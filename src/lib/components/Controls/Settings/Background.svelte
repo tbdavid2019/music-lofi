@@ -8,6 +8,7 @@
   let id: any = localStorage.getItem("bg-id");
   let useBingApi: boolean = localStorage.getItem("use-bing-api") === "true";
   let currentBingUrl: string = localStorage.getItem("bing-bg-url") || "";
+  let lastBingFetchDate: string = localStorage.getItem("bing-fetch-date") || "";
   
   // Initialize background
   if (!id) {
@@ -19,10 +20,21 @@
   const bg = document.getElementById("bg");
   let isLoadingBing = false;
   
+  // Check if we need to refresh Bing wallpaper (daily update)
+  const today = new Date().toDateString();
+  const shouldRefreshBing = useBingApi && currentBingUrl && lastBingFetchDate !== today;
+  
   // Load initial background
-  if (useBingApi && currentBingUrl) {
+  if (useBingApi && currentBingUrl && !shouldRefreshBing) {
+    // Use cached Bing wallpaper (same day)
     bg.style.backgroundImage = `url('${currentBingUrl}')`;
+    console.log("📅 使用今日快取的 Bing 桌布");
+  } else if (shouldRefreshBing) {
+    // Auto-refresh Bing wallpaper (new day)
+    console.log("🔄 偵測到新的一天，自動更新 Bing 桌布...");
+    fetchAndSetBingWallpaper();
   } else {
+    // Use local background
     bg.style.backgroundImage = `url('assets/background/bg${id}.jpg')`;
   }
 
@@ -81,6 +93,11 @@
 
   // Set Bing wallpaper with fallback
   async function setBingWallpaper() {
+    await fetchAndSetBingWallpaper();
+  }
+
+  // Fetch and set Bing wallpaper (separate function for reuse)
+  async function fetchAndSetBingWallpaper() {
     const bingUrl = await fetchBingWallpaper();
     
     if (bingUrl) {
@@ -88,8 +105,11 @@
       bg.style.backgroundImage = `url('${bingUrl}')`;
       useBingApi = true;
       currentBingUrl = bingUrl;
+      const today = new Date().toDateString();
       localStorage.setItem("use-bing-api", "true");
       localStorage.setItem("bing-bg-url", bingUrl);
+      localStorage.setItem("bing-fetch-date", today); // 記錄載入日期
+      console.log(`📅 Bing 桌布已更新 (${today})`);
     } else {
       // Fallback to local background
       useBingApi = false;
