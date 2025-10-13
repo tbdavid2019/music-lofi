@@ -83,11 +83,23 @@
   };
   let instrumentVolumes = loadInstrumentVolumes();
 
-  // Initialize instruments
-  const pn = new Piano(() => (pianoLoaded = true)).sampler;
-  const kick = new Kick(() => (kickLoaded = true)).sampler;
-  const snare = new Snare(() => (snareLoaded = true)).sampler;
-  const hat = new Hat(() => (hatLoaded = true)).sampler;
+  // Initialize instruments with callbacks that apply volumes after loading
+  const pn = new Piano(() => {
+    pianoLoaded = true;
+    applyInstrumentVolume('piano');
+  }).sampler;
+  const kick = new Kick(() => {
+    kickLoaded = true;
+    applyInstrumentVolume('kick');
+  }).sampler;
+  const snare = new Snare(() => {
+    snareLoaded = true;
+    applyInstrumentVolume('snare');
+  }).sampler;
+  const hat = new Hat(() => {
+    hatLoaded = true;
+    applyInstrumentVolume('hat');
+  }).sampler;
   const noise = Noise;
 
   // Sequences
@@ -429,6 +441,38 @@
     }
     if (hat && hat.volume) {
       hat.volume.value = linearToDbSimple(instrumentVolumes.hat);
+    }
+  }
+
+  // Apply volume for a specific instrument (called after loading)
+  function applyInstrumentVolume(instrument: 'piano' | 'kick' | 'snare' | 'hat') {
+    const linearToDbSimple = (value) => value === 0 ? -Infinity : 20 * Math.log10(value);
+    
+    switch(instrument) {
+      case 'piano':
+        if (pn && pn.volume) {
+          pn.volume.value = linearToDbSimple(instrumentVolumes.piano);
+          console.log(`🎹 Piano volume set: ${instrumentVolumes.piano}`);
+        }
+        break;
+      case 'kick':
+        if (kick && kick.volume) {
+          kick.volume.value = linearToDbSimple(instrumentVolumes.kick);
+          console.log(`🥁 Kick volume set: ${instrumentVolumes.kick}`);
+        }
+        break;
+      case 'snare':
+        if (snare && snare.volume) {
+          snare.volume.value = linearToDbSimple(instrumentVolumes.snare);
+          console.log(`🥁 Snare volume set: ${instrumentVolumes.snare} (${snare.volume.value} dB)`);
+        }
+        break;
+      case 'hat':
+        if (hat && hat.volume) {
+          hat.volume.value = linearToDbSimple(instrumentVolumes.hat);
+          console.log(`🎩 Hi-Hat volume set: ${instrumentVolumes.hat}`);
+        }
+        break;
     }
   }
 

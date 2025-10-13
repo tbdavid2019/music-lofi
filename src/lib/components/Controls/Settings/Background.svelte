@@ -40,25 +40,37 @@
       // Choose API based on device type
       const isMobile = isMobileDevice();
       const bingApiUrl = isMobile 
-        ? `https://bing.img.run/m.php?t=${Date.now()}`           // 手機版 API
-        : `https://bing.img.run/1920x1080.php?t=${Date.now()}`;  // 桌面版 API
+        ? `https://bing.img.run/m.php`           // 手機版 API
+        : `https://bing.img.run/1920x1080.php`;  // 桌面版 API
       
       console.log(`🔍 偵測設備: ${isMobile ? '📱 手機' : '💻 桌面'}`);
-      console.log(`🌐 使用 API: ${isMobile ? 'mobile' : 'desktop'} version`);
       
-      // Test if the image loads successfully
-      const response = await fetch(bingApiUrl, { 
-        method: 'HEAD',
-        timeout: 5000 
-      } as any);
+      // 使用 Image 對象預載入測試（CSS background-image 不受 CORS 限制）
+      return new Promise((resolve) => {
+        const testImg = new Image();
+        const uniqueUrl = `${bingApiUrl}?t=${Date.now()}`;
+        
+        testImg.onload = () => {
+          console.log(`✅ Bing API 載入成功 (${isMobile ? '手機版' : '桌面版'})`);
+          resolve(uniqueUrl);
+        };
+        
+        testImg.onerror = () => {
+          console.warn("⚠️ Bing API 載入失敗，使用本地背景");
+          resolve(null);
+        };
+        
+        // 設置 5 秒超時
+        setTimeout(() => {
+          if (testImg.complete === false) {
+            console.warn("⚠️ Bing API 載入超時，使用本地背景");
+            resolve(null);
+          }
+        }, 5000);
+        
+        testImg.src = uniqueUrl;
+      });
       
-      if (response.ok) {
-        console.log(`✅ Bing API 載入成功 (${isMobile ? '手機版' : '桌面版'})`);
-        return bingApiUrl;
-      } else {
-        console.warn("⚠️ Bing API 回應異常，使用本地背景");
-        return null;
-      }
     } catch (error) {
       console.warn("⚠️ Bing API 載入失敗，使用本地背景:", error);
       return null;

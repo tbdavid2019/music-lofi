@@ -26,47 +26,56 @@
 - ✅ **智能設備偵測**：自動識別手機或桌面設備
   - 📱 手機版: `bing.img.run/m.php` (優化手機顯示)
   - 💻 桌面版: `bing.img.run/1920x1080.php` (1920x1080 高解析度)
+- ✅ **CORS 問題解決**：使用 Image 對象預載入，CSS background-image 不受 CORS 限制
 - ✅ **智能回退機制**：若 API 載入失敗，自動使用本地背景
 - ✅ **狀態指示**：顯示載入中、成功或失敗狀態，並標示設備類型
 - ✅ **快取功能**：成功載入的背景會儲存在 localStorage
 - ✅ **雙軌制背景系統**：可隨時切換 Bing API 或本地背景
 
-**使用方式**：
-1. 按 `J` 鍵開啟設定面板
-2. 前往 "Background" 區域
-3. 點擊頂部的「🌐 Bing 每日桌布」按鈕
-4. 系統會自動偵測設備並載入對應版本的 Bing 背景
-5. 若成功，會顯示「✓ Bing 每日桌布」並標示設備類型（📱/💻）
-6. 若失敗，自動回退到本地背景（bg1.jpg）
-
 **技術實作**：
 - API 端點:
   - 桌面版: `https://bing.img.run/1920x1080.php`
   - 手機版: `https://bing.img.run/m.php`
+- CORS 解決方案:
+  - 使用 `new Image()` 對象預載入測試
+  - CSS `background-image` 不受 CORS 限制
+  - 避免使用 `fetch()` 直接請求圖片
 - 設備偵測邏輯:
   - 螢幕寬度 <= 600px
   - 或 User-Agent 包含移動設備標識
-- Fetch timeout: 5 秒
-- 回退邏輯: try-catch + HEAD request 檢查
+- 5 秒超時保護
 - localStorage 鍵值:
   - `use-bing-api`: 儲存是否使用 Bing API (true/false)
   - `bing-bg-url`: 快取最後成功載入的 Bing URL
   - `bg-id`: 本地背景 ID (1-10)
 
-**UI 設計**：
-- 漸層按鈕: 藍綠色 (0,120,212) → (0,178,148)
-- 啟用狀態: 發光效果 + 脈衝動畫
-- 載入狀態: 顯示「載入中...」並禁用按鈕
-- 提示文字: 「🌐 Bing 背景 (📱 手機版/💻 桌面版)」
+---
 
-**錯誤處理**：
-- 網路超時 → 回退本地背景
-- API 回應失敗 → 回退本地背景
-- 圖片載入失敗 → 回退本地背景
-- Console 記錄: 
-  - 🔍 偵測設備類型
-  - ✅ 成功訊息 (含版本)
-  - ⚠️ 失敗訊息
+### 🐛 Bug 修復
+
+#### 小鼓預設靜音問題修復
+
+**問題**：部署到 Vercel 後，首次播放音樂時仍能聽到小鼓聲音，即使預設值設定為 0
+
+**根本原因**：
+- Snare 樂器在初始化時有預設音量 `-6 dB`
+- `updateInstrumentVolumes()` 在樂器完全載入前就被調用
+- 導致預設的 `snare: 0` 設定沒有生效
+
+**解決方案**：
+- ✅ 在每個樂器載入完成的 callback 中立即應用音量設定
+- ✅ 新增 `applyInstrumentVolume()` 函數，確保音量在載入後正確應用
+- ✅ 添加 console.log 追蹤音量設定（開發模式）
+
+**修改檔案**：
+- `src/lib/PlayButton.svelte`: 改進樂器初始化邏輯
+
+**驗證方式**：
+1. 清除 localStorage（或使用無痕模式）
+2. 重新載入頁面
+3. 點擊播放按鈕
+4. 應該聽不到小鼓聲音（snare = 0%）
+5. Console 會顯示：`🥁 Snare volume set: 0 (-Infinity dB)`
 
 ---
 
