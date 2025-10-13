@@ -106,21 +106,20 @@
       <div class="volume-value">{Math.round(volumes.kick * 100)}%</div>
     </div>
 
-    <!-- Snare Control -->
-    <div class="instrument-control">
+    <!-- Snare Control - PERMANENTLY DISABLED 永久停用 -->
+    <!-- 小鼓控制已完全停用，保留 UI 結構但隱藏顯示 -->
+    <!-- 
+    <div class="instrument-control" style="display: none;">
       <div class="control-header">
-        <span class="instrument-name">🥁 小鼓 (Snare)</span>
+        <span class="instrument-name">🥁 小鼓 (Snare) - 已停用</span>
         <button 
           class="mute-btn" 
           class:muted={volumes.snare === 0}
           on:click={() => toggleMute('snare')}
-          title={volumes.snare === 0 ? "取消靜音" : "靜音"}
+          title="小鼓已永久停用"
+          disabled
         >
-          {#if volumes.snare === 0}
-            <IconVolumeOff size={16} />
-          {:else}
-            <IconVolume size={16} />
-          {/if}
+          <IconVolumeOff size={16} />
         </button>
       </div>
       <input
@@ -131,9 +130,11 @@
         bind:value={volumes.snare}
         on:input={() => updateVolume('snare', volumes.snare)}
         class="volume-slider"
+        disabled
       />
-      <div class="volume-value">{Math.round(volumes.snare * 100)}%</div>
+      <div class="volume-value">已停用</div>
     </div>
+    -->
 
     <!-- Hi-Hat Control -->
     <div class="instrument-control">

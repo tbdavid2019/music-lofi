@@ -93,10 +93,14 @@
     kickLoaded = true;
     applyInstrumentVolume('kick');
   }).sampler;
-  const snare = new Snare(() => {
-    snareLoaded = true;
-    applyInstrumentVolume('snare');
-  }).sampler;
+  // ⚠️ SNARE COMPLETELY DISABLED - 小鼓已完全停用
+  // const snare = new Snare(() => {
+  //   snareLoaded = true;
+  //   applyInstrumentVolume('snare');
+  // }).sampler;
+  const snare = null; // 直接設為 null，不載入
+  let snareLoaded = true; // 假裝已載入，避免影響其他檢查
+  
   const hat = new Hat(() => {
     hatLoaded = true;
     applyInstrumentVolume('hat');
@@ -140,18 +144,20 @@
       "8n",
     );
 
-    snareLoop = new Tone.Sequence(
-      (time, note) => {
-        if (!snareOff) {
-          if (note !== "" && Math.random() < 0.8) {
-            // @ts-ignore
-            snare.triggerAttack(note);
-          }
-        }
-      },
-      ["", "C4"],
-      "2n",
-    );
+    // ⚠️ SNARE LOOP DISABLED - 小鼓循環已停用
+    // snareLoop = new Tone.Sequence(
+    //   (time, note) => {
+    //     if (!snareOff) {
+    //       if (note !== "" && Math.random() < 0.8) {
+    //         // @ts-ignore
+    //         snare.triggerAttack(note);
+    //       }
+    //     }
+    //   },
+    //   ["", "C4"],
+    //   "2n",
+    // );
+    snareLoop = null; // 設為 null
 
     hatLoop = new Tone.Sequence(
       (time, note) => {
@@ -409,7 +415,7 @@
       chords.start(0);
       melody.start(0);
       kickLoop.start(0);
-      snareLoop.start(0);
+      // snareLoop.start(0); // ⚠️ DISABLED - 小鼓已停用
       hatLoop.start(0);
       isPlaying = true;
     }
@@ -444,9 +450,10 @@
     if (kick && kick.volume) {
       kick.volume.value = linearToDbSimple(instrumentVolumes.kick);
     }
-    if (snare && snare.volume) {
-      snare.volume.value = linearToDbSimple(instrumentVolumes.snare);
-    }
+    // ⚠️ SNARE DISABLED - 小鼓已停用
+    // if (snare && snare.volume) {
+    //   snare.volume.value = linearToDbSimple(instrumentVolumes.snare);
+    // }
     if (hat && hat.volume) {
       hat.volume.value = linearToDbSimple(instrumentVolumes.hat);
     }
@@ -470,10 +477,12 @@
         }
         break;
       case 'snare':
-        if (snare && snare.volume) {
-          snare.volume.value = linearToDbSimple(instrumentVolumes.snare);
-          console.log(`🥁 Snare volume set: ${instrumentVolumes.snare} (${snare.volume.value} dB)`);
-        }
+        // ⚠️ SNARE DISABLED - 小鼓已停用
+        // if (snare && snare.volume) {
+        //   snare.volume.value = linearToDbSimple(instrumentVolumes.snare);
+        //   console.log(`🥁 Snare volume set: ${instrumentVolumes.snare} (${snare.volume.value} dB)`);
+        // }
+        console.log(`🚫 Snare is permanently disabled - 小鼓已永久停用`);
         break;
       case 'hat':
         if (hat && hat.volume) {
