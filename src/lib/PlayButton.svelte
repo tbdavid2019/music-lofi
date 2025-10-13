@@ -57,7 +57,7 @@
 
   let pianoLoaded = false;
   let kickLoaded = false;
-  let snareLoaded = true; // ⚠️ 直接設為 true，因為小鼓已停用
+  let snareLoaded = false;
   let hatLoaded = false;
 
   let contextStarted = false;
@@ -68,9 +68,10 @@
   const loadInstrumentVolumes = () => {
     try {
       const saved = localStorage.getItem(INSTRUMENTS_STORAGE_KEY);
-      return saved ? JSON.parse(saved) : { piano: 1, kick: 0.7, snare: 0, hat: 0.5 };
+      // 預設純鋼琴模式 - 只有鋼琴有音量，其他樂器靜音
+      return saved ? JSON.parse(saved) : { piano: 1, kick: 0, snare: 0, hat: 0 };
     } catch (e) {
-      return { piano: 1, kick: 0.7, snare: 0, hat: 0.5 };
+      return { piano: 1, kick: 0, snare: 0, hat: 0 };
     }
   };
   let instrumentVolumes = loadInstrumentVolumes();
@@ -93,13 +94,10 @@
     kickLoaded = true;
     applyInstrumentVolume('kick');
   }).sampler;
-  // ⚠️ SNARE COMPLETELY DISABLED - 小鼓已完全停用
-  // const snare = new Snare(() => {
-  //   snareLoaded = true;
-  //   applyInstrumentVolume('snare');
-  // }).sampler;
-  const snare = null; // 直接設為 null，不載入
-  // snareLoaded 已在上方設為 true，避免重複宣告
+  const snare = new Snare(() => {
+    snareLoaded = true;
+    applyInstrumentVolume('snare');
+  }).sampler;
   
   const hat = new Hat(() => {
     hatLoaded = true;
@@ -144,20 +142,18 @@
       "8n",
     );
 
-    // ⚠️ SNARE LOOP DISABLED - 小鼓循環已停用
-    // snareLoop = new Tone.Sequence(
-    //   (time, note) => {
-    //     if (!snareOff) {
-    //       if (note !== "" && Math.random() < 0.8) {
-    //         // @ts-ignore
-    //         snare.triggerAttack(note);
-    //       }
-    //     }
-    //   },
-    //   ["", "C4"],
-    //   "2n",
-    // );
-    snareLoop = null; // 設為 null
+    snareLoop = new Tone.Sequence(
+      (time, note) => {
+        if (!snareOff) {
+          if (note !== "" && Math.random() < 0.8) {
+            // @ts-ignore
+            snare.triggerAttack(note);
+          }
+        }
+      },
+      ["", "C4"],
+      "2n",
+    );
 
     hatLoop = new Tone.Sequence(
       (time, note) => {
@@ -235,27 +231,34 @@
 
   function nextChord() {
     const nextProgress = progress === progression.length - 1 ? 0 : progress + 1;
-    const nextKickOff = Math.random() < 0.15;
-    const nextSnareOff = Math.random() < 0.2;
-    const nextHatOff = Math.random() < 0.25;
+    
+    // 隨機變化只在樂器沒有被用戶手動靜音時生效
+    const nextKickOff = instrumentVolumes.kick === 0 ? true : Math.random() < 0.15;
+    const nextSnareOff = instrumentVolumes.snare === 0 ? true : Math.random() < 0.2;
+    const nextHatOff = instrumentVolumes.hat === 0 ? true : Math.random() < 0.25;
     const nextMelodyDensity = Math.random() * 0.3 + 0.2;
     const nextMelodyOff = Math.random() < 0.25;
 
     if (progress === 4) {
       progress = nextProgress;
-      kickOff = nextKickOff;
-      snareOff = nextSnareOff;
-      hatOff = nextHatOff;
+      // 只有在用戶沒有手動靜音時才應用隨機邏輯
+      if (instrumentVolumes.kick > 0) kickOff = nextKickOff;
+      if (instrumentVolumes.snare > 0) snareOff = nextSnareOff;
+      if (instrumentVolumes.hat > 0) hatOff = nextHatOff;
     } else if (progress === 0) {
       progress = nextProgress;
-      kickOff = nextKickOff;
-      snareOff = nextSnareOff;
-      hatOff = nextHatOff;
+      // 只有在用戶沒有手動靜音時才應用隨機邏輯
+      if (instrumentVolumes.kick > 0) kickOff = nextKickOff;
+      if (instrumentVolumes.snare > 0) snareOff = nextSnareOff;
+      if (instrumentVolumes.hat > 0) hatOff = nextHatOff;
       melodyDensity = nextMelodyDensity;
       melodyOff = nextMelodyOff;
     } else {
       progress = nextProgress;
     }
+
+    // 調試訊息
+    console.log(`🎵 和弦進行: ${progress+1}/${progression.length}, 樂器狀態: kick=${!kickOff}, snare=${!snareOff}, hat=${!hatOff} (用戶音量: kick=${instrumentVolumes.kick}, snare=${instrumentVolumes.snare}, hat=${instrumentVolumes.hat})`);
   }
 
   function playChord() {
@@ -415,7 +418,7 @@
       chords.start(0);
       melody.start(0);
       kickLoop.start(0);
-      // snareLoop.start(0); // ⚠️ DISABLED - 小鼓已停用
+      snareLoop.start(0);
       hatLoop.start(0);
       isPlaying = true;
     }
@@ -450,10 +453,9 @@
     if (kick && kick.volume) {
       kick.volume.value = linearToDbSimple(instrumentVolumes.kick);
     }
-    // ⚠️ SNARE DISABLED - 小鼓已停用
-    // if (snare && snare.volume) {
-    //   snare.volume.value = linearToDbSimple(instrumentVolumes.snare);
-    // }
+    if (snare && snare.volume) {
+      snare.volume.value = linearToDbSimple(instrumentVolumes.snare);
+    }
     if (hat && hat.volume) {
       hat.volume.value = linearToDbSimple(instrumentVolumes.hat);
     }
@@ -477,12 +479,10 @@
         }
         break;
       case 'snare':
-        // ⚠️ SNARE DISABLED - 小鼓已停用
-        // if (snare && snare.volume) {
-        //   snare.volume.value = linearToDbSimple(instrumentVolumes.snare);
-        //   console.log(`🥁 Snare volume set: ${instrumentVolumes.snare} (${snare.volume.value} dB)`);
-        // }
-        console.log(`🚫 Snare is permanently disabled - 小鼓已永久停用`);
+        if (snare && snare.volume) {
+          snare.volume.value = linearToDbSimple(instrumentVolumes.snare);
+          console.log(`🥁 Snare volume set: ${instrumentVolumes.snare} (${snare.volume.value} dB)`);
+        }
         break;
       case 'hat':
         if (hat && hat.volume) {

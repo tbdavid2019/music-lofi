@@ -37,6 +37,35 @@
     saveVolumes();
   }
 
+  // Quick preset functions
+  function setPianoOnly() {
+    volumes = {
+      piano: 1.0,
+      kick: 0,
+      snare: 0,
+      hat: 0,
+    };
+    saveVolumes();
+    console.log("🎹 設定為純鋼琴模式");
+  }
+
+  function setFullBand() {
+    volumes = { ...DEFAULT_VOLUMES };
+    saveVolumes();
+    console.log("🎵 設定為完整樂團模式");
+  }
+
+  function setDrumsOnly() {
+    volumes = {
+      piano: 0,
+      kick: 0.8,
+      snare: 0,  // snare 已停用
+      hat: 0.6,
+    };
+    saveVolumes();
+    console.log("🥁 設定為純鼓點模式");
+  }
+
   // Auto-save volumes when changed
   $: if (volumes) {
     saveVolumes();
@@ -46,6 +75,19 @@
 <div class="instrument-controls">
   <h3>🎛️ 樂器控制</h3>
   <p class="description">獨立調整每個樂器的音量</p>
+
+  <!-- 快速預設按鈕 -->
+  <div class="quick-presets">
+    <button class="preset-btn piano-only" on:click={setPianoOnly} title="純鋼琴模式">
+      🎹 純鋼琴
+    </button>
+    <button class="preset-btn full-band" on:click={setFullBand} title="完整樂團">
+      🎵 完整樂團
+    </button>
+    <button class="preset-btn drums-only" on:click={setDrumsOnly} title="純鼓點">
+      🥁 純鼓點
+    </button>
+  </div>
 
   <div class="controls-grid">
     <!-- Piano Control -->
@@ -106,20 +148,21 @@
       <div class="volume-value">{Math.round(volumes.kick * 100)}%</div>
     </div>
 
-    <!-- Snare Control - PERMANENTLY DISABLED 永久停用 -->
-    <!-- 小鼓控制已完全停用，保留 UI 結構但隱藏顯示 -->
-    <!-- 
-    <div class="instrument-control" style="display: none;">
+    <!-- Snare Control -->
+    <div class="instrument-control">
       <div class="control-header">
-        <span class="instrument-name">🥁 小鼓 (Snare) - 已停用</span>
+        <span class="instrument-name">🥁 小鼓 (Snare)</span>
         <button 
           class="mute-btn" 
           class:muted={volumes.snare === 0}
           on:click={() => toggleMute('snare')}
-          title="小鼓已永久停用"
-          disabled
+          title={volumes.snare === 0 ? "取消靜音" : "靜音"}
         >
-          <IconVolumeOff size={16} />
+          {#if volumes.snare === 0}
+            <IconVolumeOff size={16} />
+          {:else}
+            <IconVolume size={16} />
+          {/if}
         </button>
       </div>
       <input
@@ -130,11 +173,9 @@
         bind:value={volumes.snare}
         on:input={() => updateVolume('snare', volumes.snare)}
         class="volume-slider"
-        disabled
       />
-      <div class="volume-value">已停用</div>
+      <div class="volume-value">{Math.round(volumes.snare * 100)}%</div>
     </div>
-    -->
 
     <!-- Hi-Hat Control -->
     <div class="instrument-control">
@@ -313,6 +354,56 @@
 
   .volume-slider::-moz-range-thumb:hover {
     transform: scale(1.2);
+  }
+
+  /* 快速預設按鈕樣式 */
+  .quick-presets {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+
+  .preset-btn {
+    flex: 1;
+    min-width: 90px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.05);
+    color: white;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    backdrop-filter: blur(5px);
+  }
+
+  .preset-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px);
+  }
+
+  .preset-btn:active {
+    transform: translateY(0);
+  }
+
+  .piano-only:hover {
+    background: rgba(102, 126, 234, 0.2);
+    border-color: rgba(102, 126, 234, 0.4);
+    color: #667eea;
+  }
+
+  .full-band:hover {
+    background: rgba(0, 255, 178, 0.2);
+    border-color: rgba(0, 255, 178, 0.4);
+    color: #00ffb2;
+  }
+
+  .drums-only:hover {
+    background: rgba(255, 193, 7, 0.2);
+    border-color: rgba(255, 193, 7, 0.4);
+    color: #ffc107;
   }
 
   .volume-value {

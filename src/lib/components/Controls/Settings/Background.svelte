@@ -1,14 +1,17 @@
 <script lang="ts">
-  import { IconArrowLeft, IconArrowRight, IconRefresh, IconPhoto } from "@tabler/icons-svelte";
+  import { IconArrowLeft, IconArrowRight, IconRefresh, IconPhoto, IconHeart } from "@tabler/icons-svelte";
 
   // Background source types
-  type BgSource = 'bing' | 'local';
+  type BgSource = 'bing' | 'beauty' | 'local';
   
   // Get settings from localStorage
   let id: any = localStorage.getItem("bg-id");
   let useBingApi: boolean = localStorage.getItem("use-bing-api") === "true";
+  let useBeautyApi: boolean = localStorage.getItem("use-beauty-api") === "true";
   let currentBingUrl: string = localStorage.getItem("bing-bg-url") || "";
+  let currentBeautyUrl: string = localStorage.getItem("beauty-bg-url") || "";
   let lastBingFetchDate: string = localStorage.getItem("bing-fetch-date") || "";
+  let lastBeautyFetchDate: string = localStorage.getItem("beauty-fetch-date") || "";
   
   // Initialize background
   if (!id) {
@@ -19,13 +22,23 @@
   
   const bg = document.getElementById("bg");
   let isLoadingBing = false;
+  let isLoadingBeauty = false;
   
-  // Check if we need to refresh Bing wallpaper (daily update)
+  // Check if we need to refresh wallpapers (daily update)
   const today = new Date().toDateString();
   const shouldRefreshBing = useBingApi && currentBingUrl && lastBingFetchDate !== today;
+  const shouldRefreshBeauty = useBeautyApi && currentBeautyUrl && lastBeautyFetchDate !== today;
   
-  // Load initial background
-  if (useBingApi && currentBingUrl && !shouldRefreshBing) {
+  // Load initial background based on priority: Beauty > Bing > Local
+  if (useBeautyApi && currentBeautyUrl && !shouldRefreshBeauty) {
+    // Use cached Beauty wallpaper (same day)
+    bg.style.backgroundImage = `url('${currentBeautyUrl}')`;
+    console.log("📅 使用今日快取的美女桌布");
+  } else if (shouldRefreshBeauty) {
+    // Auto-refresh Beauty wallpaper (new day)
+    console.log("🔄 偵測到新的一天，自動更新美女桌布...");
+    fetchAndSetBeautyWallpaper();
+  } else if (useBingApi && currentBingUrl && !shouldRefreshBing) {
     // Use cached Bing wallpaper (same day)
     bg.style.backgroundImage = `url('${currentBingUrl}')`;
     console.log("📅 使用今日快取的 Bing 桌布");
@@ -91,9 +104,56 @@
     }
   }
 
+  // Fetch Beauty wallpaper API
+  async function fetchBeautyWallpaper(): Promise<string | null> {
+    try {
+      isLoadingBeauty = true;
+      
+      const beautyApiUrl = `https://api.liuzhuai.com/img/m.php`;
+      console.log("🔍 請求美女桌布 API...");
+      
+      // 使用 Image 預載入解決 CORS 問題，就像 Bing API 一樣
+      return new Promise((resolve) => {
+        const testImg = new Image();
+        const uniqueUrl = `${beautyApiUrl}?t=${Date.now()}`;
+        
+        testImg.onload = () => {
+          console.log("✅ 美女桌布載入成功:", uniqueUrl);
+          resolve(uniqueUrl);
+        };
+        
+        testImg.onerror = () => {
+          console.warn("⚠️ 美女 API 載入失敗，使用本地背景");
+          resolve(null);
+        };
+        
+        // 設置 5 秒超時
+        setTimeout(() => {
+          if (testImg.complete === false) {
+            console.warn("⚠️ 美女 API 載入超時，使用本地背景");
+            resolve(null);
+          }
+        }, 5000);
+        
+        testImg.src = uniqueUrl;
+      });
+      
+    } catch (error) {
+      console.warn("⚠️ 美女 API 載入失敗:", error);
+      return null;
+    } finally {
+      isLoadingBeauty = false;
+    }
+  }
+
   // Set Bing wallpaper with fallback
   async function setBingWallpaper() {
     await fetchAndSetBingWallpaper();
+  }
+
+  // Set Beauty wallpaper with fallback
+  async function setBeautyWallpaper() {
+    await fetchAndSetBeautyWallpaper();
   }
 
   // Fetch and set Bing wallpaper (separate function for reuse)
@@ -104,16 +164,46 @@
       // Success - use Bing wallpaper
       bg.style.backgroundImage = `url('${bingUrl}')`;
       useBingApi = true;
+      useBeautyApi = false; // 關閉美女桌布
       currentBingUrl = bingUrl;
       const today = new Date().toDateString();
       localStorage.setItem("use-bing-api", "true");
+      localStorage.setItem("use-beauty-api", "false");
       localStorage.setItem("bing-bg-url", bingUrl);
-      localStorage.setItem("bing-fetch-date", today); // 記錄載入日期
+      localStorage.setItem("bing-fetch-date", today);
       console.log(`📅 Bing 桌布已更新 (${today})`);
     } else {
       // Fallback to local background
       useBingApi = false;
+      useBeautyApi = false;
       bg.style.backgroundImage = `url('assets/background/bg${id}.jpg')`;
+      localStorage.setItem("use-bing-api", "false");
+      localStorage.setItem("use-beauty-api", "false");
+    }
+  }
+
+  // Fetch and set Beauty wallpaper
+  async function fetchAndSetBeautyWallpaper() {
+    const beautyUrl = await fetchBeautyWallpaper();
+    
+    if (beautyUrl) {
+      // Success - use Beauty wallpaper
+      bg.style.backgroundImage = `url('${beautyUrl}')`;
+      useBeautyApi = true;
+      useBingApi = false; // 關閉 Bing 桌布
+      currentBeautyUrl = beautyUrl;
+      const today = new Date().toDateString();
+      localStorage.setItem("use-beauty-api", "true");
+      localStorage.setItem("use-bing-api", "false");
+      localStorage.setItem("beauty-bg-url", beautyUrl);
+      localStorage.setItem("beauty-fetch-date", today);
+      console.log(`📅 美女桌布已更新 (${today})`);
+    } else {
+      // Fallback to local background
+      useBeautyApi = false;
+      useBingApi = false;
+      bg.style.backgroundImage = `url('assets/background/bg${id}.jpg')`;
+      localStorage.setItem("use-beauty-api", "false");
       localStorage.setItem("use-bing-api", "false");
     }
   }
@@ -121,10 +211,12 @@
   // Switch to local background
   function useLocalBg(bgId: number) {
     useBingApi = false;
+    useBeautyApi = false;
     id = bgId;
     bg.style.backgroundImage = `url('assets/background/bg${id}.jpg')`;
     localStorage.setItem("bg-id", id.toString());
     localStorage.setItem("use-bing-api", "false");
+    localStorage.setItem("use-beauty-api", "false");
   }
 
   function randomBg() {
@@ -172,10 +264,11 @@
 <div>
   <h4>Background</h4>
   
-  <!-- Bing 每日桌布按鈕 -->
-  <div class="bing-btn-container">
+  <!-- API 桌布選項 -->
+  <div class="api-wallpaper-section">
+    <!-- Bing 每日桌布按鈕 -->
     <button 
-      class="bing-btn" 
+      class="api-btn bing-btn" 
       class:active={useBingApi}
       on:click={setBingWallpaper} 
       title="使用 Bing 每日高清桌布（自動偵測手機/桌面版本）"
@@ -184,9 +277,28 @@
       <IconPhoto size={18} />
       <span>{isLoadingBing ? '載入中...' : useBingApi ? '✓ Bing 每日桌布' : 'Bing 每日桌布'}</span>
     </button>
+    
+    <!-- 美女桌布按鈕 -->
+    <button 
+      class="api-btn beauty-btn" 
+      class:active={useBeautyApi}
+      on:click={setBeautyWallpaper} 
+      title="隨機美女真人桌布（高清圖片）"
+      disabled={isLoadingBeauty}
+    >
+      <IconHeart size={18} />
+      <span>{isLoadingBeauty ? '載入中...' : useBeautyApi ? '✓ 美女桌布' : '美女桌布'}</span>
+    </button>
+    
+    <!-- API 狀態提示 -->
     {#if useBingApi}
-      <div class="bing-hint">
+      <div class="api-hint bing-hint">
         🌐 Bing 背景 ({isMobileDevice() ? '📱 手機版' : '💻 桌面版'})
+      </div>
+    {/if}
+    {#if useBeautyApi}
+      <div class="api-hint beauty-hint">
+        👩 隨機美女桌布
       </div>
     {/if}
   </div>
@@ -265,10 +377,74 @@
     cursor: not-allowed;
   }
 
-  .bing-hint {
+  /* API 桌布選項樣式 */
+  .api-wallpaper-section {
+    margin-bottom: 20px;
+  }
+
+  .api-btn {
+    width: 100%;
+    height: 45px;
+    margin-bottom: 8px;
+    padding: 8px 15px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.05);
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(5px);
+  }
+
+  .api-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px);
+  }
+
+  .api-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .api-btn.active {
+    background: rgba(0, 255, 178, 0.2);
+    border-color: rgba(0, 255, 178, 0.4);
+    color: #00ffb2;
+  }
+
+  .bing-btn.active {
+    background: rgba(0, 149, 255, 0.2);
+    border-color: rgba(0, 149, 255, 0.4);
+    color: #0095ff;
+  }
+
+  .beauty-btn.active {
+    background: rgba(255, 105, 180, 0.2);
+    border-color: rgba(255, 105, 180, 0.4);
+    color: #ff69b4;
+  }
+
+  .api-hint {
     font-size: 12px;
-    color: rgba(0, 255, 178, 0.9);
+    padding: 4px 8px;
+    border-radius: 4px;
+    margin-top: 4px;
     animation: pulse 2s ease-in-out infinite;
+  }
+
+  .bing-hint {
+    color: rgba(0, 149, 255, 0.9);
+    background: rgba(0, 149, 255, 0.1);
+  }
+
+  .beauty-hint {
+    color: rgba(255, 105, 180, 0.9);
+    background: rgba(255, 105, 180, 0.1);
   }
 
   @keyframes pulse {
