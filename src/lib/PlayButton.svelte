@@ -63,15 +63,7 @@
   let contextStarted = false;
   let genChordsOnce = false;
 
-  let kickOff = false;
-  let snareOff = false;
-  let hatOff = false;
-  let melodyDensity = 0.33;
-  let melodyOff = false;
-
-  let isPlaying = false;
-
-  // Load instrument volumes
+  // Load instrument volumes first
   const INSTRUMENTS_STORAGE_KEY = "LofiEngine_InstrumentVolumes";
   const loadInstrumentVolumes = () => {
     try {
@@ -82,6 +74,15 @@
     }
   };
   let instrumentVolumes = loadInstrumentVolumes();
+
+  // Initialize instrument on/off states based on volumes
+  let kickOff = instrumentVolumes.kick === 0;
+  let snareOff = instrumentVolumes.snare === 0;  // ← 預設靜音時設為 true
+  let hatOff = instrumentVolumes.hat === 0;
+  let melodyDensity = 0.33;
+  let melodyOff = false;
+
+  let isPlaying = false;
 
   // Initialize instruments with callbacks that apply volumes after loading
   const pn = new Piano(() => {
@@ -197,7 +198,14 @@
     // Listen for instrument volume changes
     const handleInstrumentVolumes = (e: CustomEvent) => {
       instrumentVolumes = e.detail;
+      
+      // Sync on/off states with volumes
+      kickOff = instrumentVolumes.kick === 0;
+      snareOff = instrumentVolumes.snare === 0;
+      hatOff = instrumentVolumes.hat === 0;
+      
       updateInstrumentVolumes();
+      console.log(`🎛️ 樂器狀態更新: kick=${!kickOff}, snare=${!snareOff}, hat=${!hatOff}`);
     };
     window.addEventListener("updateInstrumentVolumes", handleInstrumentVolumes as EventListener);
 

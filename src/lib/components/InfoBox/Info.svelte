@@ -50,7 +50,7 @@
         <div id="app-info">
           <img id="app-logo" src="LofiEngine.png" alt="" />
           <div>
-            <h1>Lofi Engine</h1>
+            <h1>Music Lofi - DAVID888 </h1>
             <p id="version">Version 1.0.1</p>
             <p id="tagline">
               Create your own atmosphere, Lofi Engine sets the mood.
