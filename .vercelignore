@@ -1,0 +1,6 @@
+src-tauri
+target
+Cargo.lock
+Cargo.toml
+tauri.conf.json
+*.rs

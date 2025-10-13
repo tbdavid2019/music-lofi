@@ -1,0 +1,33 @@
+{
+  "name": "LofiEngine",
+  "private": true,
+  "version": "1.0.1",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "check": "svelte-check --tsconfig ./tsconfig.json",
+    "tauri": "tauri",
+    "tauri:d": "tauri dev",
+    "tauri:b": "tauri build"
+  },
+  "dependencies": {
+    "@tabler/icons-svelte": "^2.17.0",
+    "@tauri-apps/api": "^2.0.0",
+    "@tauri-apps/plugin-shell": "~2.3.0",
+    "tone": "^14.7.30"
+  },
+  "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "^2.0.0",
+    "@tauri-apps/cli": "^2.6.1",
+    "@tsconfig/svelte": "^3.0.0",
+    "@types/node": "^18.7.10",
+    "svelte": "^3.54.0",
+    "svelte-check": "^3.0.0",
+    "svelte-preprocess": "^5.0.0",
+    "tslib": "^2.4.1",
+    "typescript": "^4.9.5",
+    "vite": "^4.2.1"
+  }
+}

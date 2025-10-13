@@ -1,0 +1,64 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - master  # 當推送到 master 分支時觸發
+
+  # 允許手動觸發
+  workflow_dispatch:
+
+# 設置 GitHub Token 權限
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 只允許一個部署同時進行
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout 📥
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 🔧
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Setup pnpm 📦
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: Install dependencies 📚
+        run: pnpm install
+
+      - name: Build 🏗️
+        run: pnpm build
+
+      - name: Setup Pages 📄
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact 📤
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './dist'
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    
+    steps:
+      - name: Deploy to GitHub Pages 🚀
+        id: deployment
+        uses: actions/deploy-pages@v4
