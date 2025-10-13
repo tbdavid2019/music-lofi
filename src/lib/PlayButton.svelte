@@ -57,7 +57,7 @@
 
   let pianoLoaded = false;
   let kickLoaded = false;
-  let snareLoaded = false;
+  let snareLoaded = true; // ⚠️ 直接設為 true，因為小鼓已停用
   let hatLoaded = false;
 
   let contextStarted = false;
@@ -99,7 +99,7 @@
   //   applyInstrumentVolume('snare');
   // }).sampler;
   const snare = null; // 直接設為 null，不載入
-  let snareLoaded = true; // 假裝已載入，避免影響其他檢查
+  // snareLoaded 已在上方設為 true，避免重複宣告
   
   const hat = new Hat(() => {
     hatLoaded = true;
