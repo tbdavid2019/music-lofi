@@ -106,9 +106,9 @@
 
   // Fetch Beauty wallpaper API
   async function fetchBeautyWallpaper(): Promise<string | null> {
+    isLoadingBeauty = true;
+    
     try {
-      isLoadingBeauty = true;
-      
       const beautyApiUrl = `https://api.liuzhuai.com/img/m.php`;
       console.log("🔍 請求美女桌布 API...");
       
