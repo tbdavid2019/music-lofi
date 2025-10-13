@@ -200,11 +200,30 @@ All your presets, instrument volumes, and configurations are safely stored in yo
 
 Enjoy a fresh look every time you open the app:
 
+#### Bing 每日高清桌布 (新功能!) 🌐
+
+- **一鍵切換**: 點擊 "Bing 每日桌布" 按鈕使用 Bing API 提供的高清背景
+- **智能設備偵測**: 自動識別設備類型
+  - 📱 **手機版**: 使用 `bing.img.run/m.php` (手機優化)
+  - 💻 **桌面版**: 使用 `bing.img.run/1920x1080.php` (高解析度)
+- **自動回退**: 若 API 載入失敗，自動切換到本地背景
+- **智能快取**: 成功載入的 Bing 背景會暫存，下次開啟時仍可使用
+- **即時更新**: 每次點擊都會載入最新的 Bing 每日桌布
+
+#### 本地背景隨機功能
+
 - **Auto-random on first load**: When you first open the app, a random background is selected automatically
-- **Manual random button**: Click the "🔄 隨機背景" (Random Background) button in Settings → Background
+- **Manual random button**: Click the "🔄 隨機本地背景" button to randomly select from 10 built-in backgrounds
 - **Smart selection**: Ensures the new random background is different from the current one
 
-**How to access**: Press `J` key → Background section → Click "隨機背景" button
+**How to access**: Press `J` key → Background section → Choose between Bing API or local backgrounds
+
+**Benefits**:
+
+- 🌍 Access thousands of high-quality Bing wallpapers
+- 📱 Automatically adapts to your device (mobile/desktop)
+- 📦 Fallback to 10 beautiful built-in backgrounds
+- 🔒 Reliable and always works even without internet
 
 ---
 
