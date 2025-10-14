@@ -120,18 +120,144 @@
     margin: 0;
   }
 
-  /* 響應式設計 */
-  @media (max-height: 600px) {
+  /* Android TV 響應式設計 */
+  
+  /* 標準 TV (1920x1080) */
+  @media screen and (max-width: 1920px) and (max-height: 1080px) {
+    .tv-container {
+      padding: 1.5rem;
+    }
+    
     .tv-title {
       font-size: 3rem;
     }
     
     .tv-subtitle {
-      font-size: 1.4rem;
+      font-size: 1.3rem;
     }
     
     .tv-main {
-      gap: 2rem;
+      gap: 1.5rem;
+      padding: 0 1rem;
+    }
+  }
+  
+  /* 小型 TV (1366x768) */
+  @media screen and (max-width: 1366px) and (max-height: 768px) {
+    .tv-container {
+      padding: 1rem;
+    }
+    
+    .tv-title {
+      font-size: 2.5rem;
+    }
+    
+    .tv-subtitle {
+      font-size: 1.1rem;
+    }
+    
+    .tv-main {
+      gap: 1rem;
+      padding: 0 0.5rem;
+    }
+    
+    .tv-header {
+      margin-bottom: 0.5rem;
+    }
+    
+    .tv-footer p {
+      font-size: 1rem;
+    }
+  }
+  
+  /* 超小型 TV (1280x720) */
+  @media screen and (max-width: 1280px) and (max-height: 720px) {
+    .tv-container {
+      padding: 0.5rem;
+    }
+    
+    .tv-title {
+      font-size: 2rem;
+    }
+    
+    .tv-subtitle {
+      font-size: 1rem;
+    }
+    
+    .tv-main {
+      gap: 0.5rem;
+      padding: 0;
+    }
+    
+    .tv-header {
+      margin-bottom: 0.3rem;
+    }
+    
+    .tv-footer {
+      margin-top: 1rem;
+    }
+    
+    .tv-footer p {
+      font-size: 0.9rem;
+    }
+  }
+  
+  /* 極小 TV / Android TV 盒子 (1024x600 或更小) */
+  @media screen and (max-width: 1024px) and (max-height: 600px) {
+    .tv-container {
+      padding: 0.5rem;
+    }
+    
+    .tv-layout {
+      max-width: 100%;
+    }
+    
+    .tv-title {
+      font-size: 1.8rem;
+    }
+    
+    .tv-subtitle {
+      font-size: 0.9rem;
+    }
+    
+    .tv-main {
+      flex-direction: column;
+      gap: 0.5rem;
+      padding: 0;
+    }
+    
+    .tv-player-section,
+    .tv-controls-section {
+      flex: none;
+      width: 100%;
+    }
+    
+    .tv-header {
+      margin-bottom: 0.2rem;
+    }
+    
+    .tv-footer {
+      margin-top: 0.5rem;
+    }
+    
+    .tv-footer p {
+      font-size: 0.8rem;
+    }
+  }
+  
+  /* 針對 Android TV 瀏覽器的特殊優化 */
+  @media screen and (max-height: 500px) {
+    .tv-main {
+      flex-direction: row;
+      align-items: flex-start;
+    }
+    
+    .tv-header {
+      display: none; /* 在極小螢幕隱藏標題節省空間 */
+    }
+    
+    .tv-footer {
+      display: none; /* 在極小螢幕隱藏底部資訊 */
     }
   }
 </style>

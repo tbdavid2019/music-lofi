@@ -12,6 +12,7 @@
   let isPlaying = false;
   let contextStarted = false;
   let genChordsOnce = false;
+  let autoPlayReady = false;
   
   // 音樂狀態
   let key = "C";
@@ -81,9 +82,15 @@
     melody.humanize = true;
   }
   
-  function togglePlay() {
+  async function togglePlay() {
     if (!contextStarted) {
-      startAudioContext();
+      await startAudioContext();
+      // 初始化完成後立即開始播放
+      setTimeout(() => {
+        if (contextStarted) {
+          startMusic();
+        }
+      }, 100);
       return;
     }
     
@@ -91,14 +98,18 @@
       Tone.Transport.stop();
       isPlaying = false;
     } else {
-      if (!genChordsOnce) {
-        generateProgression();
-      }
-      Tone.Transport.start();
-      chords.start(0);
-      melody.start(0);
-      isPlaying = true;
+      startMusic();
     }
+  }
+
+  function startMusic() {
+    if (!genChordsOnce) {
+      generateProgression();
+    }
+    Tone.Transport.start();
+    chords.start(0);
+    melody.start(0);
+    isPlaying = true;
   }
   
   function generateProgression() {
@@ -191,7 +202,7 @@
 
 <div class="tv-player">
   <!-- 主播放按鈕 -->
-  <button class="tv-play-button" on:click={togglePlay}>
+  <button class="tv-play-button" class:initialized={contextStarted} on:click={togglePlay}>
     <div class="play-icon">
       {#if !contextStarted}
         🎵
@@ -203,14 +214,26 @@
     </div>
     <div class="play-text">
       {#if !contextStarted}
-        初始化音樂
+        🎵 點擊開始音樂
       {:else if isPlaying}
-        暫停音樂
+        ⏸️ 暫停音樂
       {:else}
-        播放音樂
+        ▶️ 繼續播放
       {/if}
     </div>
   </button>
+
+  <!-- 引導提示 -->
+  {#if !contextStarted}
+    <div class="guide-hint animated">
+      <p class="main-hint">🎯 輕觸一下即可開始播放！</p>
+      <p class="sub-hint">遙控器操作：方向鍵調音量 | R鍵重新生成 | 空格鍵播放/暫停</p>
+    </div>
+  {:else if !isPlaying && genChordsOnce}
+    <div class="guide-hint">
+      <p class="main-hint">🎶 音樂已準備就緒</p>
+    </div>
+  {/if}
   
   <!-- 音樂資訊 -->
   <div class="music-info">
@@ -224,9 +247,12 @@
         {/each}
       </div>
       <p>LoFi 即時生成 - BPM: 156</p>
+    {:else if contextStarted}
+      <h3>🎵 LoFi 音樂引擎已就緒</h3>
+      <p>使用 Tone.js 即時生成和弦進行</p>
     {:else}
       <h3>🎵 LoFi 音樂引擎</h3>
-      <p>使用 Tone.js 即時生成和弦進行</p>
+      <p>專為 TV 設計的音樂播放體驗</p>
     {/if}
   </div>
   
@@ -289,6 +315,294 @@
   .play-text {
     font-size: 1.4rem;
     font-weight: 500;
+  }
+
+  .guide-hint {
+    text-align: center;
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 15px;
+    padding: 1.5rem 2rem;
+    margin: 1rem 0;
+    backdrop-filter: blur(10px);
+    max-width: 600px;
+  }
+
+  .guide-hint.animated {
+    animation: glow 2s ease-in-out infinite alternate;
+  }
+
+  .main-hint {
+    margin: 0.5rem 0;
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: #f0f8ff;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+  }
+
+  .sub-hint {
+    margin: 0.8rem 0 0 0;
+    font-size: 1.1rem !important;
+    opacity: 0.9;
+    font-weight: normal !important;
+    color: #e0e8ff;
+    line-height: 1.4;
+  }
+
+  @keyframes glow {
+    0% { 
+      border-color: rgba(255, 255, 255, 0.3);
+      box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+    }
+    100% { 
+      border-color: rgba(102, 187, 106, 0.6);
+      box-shadow: 0 0 25px rgba(102, 187, 106, 0.4);
+    }
+  }
+
+  /* 讓按鈕在未初始化時更突出 */
+  .tv-play-button:not(.initialized) {
+    animation: buttonPulse 1.5s ease-in-out infinite;
+    background: linear-gradient(135deg, rgba(102, 187, 106, 0.2), rgba(255, 255, 255, 0.15));
+  }
+
+  @keyframes buttonPulse {
+    0%, 100% {
+      transform: scale(1);
+      box-shadow: 0 0 20px rgba(102, 187, 106, 0.3);
+    }
+    50% {
+      transform: scale(1.05);
+      box-shadow: 0 0 30px rgba(102, 187, 106, 0.5);
+    }
+  }
+
+  /* Android TV 響應式設計 */
+  
+  /* 標準 TV (1920x1080) */
+  @media screen and (max-width: 1920px) and (max-height: 1080px) {
+    .tv-play-button {
+      width: 280px;
+      height: 130px;
+    }
+    
+    .play-icon {
+      font-size: 2.2rem;
+    }
+    
+    .play-text {
+      font-size: 1.3rem;
+    }
+    
+    .main-hint {
+      font-size: 1.3rem;
+    }
+    
+    .sub-hint {
+      font-size: 1rem !important;
+    }
+  }
+  
+  /* 小型 TV (1366x768) */
+  @media screen and (max-width: 1366px) and (max-height: 768px) {
+    .tv-player {
+      gap: 1.5rem;
+    }
+    
+    .tv-play-button {
+      width: 250px;
+      height: 110px;
+    }
+    
+    .play-icon {
+      font-size: 2rem;
+    }
+    
+    .play-text {
+      font-size: 1.2rem;
+    }
+    
+    .guide-hint {
+      padding: 1rem 1.5rem;
+      max-width: 500px;
+    }
+    
+    .main-hint {
+      font-size: 1.2rem;
+    }
+    
+    .sub-hint {
+      font-size: 0.95rem !important;
+    }
+    
+    .music-info h3 {
+      font-size: 1.5rem;
+    }
+    
+    .music-info p {
+      font-size: 1.1rem;
+    }
+    
+    .control-btn {
+      width: 140px;
+      height: 50px;
+      font-size: 1rem;
+    }
+  }
+  
+  /* 超小型 TV (1280x720) */
+  @media screen and (max-width: 1280px) and (max-height: 720px) {
+    .tv-player {
+      gap: 1rem;
+    }
+    
+    .tv-play-button {
+      width: 220px;
+      height: 100px;
+    }
+    
+    .play-icon {
+      font-size: 1.8rem;
+    }
+    
+    .play-text {
+      font-size: 1.1rem;
+    }
+    
+    .guide-hint {
+      padding: 0.8rem 1.2rem;
+      max-width: 450px;
+    }
+    
+    .main-hint {
+      font-size: 1.1rem;
+    }
+    
+    .sub-hint {
+      font-size: 0.9rem !important;
+    }
+    
+    .music-info h3 {
+      font-size: 1.3rem;
+    }
+    
+    .music-info p {
+      font-size: 1rem;
+    }
+    
+    .chord {
+      padding: 0.2rem 0.6rem;
+      font-size: 1rem;
+    }
+    
+    .control-btn {
+      width: 120px;
+      height: 45px;
+      font-size: 0.95rem;
+    }
+    
+    .volume-control {
+      font-size: 1.1rem;
+    }
+    
+    .volume-btn {
+      width: 45px;
+      height: 45px;
+      font-size: 1.1rem;
+    }
+  }
+  
+  /* 極小 TV / Android TV 盒子 (1024x600 或更小) */
+  @media screen and (max-width: 1024px) and (max-height: 600px) {
+    .tv-player {
+      gap: 0.8rem;
+    }
+    
+    .tv-play-button {
+      width: 200px;
+      height: 90px;
+    }
+    
+    .play-icon {
+      font-size: 1.6rem;
+    }
+    
+    .play-text {
+      font-size: 1rem;
+    }
+    
+    .guide-hint {
+      padding: 0.6rem 1rem;
+      max-width: 400px;
+    }
+    
+    .main-hint {
+      font-size: 1rem;
+    }
+    
+    .sub-hint {
+      font-size: 0.8rem !important;
+      line-height: 1.2;
+    }
+    
+    .music-info h3 {
+      font-size: 1.1rem;
+      margin: 0 0 0.3rem 0;
+    }
+    
+    .music-info p {
+      font-size: 0.9rem;
+    }
+    
+    .progression-display {
+      gap: 0.3rem;
+      margin: 0.5rem 0;
+    }
+    
+    .chord {
+      padding: 0.15rem 0.5rem;
+      font-size: 0.9rem;
+    }
+    
+    .control-btn {
+      width: 100px;
+      height: 40px;
+      font-size: 0.85rem;
+    }
+    
+    .volume-control {
+      font-size: 1rem;
+      gap: 0.5rem;
+    }
+    
+    .volume-btn {
+      width: 40px;
+      height: 40px;
+      font-size: 1rem;
+    }
+  }
+  
+  /* 針對 Android TV 瀏覽器的特殊優化 */
+  @media screen and (max-height: 500px) {
+    .tv-player {
+      gap: 0.5rem;
+    }
+    
+    .guide-hint {
+      display: none; /* 在極小螢幕隱藏引導文字節省空間 */
+    }
+    
+    .music-info {
+      margin: 0.5rem 0;
+    }
+    
+    .control-buttons {
+      margin-top: 0;
+    }
+    
+    .volume-control {
+      display: none; /* 在極小螢幕隱藏音量控制，改用遙控器 */
+    }
   }
   
   .music-info {
