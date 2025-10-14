@@ -24,13 +24,27 @@
   let isLoadingBing = false;
   let isLoadingBeauty = false;
   
+  // Check if this is first time user (no API preference set)
+  const isFirstTimeUser = localStorage.getItem("use-bing-api") === null && localStorage.getItem("use-beauty-api") === null;
+  
   // Check if we need to refresh wallpapers (daily update)
   const today = new Date().toDateString();
   const shouldRefreshBing = useBingApi && currentBingUrl && lastBingFetchDate !== today;
   const shouldRefreshBeauty = useBeautyApi && currentBeautyUrl && lastBeautyFetchDate !== today;
   
+  // First time user: randomly choose between Bing or Beauty API
+  if (isFirstTimeUser) {
+    const randomChoice = Math.random() < 0.5 ? 'bing' : 'beauty';
+    console.log(`🎲 首次使用，隨機選擇: ${randomChoice === 'bing' ? 'Bing 桌布' : '美女桌布'}`);
+    
+    if (randomChoice === 'bing') {
+      fetchAndSetBingWallpaper();
+    } else {
+      fetchAndSetBeautyWallpaper();
+    }
+  }
   // Load initial background based on priority: Beauty > Bing > Local
-  if (useBeautyApi && currentBeautyUrl && !shouldRefreshBeauty) {
+  else if (useBeautyApi && currentBeautyUrl && !shouldRefreshBeauty) {
     // Use cached Beauty wallpaper (same day)
     bg.style.backgroundImage = `url('${currentBeautyUrl}')`;
     console.log("📅 使用今日快取的美女桌布");
@@ -174,6 +188,7 @@
       console.log(`📅 Bing 桌布已更新 (${today})`);
     } else {
       // Fallback to local background
+      console.log("🔄 網路環境失敗，退回到本地背景");
       useBingApi = false;
       useBeautyApi = false;
       bg.style.backgroundImage = `url('assets/background/bg${id}.jpg')`;
@@ -200,6 +215,7 @@
       console.log(`📅 美女桌布已更新 (${today})`);
     } else {
       // Fallback to local background
+      console.log("🔄 網路環境失敗，退回到本地背景");
       useBeautyApi = false;
       useBingApi = false;
       bg.style.backgroundImage = `url('assets/background/bg${id}.jpg')`;

@@ -3,7 +3,7 @@
 version = 4
 
 [[package]]
-name = "LofiEngine"
+name = "MUSICLofi-DAVID888"
 version = "1.0.1"
 dependencies = [
  "serde",

@@ -110,6 +110,57 @@ The LoFi track is now generated procedurally using **Tone.js**, providing a dyna
 
 If you have suggestions or encounter any issues, please let us know by opening an issue or contributing directly to the project. Together, we can make LoFi Engine even better!
 
+#### 🎵 Music Generation Logic
+
+LoFi Engine uses an **intelligent random generation system** rather than simple looped tracks:
+
+##### 🎯 Core Generation System
+
+**1. Chord Progression Generation**
+- **Smart Harmonic Flow**: Based on music theory, each chord can only transition to specific next chords
+- **12 Key Signatures**: Randomly selects from C, C#, D, D#, E, F, F#, G, G#, A, A#, B
+- **8-Chord Progressions**: Generates sequences using proper voice leading rules
+
+**2. Chord Relationship Logic**
+- **I (Tonic)**: Can go to ii, iii, IV, V, vi, vii (most flexible)
+- **V (Dominant)**: Often resolves to I, iii, vi (classic resolution)
+- **ii (Supertonic)**: Limited to iii, V, vii transitions
+- Each chord has pre-defined possible successors based on harmonic theory
+
+**3. Dynamic Layering System**
+- **Piano**: Chord progression (every measure) + melody (every 8th note)
+- **Drums**: Kick pattern + Snare (every 2 beats) + Hi-Hat (every quarter note)
+- **Probabilistic Triggers**: Each instrument has random trigger chances (80-90%)
+
+##### 🔄 Real-Time Variation System
+
+**1. Instrument Randomization** (every 8 chords):
+```
+Kick Off: 15% chance to mute
+Snare Off: 20% chance to mute  
+Hi-Hat Off: 25% chance to mute
+Melody Off: 25% chance to mute
+```
+
+**2. Melody Density Control**:
+- **Adaptive Density**: 20%-50% random density per cycle
+- **Weighted Intervals**: Uses mathematical weights for natural melodic movement
+- **Scale Position Tracking**: Maintains musical context for smooth transitions
+
+**3. Humanization Features**:
+- **Timing Variations**: `humanize = true` adds natural micro-timing
+- **Volume Fluctuations**: Subtle random velocity changes
+- **Swing Feel**: Built-in swing quantization for groove
+
+##### 🎛️ User Controls
+
+- **Press `R`**: Generate completely new progression (new key + new chord sequence)
+- **Press `M`**: Toggle melody on/off
+- **Individual Volumes**: Control piano, kick, snare, hi-hat independently
+- **BPM Control**: Adjust tempo (default: 156 BPM)
+
+This system can generate **virtually infinite musical variations** while maintaining musical coherence and the characteristic LoFi aesthetic!
+
 ## New Features 🎉
 
 LoFi Engine now includes powerful new features to enhance your music experience!
