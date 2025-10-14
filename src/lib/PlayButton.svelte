@@ -35,7 +35,7 @@
   const linearToDb = (value) =>
     value === 0 ? -Infinity : 20 * Math.log10(value);
 
-  // Setup audio chain
+  // Setup audio chain - 微妙音量提升，保持原始 LoFi 品質
   const cmp = new Tone.Compressor({
     threshold: -6,
     ratio: 3,
@@ -43,7 +43,7 @@
     release: 0.1,
   });
   const lpf = new Tone.Filter(2000, "lowpass");
-  const vol = new Tone.Volume(linearToDb(volumes.main_track));
+  const vol = new Tone.Volume(linearToDb(volumes.main_track) + 3); // 只提升 3dB
   Tone.Master.chain(cmp, lpf, vol);
   
   // 初始化 BPM (從 localStorage 讀取或使用默認值)

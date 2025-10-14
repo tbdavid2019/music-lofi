@@ -36,8 +36,8 @@
   let pn: any;
   let chords: any, melody: any;
   
-  // 音量控制
-  let volume = 0.7;
+  // 音量控制 - LoFi 適中音量
+  let volume = 0.8; // 調整為 0.8，平衡音量和 LoFi 感覺
   const linearToDb = (value: number) =>
     value === 0 ? -Infinity : 20 * Math.log10(value);
   
@@ -55,8 +55,8 @@
         console.log("🎹 鋼琴載入完成");
       }).sampler;
       
-      // 設置音量
-      const vol = new Tone.Volume(linearToDb(volume));
+      // 設置音量 - LoFi 風格
+      const vol = new Tone.Volume(linearToDb(volume) + 3); // 微妙提升 3dB
       Tone.Master.chain(vol);
       
       // 初始化 BPM (從 localStorage 讀取或使用默認值)
@@ -233,7 +233,7 @@
   function adjustVolume(delta: number) {
     volume = Math.max(0, Math.min(1, volume + delta));
     if (contextStarted) {
-      Tone.Master.volume.value = linearToDb(volume);
+      Tone.Master.volume.value = linearToDb(volume) + 3; // 微妙提升 3dB
     }
     
     // 發送音量變更事件
