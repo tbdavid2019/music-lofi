@@ -52,10 +52,10 @@ Generate LoFi music on the go. You create your own atmosphere; LoFi Engine sets 
 - [x] **Instrument volume controls** (separate drum controls, **snare muted by default**)
 - [x] **Intuitive track names** (Chinese labels instead of "Track 1", "Track 2")
 - [x] **Random background on startup** (with manual random button)
+- [x] **🎚️ Professional Audio Optimization** (triad voicing, voice separation, micro-timing)
 - [ ] Purchasing a domain
 - [ ] Mobile support (iOS, Android)
 - [ ] More customization options and effects
-- [ ] Improved procedural generation algorithms
 - [ ] User feedback integration
 
 ---
@@ -119,8 +119,9 @@ LoFi Engine uses an **intelligent random generation system** rather than simple 
 
 **1. Chord Progression Generation**
 - **Smart Harmonic Flow**: Based on music theory, each chord can only transition to specific next chords
-- **12 Key Signatures**: Randomly selects from C, C#, D, D#, E, F, F#, G, G#, A, A#, B
+- **Universal Key Support**: All 12 chromatic keys (C, C#, D, D#, E, F, F#, G, G#, A, A#, B) with consistent audio quality
 - **8-Chord Progressions**: Generates sequences using proper voice leading rules
+- **Cross-Platform Optimization**: Identical audio processing applies to both main interface and TV mode
 
 **2. Chord Relationship Logic**
 - **I (Tonic)**: Can go to ii, iii, IV, V, vi, vii (most flexible)
@@ -153,7 +154,34 @@ Melody Off: 25% chance to mute
 - **Volume Fluctuations**: Subtle random velocity changes
 - **Swing Feel**: Built-in swing quantization for groove
 
-##### 🎛️ User Controls
+##### �️ **Audio Quality Optimization** (Latest Updates)
+
+**1. Professional Chord Voicing**:
+- **Triad Structure**: Reduced from 4-note to 3-note chords (Root + 3rd + 5th)
+- **Voice Leading Separation**: Bass notes (C2-C3) isolated from harmony (C4+)
+- **Frequency Clarity**: Eliminates muddy low-end by avoiding thirds in bass register
+
+**2. Advanced Audio Processing Chain**:
+```
+High-Pass Filter (150Hz) → Compressor → Low-Pass Filter (1200Hz) → Reverb → Stereo Widener
+```
+- **HPF @ 150Hz**: Cleans up low-frequency buildup and rumble
+- **Smart Compression**: -12dB threshold, 2:1 ratio for cohesive dynamics
+- **Controlled Reverb**: Reduced to 0.5 to prevent excessive tail overlap
+- **Stereo Width**: Optimized to 0.3 to avoid phase issues
+
+**3. Micro-Timing & Dynamics**:
+- **Velocity Randomization**: ±15% variation per note for natural feel
+- **Onset Staggering**: 5-15ms random delays prevent machine-like attack
+- **Note Separation**: 2ms intervals between chord tones for organic roll effect
+- **Release Optimization**: Shortened envelope release (0.2s) to prevent note overlap
+
+**4. Optimized Note Duration**:
+- **Bass Notes**: Shortened to half-note (2n) duration for clarity
+- **Harmony Notes**: Full measure (1n) for sustained chord progression
+- **Frequency Isolation**: Complete separation between bass and treble registers
+
+##### �🎛️ User Controls
 
 - **Press `R`**: Generate completely new progression (new key + new chord sequence)
 - **Press `M`**: Toggle melody on/off
@@ -186,7 +214,9 @@ Simply add `/tv` to the end of your URL:
 #### ⚡ Performance Optimized
 
 - **Lightweight Interface**: Reduced visual complexity for better performance on Android TV devices
-- **Preserved Music Engine**: Full Tone.js procedural music generation maintained (C, A#, chord progressions)
+- **Identical Audio Quality**: Same professional audio processing chain as main version
+- **All 12 Keys Supported**: Complete chromatic key support (C, C#, D, D#, E, F, F#, G, G#, A, A#, B)
+- **Optimized Chord Voicing**: Professional triad structure with separated bass/harmony registers
 - **Fast Loading**: Optimized for devices with limited processing power
 
 #### 🎵 Music Controls (TV Version)

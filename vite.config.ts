@@ -3,8 +3,8 @@ import { svelte } from "@sveltejs/vite-plugin-svelte";
 import sveltePreprocess from "svelte-preprocess";
 
 // https://vitejs.dev/config/
-export default defineConfig(async () => ({
-  base: "./",
+export default defineConfig({
+  base: "/",  // 改為絕對路徑，確保 Vercel 部署時路由正確
   plugins: [
     svelte({
       preprocess: [
@@ -34,4 +34,4 @@ export default defineConfig(async () => ({
     // produce sourcemaps for debug builds
     sourcemap: !!process.env.TAURI_DEBUG,
   },
-}));
+});
