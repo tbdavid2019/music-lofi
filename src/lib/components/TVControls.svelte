@@ -148,18 +148,6 @@
       </div>
     {/each}
   </div>
-  
-  <!-- 全局控制 -->
-  <div class="global-controls">
-    <button class="stop-all-btn" on:click={stopAllEffects}>
-      🛑 停止所有音效
-    </button>
-  </div>
-  
-  <!-- 快捷鍵提示 -->
-  <div class="shortcuts-hint">
-    <p>🎮 遙控器快捷鍵: 1-4 切換音效 | K 停止全部</p>
-  </div>
 </div>
 
 <style>
@@ -276,41 +264,6 @@
   .volume-adjust-btn:disabled {
     opacity: 0.3;
     cursor: not-allowed;
-  }
-  
-  .global-controls {
-    margin-top: 0.5rem;
-    display: flex;
-    justify-content: center;
-  }
-  
-  .stop-all-btn {
-    width: 180px;
-    height: 45px;
-    background: rgba(239, 68, 68, 0.2);
-    color: white;
-    border: 2px solid rgba(239, 68, 68, 0.5);
-    border-radius: 12px;
-    cursor: pointer;
-    font-size: 0.9rem;
-    font-weight: 500;
-    transition: all 0.3s ease;
-  }
-  
-  .stop-all-btn:hover {
-    background: rgba(239, 68, 68, 0.3);
-    transform: translateY(-2px);
-  }
-  
-  .shortcuts-hint {
-    margin-top: 0.5rem;
-    opacity: 0.6;
-    font-size: 0.8rem;
-    text-align: center;
-  }
-  
-  .shortcuts-hint p {
-    margin: 0;
   }
   
   /* 響應式設計 */

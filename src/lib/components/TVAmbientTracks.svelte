@@ -1,11 +1,11 @@
 <script lang="ts">
   // 環境音軌列表 (原本應用的音軌)
   let tracks = [
-    { id: 1, name: "風聲", file: "assets/engine/tracks/Wind-Mark_DiAngelo-1940285615.mp3", isPlaying: false, audio: null as HTMLAudioElement | null },
-    { id: 2, name: "海灘聲", file: "assets/engine/tracks/small-waves-onto-the-sand-143040.mp3", isPlaying: false, audio: null as HTMLAudioElement | null },
-    { id: 3, name: "夜晚氛圍", file: "assets/engine/tracks/night-ambience-17064.mp3", isPlaying: false, audio: null as HTMLAudioElement | null },
-    { id: 4, name: "辦公室", file: "assets/engine/tracks/office-ambience-6322.mp3", isPlaying: false, audio: null as HTMLAudioElement | null },
-    { id: 5, name: "城市聲", file: "assets/engine/tracks/city-ambience-9272.mp3", isPlaying: false, audio: null as HTMLAudioElement | null }
+    { id: 1, name: "風聲", icon: "💨", file: "assets/engine/tracks/Wind-Mark_DiAngelo-1940285615.mp3", isPlaying: false, audio: null as HTMLAudioElement | null },
+    { id: 2, name: "海灘聲", icon: "🌊", file: "assets/engine/tracks/small-waves-onto-the-sand-143040.mp3", isPlaying: false, audio: null as HTMLAudioElement | null },
+    { id: 3, name: "夜晚氛圍", icon: "🌙", file: "assets/engine/tracks/night-ambience-17064.mp3", isPlaying: false, audio: null as HTMLAudioElement | null },
+    { id: 4, name: "辦公室", icon: "🏢", file: "assets/engine/tracks/office-ambience-6322.mp3", isPlaying: false, audio: null as HTMLAudioElement | null },
+    { id: 5, name: "城市聲", icon: "🏙️", file: "assets/engine/tracks/city-ambience-9272.mp3", isPlaying: false, audio: null as HTMLAudioElement | null }
   ];
   
   function toggleTrack(track: any) {
@@ -72,23 +72,13 @@
         class:active={track.isPlaying}
         on:click={() => toggleTrack(track)}
       >
-        <div class="track-number">{track.id}</div>
+        <div class="track-icon">{track.icon}</div>
         <div class="track-name">{track.name}</div>
         <div class="track-status">
           {track.isPlaying ? 'ON' : 'OFF'}
         </div>
       </button>
     {/each}
-  </div>
-  
-  <div class="global-control">
-    <button class="stop-all-btn" on:click={stopAllTracks}>
-      🛑 停止全部
-    </button>
-  </div>
-  
-  <div class="hint">
-    <p>🎮 按 1-5 快速切換 | K 停止全部</p>
   </div>
 </div>
 
@@ -115,11 +105,11 @@
   }
   
   .track-button {
-    width: 80px;
-    height: 80px;
+    width: 100%;
+    height: 70px;
     background: rgba(255, 255, 255, 0.1);
     color: white;
-    border: 2px solid rgba(255, 255, 255, 0.2);
+    border: 2px solid rgba(255, 255, 255, 0.3);
     border-radius: 12px;
     cursor: pointer;
     transition: all 0.3s ease;
@@ -132,7 +122,7 @@
   }
   
   .track-button:hover {
-    background: rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.2);
     transform: translateY(-2px);
   }
   
@@ -142,51 +132,19 @@
     box-shadow: 0 0 15px rgba(72, 187, 120, 0.4);
   }
   
-  .track-number {
+  .track-icon {
     font-size: 1.2rem;
-    font-weight: bold;
   }
   
   .track-name {
     font-size: 0.7rem;
     text-align: center;
+    font-weight: 500;
   }
   
   .track-status {
     font-size: 0.6rem;
     opacity: 0.8;
-  }
-  
-  .global-control {
-    margin-top: 1rem;
-  }
-  
-  .stop-all-btn {
-    width: 120px;
-    height: 40px;
-    background: rgba(239, 68, 68, 0.2);
-    color: white;
-    border: 2px solid rgba(239, 68, 68, 0.4);
-    border-radius: 10px;
-    cursor: pointer;
-    font-size: 0.9rem;
-    transition: all 0.3s ease;
-  }
-  
-  .stop-all-btn:hover {
-    background: rgba(239, 68, 68, 0.3);
-    transform: translateY(-2px);
-  }
-  
-  .hint {
-    margin-top: 0.5rem;
-    opacity: 0.7;
-    font-size: 0.8rem;
-    text-align: center;
-  }
-  
-  .hint p {
-    margin: 0;
   }
   
   /* 響應式設計 */

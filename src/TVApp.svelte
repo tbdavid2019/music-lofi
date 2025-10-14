@@ -95,16 +95,23 @@
         </div>
       </div>
       
-      <!-- 右欄：分為兩個垂直區塊 -->
+      <!-- 右欄：統一背景音效控制區 -->
       <div class="tv-right-panel">
-        <!-- 上半部：環境音效控制 -->
-        <div class="control-zone control-zone-top">
-          <TVControls />
-        </div>
-        
-        <!-- 下半部：背景音軌控制 -->
-        <div class="control-zone control-zone-bottom">
-          <TVAmbientTracks />
+        <!-- 背景音效控制區 -->
+        <div class="ambient-control-zone">
+          <div class="ambient-header">
+            <h3>🎵 背景音效</h3>
+          </div>
+          
+          <!-- 環境音效 (原 TVControls) -->
+          <div class="environment-effects">
+            <TVControls />
+          </div>
+          
+          <!-- 背景音軌 (原 TVAmbientTracks) -->
+          <div class="ambient-tracks">
+            <TVAmbientTracks />
+          </div>
         </div>
       </div>
     </div>
@@ -262,37 +269,49 @@
     font-weight: 500;
   }
 
-  /* 右欄：控制面板 */
+  /* 右欄：統一背景音效控制面板 */
   .tv-right-panel {
-    display: grid;
-    grid-template-rows: 1fr 1fr; /* 平均分配上下兩個控制區域 */
-    gap: 1rem;
+    display: flex;
+    flex-direction: column;
     height: 100%;
     overflow: hidden; /* 完全禁用捲軸 */
   }
 
-  .control-zone {
+  /* 統一背景音效控制區 */
+  .ambient-control-zone {
     background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.15);
     border-radius: 15px;
-    padding: 1rem;
+    padding: 1.2rem;
     backdrop-filter: blur(10px);
-    overflow: hidden;
+    overflow-y: auto;
     display: flex;
     flex-direction: column;
-    min-height: 0; /* 允許 flex 項目縮小 */
+    gap: 1.5rem;
+    height: 100%;
   }
-
-  /* 上半部控制區域 - 環境音效 + BPM */
-  .control-zone-top {
-    border-bottom: 2px solid rgba(102, 187, 106, 0.2);
-    max-height: 50vh; /* 限制最大高度 */
+  
+  .ambient-header {
+    text-align: center;
+    margin-bottom: 0.5rem;
   }
-
-  /* 下半部控制區域 - 背景音軌 */
-  .control-zone-bottom {
-    border-top: 2px solid rgba(255, 193, 7, 0.2);
-    max-height: 50vh; /* 限制最大高度 */
+  
+  .ambient-header h3 {
+    margin: 0;
+    font-size: 1.4rem;
+    color: #f0f8ff;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+  }
+  
+  /* 環境音效區域 */
+  .environment-effects {
+    flex-shrink: 0;
+  }
+  
+  /* 背景音軌區域 */
+  .ambient-tracks {
+    flex: 1;
+    min-height: 0;
   }
 
   .tv-footer {
@@ -301,8 +320,9 @@
   }
 
   .tv-footer p {
-    font-size: 1.2rem;
+    font-size: 1.4rem; /* 增大字體 */
     margin: 0;
+    font-weight: 500; /* 稍微加粗 */
   }
 
   /* Android TV 響應式設計 */
