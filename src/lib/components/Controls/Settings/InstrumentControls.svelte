@@ -3,10 +3,10 @@
 
   const INSTRUMENTS_STORAGE_KEY = "LofiEngine_InstrumentVolumes";
   const DEFAULT_VOLUMES = {
-    piano: 1.0,
-    kick: 0.7,
-    snare: 0.6,
-    hat: 0.5,
+    piano: 1.0,  // 鋼琴全音量
+    kick: 0,     // 預設靜音，專注於鋼琴的靈性
+    snare: 0,    // 預設靜音
+    hat: 0,      // 預設靜音
   };
 
   // Load saved volumes or use defaults
@@ -50,7 +50,12 @@
   }
 
   function setFullBand() {
-    volumes = { ...DEFAULT_VOLUMES };
+    volumes = { 
+      piano: 1.0,
+      kick: 0.6,   // 適度的鼓聲
+      snare: 0.5,  // 適度的軍鼓
+      hat: 0.4,    // 輕微的 hi-hat
+    };
     saveVolumes();
     console.log("🎵 設定為完整樂團模式");
   }

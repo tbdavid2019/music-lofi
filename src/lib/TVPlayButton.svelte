@@ -41,6 +41,9 @@
   const linearToDb = (value: number) =>
     value === 0 ? -Infinity : 20 * Math.log10(value);
   
+  // 音量節點引用 (在 startAudioContext 中初始化)
+  let volumeNode: any = null;
+  
   // 初始化 Tone.js 音樂引擎
   async function startAudioContext() {
     if (contextStarted) return;
@@ -55,9 +58,16 @@
         console.log("🎹 鋼琴載入完成");
       }).sampler;
       
-      // 設置音量 - LoFi 風格
-      const vol = new Tone.Volume(linearToDb(volume) + 3); // 微妙提升 3dB
-      Tone.Master.chain(vol);
+      // 設置音頻處理鏈 - 原作者版本
+      const cmp = new Tone.Compressor({
+        threshold: -6,
+        ratio: 3,
+        attack: 0.5,
+        release: 0.1,
+      });
+      const lpf = new Tone.Filter(2000, "lowpass");
+      volumeNode = new Tone.Volume(linearToDb(volume));
+      Tone.Master.chain(cmp, lpf, volumeNode);
       
       // 初始化 BPM (從 localStorage 讀取或使用默認值)
       let savedBPM = 156;
@@ -89,7 +99,7 @@
   }
   
   function setupSequences() {
-    // 和弦序列 (簡化版)
+    // 和弦序列 - 原作者版本
     chords = new Tone.Sequence(
       (time, note) => {
         playChord();
@@ -149,9 +159,11 @@
   function generateProgression() {
     const _scale = fiveToFive;
     const newKey = Keys[Math.floor(Math.random() * Keys.length)];
+    // @ts-ignore
     const newScale = Tone.Frequency(newKey + "5")
       .harmonize(_scale)
       .map((f: any) => Tone.Frequency(f).toNote());
+    // @ts-ignore
     const newProgression = ChordProgression.generate(8);
     const newScalePos = Math.floor(Math.random() * _scale.length);
 
@@ -173,41 +185,22 @@
     
     const chord = progression[progress];
     
-    // 2. 拉開音域 - 低音區和高音區分離
-    const bassRoot = Tone.Frequency(key + "2").transpose(chord.semitoneDist); // C2-C3 區域
-    const harmonyRoot = Tone.Frequency(key + "4").transpose(chord.semitoneDist); // C4 以上
+    // 使用原作者的動態和聲生成
+    // @ts-ignore
+    const root = Tone.Frequency(key + "3").transpose(chord.semitoneDist);
+    const size = 4;
+    // @ts-ignore
+    const voicing = chord.generateVoicing(size);
+    // @ts-ignore
+    const notes = Tone.Frequency(root)
+      .harmonize(voicing)
+      .map((f: any) => Tone.Frequency(f).toNote());
     
-    // 低音部：只放根音，避免三度造成混濁
-    const bassNote = bassRoot.toNote();
+    // 降低音量，增加柔和感
+    const velocity = 0.35 + Math.random() * 0.15; // 0.35-0.5，更柔和
     
-    // 高音部：放三度和五度的和聲
-    const harmonyNotes = [4, 7].map((interval: number) => 
-      Tone.Frequency(harmonyRoot).transpose(interval).toNote()
-    );
-    
-    // 4. 動態與時序 - 添加 velocity 和 timing 隨機化
-    const baseVelocity = 0.6;
-    const velocityVariation = 0.15; // ±15% 變化
-    
-    // 5ms-15ms 的隨機 onset 延遲
-    const randomDelay = Math.random() * 0.01 + 0.005;
-    
-    // 低音部 - 較短持續時間
-    setTimeout(() => {
-      const bassVelocity = baseVelocity + (Math.random() - 0.5) * velocityVariation;
-      pn.triggerAttackRelease(bassNote, "2n", undefined, bassVelocity);
-    }, 0);
-    
-    // 高音部 - 稍微延遲
-    setTimeout(() => {
-      harmonyNotes.forEach((note: string, i: number) => {
-        const noteDelay = i * 0.002;
-        const noteVelocity = baseVelocity + (Math.random() - 0.5) * velocityVariation;
-        setTimeout(() => {
-          pn.triggerAttackRelease(note, "1n", undefined, noteVelocity);
-        }, noteDelay * 1000);
-      });
-    }, randomDelay * 1000);
+    // @ts-ignore
+    pn.triggerAttackRelease(notes, "1n", undefined, velocity);
     
     nextChord();
   }
@@ -222,7 +215,10 @@
     
     const note = scale[scalePos];
     if (note) {
-      pn.triggerAttackRelease(note, "2n");
+      // 降低旋律音量，讓它更柔和
+      const melodyVelocity = 0.3 + Math.random() * 0.15; // 0.3-0.45
+      // @ts-ignore
+      pn.triggerAttackRelease(note, "2n", undefined, melodyVelocity);
     }
     
     // 簡單的旋律運動
@@ -232,8 +228,8 @@
   
   function adjustVolume(delta: number) {
     volume = Math.max(0, Math.min(1, volume + delta));
-    if (contextStarted) {
-      Tone.Master.volume.value = linearToDb(volume) + 3; // 微妙提升 3dB
+    if (contextStarted && volumeNode) {
+      volumeNode.volume.value = linearToDb(volume) + 3; // 使用正確的音量節點
     }
     
     // 發送音量變更事件

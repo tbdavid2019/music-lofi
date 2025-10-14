@@ -283,47 +283,22 @@
   function playChord() {
     const chord = progression[progress];
     
-    // 2. 拉開音域 - 低音區和高音區分離
-    const bassRoot = Tone.Frequency(key + "2").transpose(chord.semitoneDist); // C2-C3 區域
-    const harmonyRoot = Tone.Frequency(key + "4").transpose(chord.semitoneDist); // C4 以上
+    // 使用原作者的動態和聲生成 - 每次生成不同的聲部排列
+    // @ts-ignore
+    const root = Tone.Frequency(key + "3").transpose(chord.semitoneDist);
+    const size = 4; // 4 聲部和聲
+    // @ts-ignore
+    const voicing = chord.generateVoicing(size); // 動態生成和聲排列
+    // @ts-ignore
+    const notes = Tone.Frequency(root)
+      .harmonize(voicing)
+      .map((f) => Tone.Frequency(f).toNote());
     
-    // 只用根音 + 三度 + 五度 (Triad)
-    const triadIntervals = [0, 4, 7]; // 根音、大三度、完全五度
+    // 降低音量，增加柔和感
+    const velocity = 0.35 + Math.random() * 0.15; // 0.35-0.5，更柔和
     
-    // 低音部：只放根音或五度，避免三度造成混濁
-    const bassNote = bassRoot.toNote();
-    
-    // 高音部：放三度和五度的和聲
-    const harmonyNotes = [4, 7].map(interval => 
-      Tone.Frequency(harmonyRoot).transpose(interval).toNote()
-    );
-    
-    // 4. 動態與時序 - 添加 velocity 和 timing 隨機化
-    const baseVelocity = 0.6;
-    const velocityVariation = 0.15; // ±15% 變化
-    
-    // 5ms-15ms 的隨機 onset 延遲，避免完全同時觸發
-    const randomDelay = Math.random() * 0.01 + 0.005; // 5-15ms
-    
-    // 低音部 - 較短的持續時間，避免重疊
-    setTimeout(() => {
-      const bassVelocity = baseVelocity + (Math.random() - 0.5) * velocityVariation;
-      // @ts-ignore
-      pn.triggerAttackRelease(bassNote, "2n", undefined, bassVelocity);
-    }, 0);
-    
-    // 高音部 - 稍微延遲，創造自然感
-    setTimeout(() => {
-      harmonyNotes.forEach((note, i) => {
-        const noteDelay = i * 0.002; // 每個音符間隔 2ms
-        const noteVelocity = baseVelocity + (Math.random() - 0.5) * velocityVariation;
-        setTimeout(() => {
-          // @ts-ignore
-          pn.triggerAttackRelease(note, "1n", undefined, noteVelocity);
-        }, noteDelay * 1000);
-      });
-    }, randomDelay * 1000);
-    
+    // @ts-ignore
+    pn.triggerAttackRelease(notes, "1n", undefined, velocity);
     nextChord();
   }
 
@@ -371,8 +346,12 @@
     const newScalePos = scalePos + scalePosChange;
 
     scalePos = newScalePos;
+    
+    // 降低旋律音量，讓它更柔和
+    const melodyVelocity = 0.3 + Math.random() * 0.15; // 0.3-0.45
+    
     // @ts-ignore
-    pn.triggerAttackRelease(scale[newScalePos], "2n");
+    pn.triggerAttackRelease(scale[newScalePos], "2n", undefined, melodyVelocity);
   }
 
   function generateProgression() {

@@ -143,7 +143,7 @@
       // 清除當前狀態
       localStorage.removeItem(CURRENT_STATE_KEY);
       
-      // 重置為預設狀態
+      // 重置為預設狀態 - 純鋼琴模式
       const defaultState = {
         key: "C",
         bpm: 156,
@@ -154,9 +154,9 @@
           jungle: 1,
           main_track: 1,
         },
-        kickOff: false,
-        snareOff: false,
-        hatOff: false,
+        kickOff: true,    // 預設關閉鼓類樂器
+        snareOff: true,   // 預設關閉
+        hatOff: true,     // 預設關閉
         melodyDensity: 0.33,
         melodyOff: false,
         background: 1,
