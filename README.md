@@ -161,6 +161,69 @@ Melody Off: 25% chance to mute
 
 This system can generate **virtually infinite musical variations** while maintaining musical coherence and the characteristic LoFi aesthetic!
 
+---
+
+## 📺 TV Version
+
+LoFi Engine now includes a **dedicated TV mode** optimized for Android TV devices and large screen displays!
+
+### 🚀 Access TV Mode
+
+Simply add `/tv` to the end of your URL:
+
+- **Production**: `music.david888.com/tv`
+- **Development**: `localhost:5173/tv`
+
+### 📱 TV-Optimized Features
+
+#### 🎛️ Horizontal Layout Design
+
+- **Left Panel**: Large music player with play/pause controls
+- **Right Panel**: Simplified control interface optimized for TV remotes
+- **TV-Friendly**: Designed specifically for landscape orientation and couch viewing
+
+#### ⚡ Performance Optimized
+
+- **Lightweight Interface**: Reduced visual complexity for better performance on Android TV devices
+- **Preserved Music Engine**: Full Tone.js procedural music generation maintained (C, A#, chord progressions)
+- **Fast Loading**: Optimized for devices with limited processing power
+
+#### 🎵 Music Controls (TV Version)
+
+- **Simple Play/Pause**: Large, easy-to-see controls
+- **Key Display**: Current key signature prominently shown
+- **BPM Control**: Visible tempo adjustment
+- **Progress Indicator**: Clear progression tracking
+
+#### 🌊 Ambient Tracks (TV Simplified)
+
+- **Visual Track List**: Clean grid layout of ambient tracks
+- **One-Click Toggle**: Easy track activation/deactivation
+- **Track Status**: Clear visual feedback for active tracks
+
+### 💡 Why TV Version?
+
+**Problem Solved**: Many users reported performance issues when using LoFi Engine on Android TV devices with limited processing power.
+
+**Solution**: Dedicated TV interface that:
+
+- ✅ Maintains the same **intelligent music generation** using Tone.js
+- ✅ Preserves **chord progressions** (C, A#, music theory-based transitions)
+- ✅ Keeps **dynamic layering system** (piano, drums, melody)
+- ✅ Optimizes **UI performance** for TV devices
+- ✅ Provides **horizontal layout** for TV screens
+
+### 🎯 Technical Details
+
+- **Automatic Route Detection**: App automatically loads TV version when `/tv` path is detected
+- **Same Music Engine**: Identical Tone.js implementation as desktop version
+- **Responsive Design**: Adapts to various TV screen sizes
+- **Touch & Remote Friendly**: Large buttons and simple navigation
+
+**Perfect for**: Relaxing on the couch, study sessions on the big screen, or ambient background music for your living room! 🛋️
+
+---
+
 ## New Features 🎉
 
 LoFi Engine now includes powerful new features to enhance your music experience!

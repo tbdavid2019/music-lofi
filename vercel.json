@@ -3,5 +3,15 @@
   "outputDirectory": "dist",
   "devCommand": "pnpm dev",
   "installCommand": "pnpm install",
-  "framework": "vite"
+  "framework": "vite",
+  "routes": [
+    {
+      "src": "/tv",
+      "dest": "/index.html"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ]
 }
