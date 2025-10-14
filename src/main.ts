@@ -7,6 +7,7 @@ const currentPath = window.location.pathname;
 const isTVMode = currentPath === '/tv' || currentPath.includes('/tv');
 
 console.log(`🔍 檢測路徑: ${currentPath}, TV模式: ${isTVMode}`);
+console.log('🚀 Main.ts loaded at:', new Date().toISOString());
 
 // 根據路徑選擇對應的應用版本
 const AppComponent = isTVMode ? TVApp : App;

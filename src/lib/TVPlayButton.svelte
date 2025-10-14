@@ -7,6 +7,8 @@
   import { fiveToFive } from "./engine/Chords/MajorScale";
   import Piano from "./engine/Piano/Piano";
   
+  console.log('🎵 TVPlayButton component loaded');
+  
   let isPlaying = false;
   let contextStarted = false;
   let genChordsOnce = false;
