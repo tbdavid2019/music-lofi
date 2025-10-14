@@ -1,4 +1,6 @@
 <script lang="ts">
+  import TVBPMControl from './TVBPMControl.svelte';
+  
   // 環境音效狀態
   let effects = {
     rain: { active: false, audio: null as HTMLAudioElement | null, volume: 0.5 },
@@ -107,6 +109,9 @@
 </script>
 
 <div class="tv-controls">
+  <!-- BPM 控制器 -->
+  <TVBPMControl />
+  
   <h2 class="controls-title">🎭 環境音效</h2>
   
   <!-- 音效按鈕網格 -->

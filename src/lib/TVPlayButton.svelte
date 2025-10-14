@@ -49,7 +49,16 @@
       // 設置音量
       const vol = new Tone.Volume(linearToDb(volume));
       Tone.Master.chain(vol);
-      Tone.Transport.bpm.value = 156;
+      
+      // 初始化 BPM (從 localStorage 讀取或使用默認值)
+      let savedBPM = 156;
+      if (typeof window !== 'undefined') {
+        const bpmFromStorage = localStorage.getItem('LofiEngine_BPM');
+        if (bpmFromStorage) {
+          savedBPM = parseInt(bpmFromStorage);
+        }
+      }
+      Tone.Transport.bpm.value = savedBPM;
       
       setupSequences();
       generateProgression();
@@ -197,6 +206,16 @@
   // 綁定鍵盤事件
   if (typeof window !== 'undefined') {
     window.addEventListener('keydown', handleKeydown);
+    
+    // BPM 變更監聽器
+    const handleBPMChange = (e: CustomEvent) => {
+      const newBPM = e.detail;
+      if (contextStarted) {
+        Tone.Transport.bpm.value = newBPM;
+        console.log(`🎵 TV版 BPM 已變更: ${newBPM}`);
+      }
+    };
+    window.addEventListener('bpmChange', handleBPMChange as EventListener);
   }
 </script>
 

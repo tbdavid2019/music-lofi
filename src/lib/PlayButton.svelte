@@ -45,7 +45,16 @@
   const lpf = new Tone.Filter(2000, "lowpass");
   const vol = new Tone.Volume(linearToDb(volumes.main_track));
   Tone.Master.chain(cmp, lpf, vol);
-  Tone.Transport.bpm.value = 156;
+  
+  // 初始化 BPM (從 localStorage 讀取或使用默認值)
+  let currentBPM = 156;
+  if (typeof window !== 'undefined') {
+    const savedBPM = localStorage.getItem('LofiEngine_BPM');
+    if (savedBPM) {
+      currentBPM = parseInt(savedBPM);
+    }
+  }
+  Tone.Transport.bpm.value = currentBPM;
   Tone.Transport.swing = 1;
 
   // State variables
@@ -211,6 +220,15 @@
     };
     window.addEventListener("updateInstrumentVolumes", handleInstrumentVolumes as EventListener);
 
+    // BPM 變更監聽器
+    const handleBPMChange = (e: CustomEvent) => {
+      const newBPM = e.detail;
+      currentBPM = newBPM;
+      Tone.Transport.bpm.value = newBPM;
+      console.log(`🎵 BPM 已變更: ${newBPM}`);
+    };
+    window.addEventListener("bpmChange", handleBPMChange as EventListener);
+
     // Apply initial instrument volumes
     updateInstrumentVolumes();
 
@@ -219,6 +237,7 @@
       window.removeEventListener("loadPreset", handleLoadPreset as EventListener);
       window.removeEventListener("fadeOutMusic", handleFadeOut);
       window.removeEventListener("updateInstrumentVolumes", handleInstrumentVolumes as EventListener);
+      window.removeEventListener("bpmChange", handleBPMChange as EventListener);
     };
   });
 

@@ -7,11 +7,19 @@
   import PresetManager from "./PresetManager.svelte";
   import Recorder from "../../Recorder/Recorder.svelte";
   import Timer from "../../Timer/Timer.svelte";
+  import BPMControl from "./BPMControl.svelte";
 
   let isActive = false;
 
   function toggle() {
     isActive = !isActive;
+  }
+
+  // 處理 BPM 變更
+  function handleBPMChange(event) {
+    const newBPM = event.detail;
+    // 發送 BPM 變更事件到父組件
+    window.dispatchEvent(new CustomEvent('bpmChange', { detail: newBPM }));
   }
 
   // Shortuct to toggle settings with "J" key
@@ -54,6 +62,7 @@
   {#if isActive}
     <div class="settings-container">
       <div>
+        <BPMControl on:bpmChange={handleBPMChange} />
         <Background />
         <Volume />
         <InstrumentControls />

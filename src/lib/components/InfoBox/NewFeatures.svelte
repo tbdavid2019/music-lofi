@@ -3,13 +3,17 @@
   import InstrumentControls from "../Controls/Settings/InstrumentControls.svelte";
   import Recorder from "../Recorder/Recorder.svelte";
   import Timer from "../Timer/Timer.svelte";
+  import BPMControl from "./BPMControl.svelte";
 
-  let activeSection: "presets" | "instruments" | "recorder" | "timer" | null = null;
+  let activeSection: "bpm" | "presets" | "instruments" | "recorder" | "timer" | null = "bpm"; // 默認展開 BPM
 </script>
 
 <div class="features-guide">
   <h2>🎉 新功能中心</h2>
   <p class="subtitle">直接在這裡操作所有新功能，無需跳轉！</p>
+  
+  <!-- BPM 控制器 - 最核心功能 -->
+  <BPMControl />
   
   <!-- 功能卡片選單 -->
   <div class="feature-cards">
