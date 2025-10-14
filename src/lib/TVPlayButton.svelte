@@ -172,14 +172,43 @@
     if (!pianoLoaded || !progression[progress]) return;
     
     const chord = progression[progress];
-    const root = Tone.Frequency(key + "3").transpose(chord.semitoneDist);
-    const size = 4;
-    const voicing = chord.generateVoicing(size);
-    const notes = Tone.Frequency(root)
-      .harmonize(voicing)
-      .map((f: any) => Tone.Frequency(f).toNote());
     
-    pn.triggerAttackRelease(notes, "1n");
+    // 2. 拉開音域 - 低音區和高音區分離
+    const bassRoot = Tone.Frequency(key + "2").transpose(chord.semitoneDist); // C2-C3 區域
+    const harmonyRoot = Tone.Frequency(key + "4").transpose(chord.semitoneDist); // C4 以上
+    
+    // 低音部：只放根音，避免三度造成混濁
+    const bassNote = bassRoot.toNote();
+    
+    // 高音部：放三度和五度的和聲
+    const harmonyNotes = [4, 7].map((interval: number) => 
+      Tone.Frequency(harmonyRoot).transpose(interval).toNote()
+    );
+    
+    // 4. 動態與時序 - 添加 velocity 和 timing 隨機化
+    const baseVelocity = 0.6;
+    const velocityVariation = 0.15; // ±15% 變化
+    
+    // 5ms-15ms 的隨機 onset 延遲
+    const randomDelay = Math.random() * 0.01 + 0.005;
+    
+    // 低音部 - 較短持續時間
+    setTimeout(() => {
+      const bassVelocity = baseVelocity + (Math.random() - 0.5) * velocityVariation;
+      pn.triggerAttackRelease(bassNote, "2n", undefined, bassVelocity);
+    }, 0);
+    
+    // 高音部 - 稍微延遲
+    setTimeout(() => {
+      harmonyNotes.forEach((note: string, i: number) => {
+        const noteDelay = i * 0.002;
+        const noteVelocity = baseVelocity + (Math.random() - 0.5) * velocityVariation;
+        setTimeout(() => {
+          pn.triggerAttackRelease(note, "1n", undefined, noteVelocity);
+        }, noteDelay * 1000);
+      });
+    }, randomDelay * 1000);
+    
     nextChord();
   }
   
