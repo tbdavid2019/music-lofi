@@ -185,7 +185,6 @@
     
     const chord = progression[progress];
     
-    // 使用原作者的動態和聲生成
     // @ts-ignore
     const root = Tone.Frequency(key + "3").transpose(chord.semitoneDist);
     const size = 4;
@@ -196,11 +195,8 @@
       .harmonize(voicing)
       .map((f: any) => Tone.Frequency(f).toNote());
     
-    // 降低音量，增加柔和感
-    const velocity = 0.35 + Math.random() * 0.15; // 0.35-0.5，更柔和
-    
     // @ts-ignore
-    pn.triggerAttackRelease(notes, "1n", undefined, velocity);
+    pn.triggerAttackRelease(notes, "1n");
     
     nextChord();
   }
@@ -215,10 +211,8 @@
     
     const note = scale[scalePos];
     if (note) {
-      // 降低旋律音量，讓它更柔和
-      const melodyVelocity = 0.3 + Math.random() * 0.15; // 0.3-0.45
       // @ts-ignore
-      pn.triggerAttackRelease(note, "2n", undefined, melodyVelocity);
+      pn.triggerAttackRelease(note, "2n");
     }
     
     // 簡單的旋律運動

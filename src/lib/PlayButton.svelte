@@ -283,22 +283,18 @@
   function playChord() {
     const chord = progression[progress];
     
-    // 使用原作者的動態和聲生成 - 每次生成不同的聲部排列
     // @ts-ignore
     const root = Tone.Frequency(key + "3").transpose(chord.semitoneDist);
-    const size = 4; // 4 聲部和聲
+    const size = 4;
     // @ts-ignore
-    const voicing = chord.generateVoicing(size); // 動態生成和聲排列
+    const voicing = chord.generateVoicing(size);
     // @ts-ignore
     const notes = Tone.Frequency(root)
       .harmonize(voicing)
       .map((f) => Tone.Frequency(f).toNote());
     
-    // 降低音量，增加柔和感
-    const velocity = 0.35 + Math.random() * 0.15; // 0.35-0.5，更柔和
-    
     // @ts-ignore
-    pn.triggerAttackRelease(notes, "1n", undefined, velocity);
+    pn.triggerAttackRelease(notes, "1n");
     nextChord();
   }
 
