@@ -198,6 +198,8 @@
     justify-content: center;
     gap: 0.2rem;
     backdrop-filter: blur(5px);
+    padding: 0.2rem;
+    box-sizing: border-box;
   }
   
   .effect-button:hover {
@@ -212,18 +214,20 @@
   }
   
   .effect-icon {
-    font-size: 1.8rem;
+    font-size: 1.5rem;
   }
   
   .effect-name {
-    font-size: 1rem;
+    font-size: 0.85rem;
     font-weight: 500;
+    line-height: 1.1;
   }
   
   .effect-status {
-    font-size: 0.8rem;
+    font-size: 0.7rem;
     opacity: 0.8;
     font-weight: bold;
+    line-height: 1;
   }
   
   .volume-controls {

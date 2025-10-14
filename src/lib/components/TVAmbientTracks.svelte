@@ -4,8 +4,12 @@
     { id: 1, name: "風聲", icon: "💨", file: "assets/engine/tracks/Wind-Mark_DiAngelo-1940285615.mp3", isPlaying: false, audio: null as HTMLAudioElement | null },
     { id: 2, name: "海灘聲", icon: "🌊", file: "assets/engine/tracks/small-waves-onto-the-sand-143040.mp3", isPlaying: false, audio: null as HTMLAudioElement | null },
     { id: 3, name: "夜晚氛圍", icon: "🌙", file: "assets/engine/tracks/night-ambience-17064.mp3", isPlaying: false, audio: null as HTMLAudioElement | null },
-    { id: 4, name: "辦公室", icon: "🏢", file: "assets/engine/tracks/office-ambience-6322.mp3", isPlaying: false, audio: null as HTMLAudioElement | null },
-    { id: 5, name: "城市聲", icon: "🏙️", file: "assets/engine/tracks/city-ambience-9272.mp3", isPlaying: false, audio: null as HTMLAudioElement | null }
+    { id: 4, name: "海鷗聲", icon: "🐦", file: "assets/engine/tracks/seagulls-37450.mp3", isPlaying: false, audio: null as HTMLAudioElement | null },
+    { id: 5, name: "辦公室", icon: "🏢", file: "assets/engine/tracks/office-ambience-6322.mp3", isPlaying: false, audio: null as HTMLAudioElement | null },
+    { id: 6, name: "城市聲", icon: "🏙️", file: "assets/engine/tracks/city-ambience-9272.mp3", isPlaying: false, audio: null as HTMLAudioElement | null },
+    { id: 7, name: "伺服器", icon: "💻", file: "assets/engine/tracks/server-fan-6445.mp3", isPlaying: false, audio: null as HTMLAudioElement | null },
+    { id: 8, name: "火車聲", icon: "🚂", file: "assets/engine/tracks/train-to-munich-121561.mp3", isPlaying: false, audio: null as HTMLAudioElement | null },
+    { id: 9, name: "水下白噪音", icon: "🌊", file: "assets/engine/tracks/underwater-ambience-6201.mp3", isPlaying: false, audio: null as HTMLAudioElement | null }
   ];
   
   function toggleTrack(track: any) {
@@ -99,53 +103,56 @@
   }
   
   .tracks-grid {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 0.8rem;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 0.5rem;
   }
   
   .track-button {
-    width: 100%;
-    height: 70px;
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-radius: 12px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 0.2rem;
-    backdrop-filter: blur(5px);
+      width: 100%;
+      height: 70px;
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.2rem;
+      backdrop-filter: blur(5px);
+      padding: 0.2rem;
+      box-sizing: border-box;
   }
   
   .track-button:hover {
-    background: rgba(255, 255, 255, 0.2);
-    transform: translateY(-2px);
+      background: rgba(255, 255, 255, 0.2);
+      transform: translateY(-2px);
   }
   
   .track-button.active {
-    background: rgba(72, 187, 120, 0.3);
-    border-color: rgba(72, 187, 120, 0.6);
-    box-shadow: 0 0 15px rgba(72, 187, 120, 0.4);
+      background: rgba(72, 187, 120, 0.3);
+      border-color: rgba(72, 187, 120, 0.6);
+      box-shadow: 0 0 20px rgba(72, 187, 120, 0.3);
   }
   
-  .track-icon {
-    font-size: 1.2rem;
-  }
-  
-  .track-name {
-    font-size: 0.7rem;
-    text-align: center;
-    font-weight: 500;
-  }
-  
-  .track-status {
-    font-size: 0.6rem;
-    opacity: 0.8;
-  }
+    .track-icon {
+      font-size: 1.5rem;
+    }
+    .track-name {
+      font-size: 0.85rem;
+      font-weight: 500;
+      text-align: center;
+      line-height: 1.1;
+    }
+    .track-status {
+      font-size: 0.7rem;
+      opacity: 0.8;
+      font-weight: bold;
+      line-height: 1;
+    }
   
   /* 響應式設計 */
   @media (max-width: 768px) {
