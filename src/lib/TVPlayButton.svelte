@@ -22,6 +22,19 @@
       currentBPM = parseInt(savedBPM);
     }
   }
+
+  function updateTransportBpm(newBpm: number, persist = false) {
+    if (typeof newBpm !== 'number' || Number.isNaN(newBpm)) {
+      return;
+    }
+
+    currentBPM = newBpm;
+    Tone.Transport.bpm.rampTo(newBpm, 0.01);
+
+    if (persist && typeof window !== 'undefined') {
+      localStorage.setItem('LofiEngine_BPM', newBpm.toString());
+    }
+  }
   
   // 音樂狀態
   let key = "C";
@@ -78,7 +91,7 @@
         }
       }
       currentBPM = savedBPM; // 更新顯示的 BPM
-      Tone.Transport.bpm.value = savedBPM;
+      updateTransportBpm(savedBPM);
       console.log(`🎵 TV版音頻初始化 BPM: ${savedBPM}`);
       
       setupSequences();
@@ -88,7 +101,7 @@
       setTimeout(() => {
         const latestBPM = localStorage.getItem('LofiEngine_BPM');
         if (latestBPM && parseInt(latestBPM) !== savedBPM) {
-          Tone.Transport.bpm.value = parseInt(latestBPM);
+          updateTransportBpm(parseInt(latestBPM));
           console.log(`🎵 TV版 BPM 更新為最新值: ${latestBPM}`);
         }
       }, 100);
@@ -268,7 +281,7 @@
       
       // 立即更新 Tone.js BPM，不管是否已初始化
       if (Tone.Transport) {
-        Tone.Transport.bpm.value = newBPM;
+        updateTransportBpm(newBPM, true);
         console.log(`🎵 BPM 已設定為: ${Tone.Transport.bpm.value}`);
       }
     };

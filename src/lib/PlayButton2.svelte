@@ -42,16 +42,8 @@
     release: 0.1,
   });
   const lpf = new Tone.Filter(2000, "lowpass");
-  const reverb = new Tone.Reverb({
-    decay: 3.5,
-    preDelay: 0.02,
-    wet: 0.28,
-  });
-  // 柔和殘響，非同步預先生成即可
-  // @ts-ignore Tone 型別未必包含 generate
-  reverb.generate?.().catch?.(() => {});
   const vol = new Tone.Volume(linearToDb(volumes.main_track) + 3); // 只提升 3dB
-  Tone.Master.chain(cmp, lpf, reverb, vol);
+  Tone.Master.chain(cmp, lpf, vol);
   
   // 初始化 BPM (從 localStorage 讀取或使用默認值)
   let currentBPM = 156;
@@ -114,18 +106,6 @@
   };
   let instrumentVolumes = loadInstrumentVolumes();
 
-  const kickPatterns = [
-    ["C4", "", "", "", "", "", "", "C4", "C4", "", ".", "", "", "", "", ""],
-    ["C4", "", "", "C4", "", "", "", "", "C4", "", ".", "", "C4", "", "", ""],
-    ["C4", "", "", "", "C4", "", "", "C4", "C4", "", ".", "", "", "C4", "", ""],
-  ];
-
-  const hatPatterns = [
-    ["C4", "", "C4", "", "C4", "", "C4", ""],
-    ["C4", "C4", "", "C4", "", "C4", "C4", ""],
-    ["C4", "", "C4", "C4", "", "C4", "", "C4"],
-  ];
-
   // Initialize instrument on/off states based on volumes
   let kickOff = instrumentVolumes.kick === 0;
   let snareOff = instrumentVolumes.snare === 0;  // ← 預設靜音時設為 true
@@ -155,17 +135,15 @@
   }).sampler;
   // Sequences
   let chords, melody, kickLoop, snareLoop, hatLoop;
-  let currentKickPatternIdx = 0;
-  let currentHatPatternIdx = 0;
 
   onMount(() => {
     // Setup sequences
     chords = new Tone.Sequence(
-      (time) => {
-        playChord(time);
+      (time, note) => {
+        playChord();
       },
       [""],
-      "1n",
+      "16n",
     );
 
     melody = new Tone.Sequence(
@@ -188,7 +166,7 @@
           }
         }
       },
-      kickPatterns[currentKickPatternIdx],
+      ["C4", "", "", "", "", "", "", "C4", "C4", "", ".", "", "", "", "", ""],
       "8n",
     );
 
@@ -215,7 +193,7 @@
           }
         }
       },
-      hatPatterns[currentHatPatternIdx],
+      ["C4", "C4", "C4", "C4", "C4", "C4", "C4", "C4"],
       "4n",
     );
 
@@ -224,11 +202,6 @@
     kickLoop.humanize = true;
     snareLoop.humanize = true;
     hatLoop.humanize = true;
-
-    currentKickPatternIdx = Math.floor(Math.random() * kickPatterns.length);
-    currentHatPatternIdx = Math.floor(Math.random() * hatPatterns.length);
-    kickLoop.events = kickPatterns[currentKickPatternIdx];
-    hatLoop.events = hatPatterns[currentHatPatternIdx];
 
     // Listen for spacebar press
     const handleKeydown = (e) => {
@@ -296,32 +269,27 @@
   function nextChord() {
     const nextProgress = progress === progression.length - 1 ? 0 : progress + 1;
     
-    const nextKickOff = Math.random() < 0.15;
-    const nextSnareOff = Math.random() < 0.2;
-    const nextHatOff = Math.random() < 0.25;
+    // 隨機變化只在樂器沒有被用戶手動靜音時生效
+    const nextKickOff = instrumentVolumes.kick === 0 ? true : Math.random() < 0.15;
+    const nextSnareOff = instrumentVolumes.snare === 0 ? true : Math.random() < 0.2;
+    const nextHatOff = instrumentVolumes.hat === 0 ? true : Math.random() < 0.25;
     const nextMelodyDensity = Math.random() * 0.3 + 0.2;
     const nextMelodyOff = Math.random() < 0.25;
 
     if (progress === 4) {
       progress = nextProgress;
-      kickOff = nextKickOff;
-      snareOff = nextSnareOff;
-      hatOff = nextHatOff;
+      // 只有在用戶沒有手動靜音時才應用隨機邏輯
+      if (instrumentVolumes.kick > 0) kickOff = nextKickOff;
+      if (instrumentVolumes.snare > 0) snareOff = nextSnareOff;
+      if (instrumentVolumes.hat > 0) hatOff = nextHatOff;
     } else if (progress === 0) {
       progress = nextProgress;
-      kickOff = nextKickOff;
-      snareOff = nextSnareOff;
-      hatOff = nextHatOff;
+      // 只有在用戶沒有手動靜音時才應用隨機邏輯
+      if (instrumentVolumes.kick > 0) kickOff = nextKickOff;
+      if (instrumentVolumes.snare > 0) snareOff = nextSnareOff;
+      if (instrumentVolumes.hat > 0) hatOff = nextHatOff;
       melodyDensity = nextMelodyDensity;
       melodyOff = nextMelodyOff;
-      currentKickPatternIdx = Math.floor(Math.random() * kickPatterns.length);
-      currentHatPatternIdx = Math.floor(Math.random() * hatPatterns.length);
-      if (kickLoop) {
-        kickLoop.events = kickPatterns[currentKickPatternIdx];
-      }
-      if (hatLoop) {
-        hatLoop.events = hatPatterns[currentHatPatternIdx];
-      }
     } else {
       progress = nextProgress;
     }
@@ -330,27 +298,21 @@
     console.log(`🎵 和弦進行: ${progress+1}/${progression.length}, 樂器狀態: kick=${!kickOff}, snare=${!snareOff}, hat=${!hatOff} (用戶音量: kick=${instrumentVolumes.kick}, snare=${instrumentVolumes.snare}, hat=${instrumentVolumes.hat})`);
   }
 
-
-
-  function playChord(time?: number) {
+  function playChord() {
     const chord = progression[progress];
+    
+    // @ts-ignore
     const root = Tone.Frequency(key + "3").transpose(chord.semitoneDist);
-    const chordSize = Math.random() < 0.35 ? 3 : 4;
-    const voicing = chord.generateVoicing(chordSize);
+    const size = 4;
+    // @ts-ignore
+    const voicing = chord.generateVoicing(size);
+    // @ts-ignore
     const notes = Tone.Frequency(root)
       .harmonize(voicing)
       .map((f) => Tone.Frequency(f).toNote());
-
-    const strumNotes = Math.random() < 0.5 ? [...notes] : [...notes].reverse();
-    const baseTime = typeof time === "number" ? time : Tone.now();
-    const strumSpacing = 0.06 + Math.random() * 0.02;
-    strumNotes.forEach((note, i) => {
-      const jitter = i === 0 ? 0 : (Math.random() * 0.035) - 0.015;
-      const velocity = 0.46 + Math.random() * 0.18;
-      const delay = i === 0 ? 0 : i * strumSpacing + jitter;
-      pn.triggerAttackRelease(note, "1n", baseTime + delay, velocity);
-    });
-
+    
+    // @ts-ignore
+    pn.triggerAttackRelease(notes, "1n");
     nextChord();
   }
 
@@ -400,11 +362,10 @@
     scalePos = newScalePos;
     
     // 降低旋律音量，讓它更柔和
-    const melodyVelocity = 0.25 + Math.random() * 0.22; // 0.25-0.47
-    const melodyDuration = Math.random() < 0.4 ? "4n" : "2n";
+    const melodyVelocity = 0.3 + Math.random() * 0.15; // 0.3-0.45
     
     // @ts-ignore
-    pn.triggerAttackRelease(scale[newScalePos], melodyDuration, undefined, melodyVelocity);
+    pn.triggerAttackRelease(scale[newScalePos], "2n", undefined, melodyVelocity);
   }
 
   function generateProgression() {
