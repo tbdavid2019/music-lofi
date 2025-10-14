@@ -14,6 +14,15 @@
   let genChordsOnce = false;
   let autoPlayReady = false;
   
+  // 響應式 BPM 顯示 - 初始化時讀取 localStorage
+  let currentBPM = 156;
+  if (typeof window !== 'undefined') {
+    const savedBPM = localStorage.getItem('LofiEngine_BPM');
+    if (savedBPM) {
+      currentBPM = parseInt(savedBPM);
+    }
+  }
+  
   // 音樂狀態
   let key = "C";
   let progression = [];
@@ -58,10 +67,21 @@
           savedBPM = parseInt(bpmFromStorage);
         }
       }
+      currentBPM = savedBPM; // 更新顯示的 BPM
       Tone.Transport.bpm.value = savedBPM;
+      console.log(`🎵 TV版音頻初始化 BPM: ${savedBPM}`);
       
       setupSequences();
       generateProgression();
+      
+      // 初始化完成後，再次檢查最新的 BPM 設定
+      setTimeout(() => {
+        const latestBPM = localStorage.getItem('LofiEngine_BPM');
+        if (latestBPM && parseInt(latestBPM) !== savedBPM) {
+          Tone.Transport.bpm.value = parseInt(latestBPM);
+          console.log(`🎵 TV版 BPM 更新為最新值: ${latestBPM}`);
+        }
+      }, 100);
       
     } catch (error) {
       console.error("音頻初始化失敗:", error);
@@ -106,6 +126,8 @@
     if (Tone.Transport.state === "started") {
       Tone.Transport.stop();
       isPlaying = false;
+      // 發送播放狀態變更事件
+      window.dispatchEvent(new CustomEvent('playStateChange', { detail: false }));
     } else {
       startMusic();
     }
@@ -119,6 +141,9 @@
     chords.start(0);
     melody.start(0);
     isPlaying = true;
+    
+    // 發送播放狀態變更事件
+    window.dispatchEvent(new CustomEvent('playStateChange', { detail: true }));
   }
   
   function generateProgression() {
@@ -136,6 +161,9 @@
     scale = newScale;
     genChordsOnce = true;
     scalePos = newScalePos;
+    
+    // 發送調性變更事件
+    window.dispatchEvent(new CustomEvent('keyChange', { detail: newKey }));
     
     console.log(`🎵 新的進行生成: ${key} 調`);
   }
@@ -178,6 +206,9 @@
     if (contextStarted) {
       Tone.Master.volume.value = linearToDb(volume);
     }
+    
+    // 發送音量變更事件
+    window.dispatchEvent(new CustomEvent('volumeChange', { detail: Math.round(volume * 100) }));
   }
   
   // 鍵盤控制 (TV 遙控器)
@@ -208,51 +239,45 @@
     window.addEventListener('keydown', handleKeydown);
     
     // BPM 變更監聽器
-    const handleBPMChange = (e: CustomEvent) => {
-      const newBPM = e.detail;
-      if (contextStarted) {
+    const handleBPMChange = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const newBPM = customEvent.detail;
+      console.log(`🎵 TV版 BPM 變更事件收到: ${newBPM}`);
+      
+      // 更新顯示的 BPM 值
+      currentBPM = newBPM;
+      
+      // 立即更新 Tone.js BPM，不管是否已初始化
+      if (Tone.Transport) {
         Tone.Transport.bpm.value = newBPM;
-        console.log(`🎵 TV版 BPM 已變更: ${newBPM}`);
+        console.log(`🎵 BPM 已設定為: ${Tone.Transport.bpm.value}`);
       }
     };
-    window.addEventListener('bpmChange', handleBPMChange as EventListener);
+    window.addEventListener('bpmChange', handleBPMChange);
   }
 </script>
 
 <div class="tv-player">
-  <!-- 主播放按鈕 -->
-  <button class="tv-play-button" class:initialized={contextStarted} on:click={togglePlay}>
-    <div class="play-icon">
-      {#if !contextStarted}
-        🎵
-      {:else if isPlaying}
-        ⏸️
-      {:else}
-        ▶️
-      {/if}
-    </div>
-    <div class="play-text">
-      {#if !contextStarted}
-        🎵 點擊開始音樂
-      {:else if isPlaying}
-        ⏸️ 暫停音樂
-      {:else}
-        ▶️ 繼續播放
-      {/if}
-    </div>
-  </button>
+  <!-- 主要控制按鈕區域 -->
+  <div class="main-controls">
+    <!-- 主播放按鈕 -->
+    <button class="tv-play-button" class:initialized={contextStarted} on:click={togglePlay}>
+      <div class="play-text">
+        {#if !contextStarted}
+          🎵 點擊開始音樂
+        {:else if isPlaying}
+          ⏸️ 暫停音樂
+        {:else}
+          ▶️ 繼續播放
+        {/if}
+      </div>
+    </button>
 
-  <!-- 引導提示 -->
-  {#if !contextStarted}
-    <div class="guide-hint animated">
-      <p class="main-hint">🎯 輕觸一下即可開始播放！</p>
-      <p class="sub-hint">遙控器操作：方向鍵調音量 | R鍵重新生成 | 空格鍵播放/暫停</p>
-    </div>
-  {:else if !isPlaying && genChordsOnce}
-    <div class="guide-hint">
-      <p class="main-hint">🎶 音樂已準備就緒</p>
-    </div>
-  {/if}
+    <!-- 重新生成按鈕 -->
+    <button class="control-btn" on:click={generateProgression} disabled={!contextStarted}>
+      🔄 重新生成
+    </button>
+  </div>
   
   <!-- 音樂資訊 -->
   <div class="music-info">
@@ -265,21 +290,7 @@
           </span>
         {/each}
       </div>
-      <p>LoFi 即時生成 - BPM: 156</p>
-    {:else if contextStarted}
-      <h3>🎵 LoFi 音樂引擎已就緒</h3>
-      <p>使用 Tone.js 即時生成和弦進行</p>
-    {:else}
-      <h3>🎵 LoFi 音樂引擎</h3>
-      <p>專為 TV 設計的音樂播放體驗</p>
     {/if}
-  </div>
-  
-  <!-- 控制按鈕 -->
-  <div class="control-buttons">
-    <button class="control-btn" on:click={generateProgression} disabled={!contextStarted}>
-      🔄 重新生成
-    </button>
   </div>
   
   <!-- 音量控制 -->
@@ -297,23 +308,28 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 2rem;
+    gap: 1rem;
+    color: white;
   }
-  
+
+  .main-controls {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+  }
+
   .tv-play-button {
-    width: 300px;
-    height: 140px;
+    width: 250px;
+    height: 120px;
     background: rgba(255, 255, 255, 0.15);
     color: white;
-    border: 3px solid rgba(255, 255, 255, 0.3);
+    border: 2px solid rgba(255, 255, 255, 0.3);
     border-radius: 20px;
     cursor: pointer;
     transition: all 0.3s ease;
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 0.5rem;
     backdrop-filter: blur(10px);
   }
   
@@ -325,10 +341,6 @@
   
   .tv-play-button:active {
     transform: scale(0.98);
-  }
-  
-  .play-icon {
-    font-size: 2.5rem;
   }
   
   .play-text {
@@ -405,8 +417,9 @@
       height: 130px;
     }
     
-    .play-icon {
-      font-size: 2.2rem;
+    .control-btn {
+      width: 190px;
+      height: 130px;
     }
     
     .play-text {
@@ -428,13 +441,19 @@
       gap: 1.5rem;
     }
     
+    .main-controls {
+      gap: 0.8rem;
+    }
+    
     .tv-play-button {
       width: 250px;
       height: 110px;
     }
     
-    .play-icon {
-      font-size: 2rem;
+    .control-btn {
+      width: 170px;
+      height: 110px;
+      font-size: 1rem;
     }
     
     .play-text {
@@ -461,12 +480,6 @@
     .music-info p {
       font-size: 1.1rem;
     }
-    
-    .control-btn {
-      width: 140px;
-      height: 50px;
-      font-size: 1rem;
-    }
   }
   
   /* 超小型 TV (1280x720) */
@@ -475,13 +488,13 @@
       gap: 1rem;
     }
     
+    .main-controls {
+      gap: 0.8rem;
+    }
+    
     .tv-play-button {
       width: 220px;
       height: 100px;
-    }
-    
-    .play-icon {
-      font-size: 1.8rem;
     }
     
     .play-text {
@@ -515,8 +528,8 @@
     }
     
     .control-btn {
-      width: 120px;
-      height: 45px;
+      width: 150px;
+      height: 100px;
       font-size: 0.95rem;
     }
     
@@ -537,13 +550,13 @@
       gap: 0.8rem;
     }
     
+    .main-controls {
+      gap: 0.6rem;
+    }
+    
     .tv-play-button {
       width: 200px;
       height: 90px;
-    }
-    
-    .play-icon {
-      font-size: 1.6rem;
     }
     
     .play-text {
@@ -584,8 +597,8 @@
     }
     
     .control-btn {
-      width: 100px;
-      height: 40px;
+      width: 130px;
+      height: 90px;
       font-size: 0.85rem;
     }
     
@@ -673,20 +686,39 @@
   }
   
   .control-btn {
-    width: 160px;
-    height: 60px;
+    width: 180px;
+    height: 120px;
     background: rgba(255, 255, 255, 0.1);
     color: white;
     border: 2px solid rgba(255, 255, 255, 0.3);
-    border-radius: 15px;
+    border-radius: 20px;
     cursor: pointer;
-    font-size: 1.1rem;
+    font-size: 1.2rem;
+    font-weight: 500;
     transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
   }
   
   .control-btn:hover {
-    background: rgba(255, 255, 255, 0.2);
-    transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.25);
+    border-color: rgba(255, 255, 255, 0.5);
+    transform: scale(1.05);
+  }
+
+  .control-btn:active {
+    transform: scale(0.98);
+  }
+
+  .control-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .control-btn:disabled:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: none;
   }
   
   .volume-control {

@@ -1,6 +1,4 @@
 <script lang="ts">
-  import TVBPMControl from './TVBPMControl.svelte';
-  
   // 環境音效狀態
   let effects = {
     rain: { active: false, audio: null as HTMLAudioElement | null, volume: 0.5 },
@@ -109,11 +107,6 @@
 </script>
 
 <div class="tv-controls">
-  <!-- BPM 控制器 -->
-  <TVBPMControl />
-  
-  <h2 class="controls-title">🎭 環境音效</h2>
-  
   <!-- 音效按鈕網格 -->
   <div class="effects-grid">
     {#each Object.entries(effectNames) as [key, info]}
@@ -173,48 +166,49 @@
   .tv-controls {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 2rem;
-    max-width: 800px;
+    gap: 1rem;
     width: 100%;
+    height: 100%;
+    overflow: hidden; /* 確保不產生捲軸 */
   }
   
   .controls-title {
-    font-size: 2.2rem;
-    margin: 0;
+    font-size: 1.5rem;
+    margin: 0 0 0.5rem 0;
     color: #f0f8ff;
     text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+    text-align: center;
   }
   
   .effects-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 1.5rem;
-    width: 100%;
-    max-width: 800px;
+    gap: 0.5rem;
+    flex: 1;
+    min-height: 0;
   }
   
   .effect-item {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 1rem;
+    gap: 0.5rem;
   }
   
   .effect-button {
-    width: 140px;
-    height: 100px;
+    width: 100%;
+    height: 70px;
     background: rgba(255, 255, 255, 0.1);
     color: white;
     border: 2px solid rgba(255, 255, 255, 0.3);
-    border-radius: 15px;
+    border-radius: 12px;
     cursor: pointer;
     transition: all 0.3s ease;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 0.3rem;
+    gap: 0.2rem;
     backdrop-filter: blur(5px);
   }
   
@@ -230,16 +224,16 @@
   }
   
   .effect-icon {
-    font-size: 2.5rem;
+    font-size: 1.8rem;
   }
   
   .effect-name {
-    font-size: 1.2rem;
+    font-size: 1rem;
     font-weight: 500;
   }
   
   .effect-status {
-    font-size: 0.9rem;
+    font-size: 0.8rem;
     opacity: 0.8;
     font-weight: bold;
   }
@@ -248,12 +242,13 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.3rem;
+    width: 100%;
   }
   
   .volume-label {
-    font-size: 0.9rem;
-    opacity: 0.9;
+    font-size: 0.75rem;
+    opacity: 0.8;
   }
   
   .volume-buttons {
@@ -262,14 +257,14 @@
   }
   
   .volume-adjust-btn {
-    width: 35px;
-    height: 35px;
+    width: 28px;
+    height: 28px;
     background: rgba(255, 255, 255, 0.1);
     color: white;
     border: 1px solid rgba(255, 255, 255, 0.3);
     border-radius: 50%;
     cursor: pointer;
-    font-size: 1rem;
+    font-size: 0.8rem;
     transition: all 0.3s ease;
   }
   
@@ -284,18 +279,20 @@
   }
   
   .global-controls {
-    margin-top: 1rem;
+    margin-top: 0.5rem;
+    display: flex;
+    justify-content: center;
   }
   
   .stop-all-btn {
-    width: 200px;
-    height: 60px;
+    width: 180px;
+    height: 45px;
     background: rgba(239, 68, 68, 0.2);
     color: white;
     border: 2px solid rgba(239, 68, 68, 0.5);
-    border-radius: 15px;
+    border-radius: 12px;
     cursor: pointer;
-    font-size: 1.1rem;
+    font-size: 0.9rem;
     font-weight: 500;
     transition: all 0.3s ease;
   }
@@ -306,9 +303,9 @@
   }
   
   .shortcuts-hint {
-    margin-top: 1rem;
-    opacity: 0.7;
-    font-size: 1rem;
+    margin-top: 0.5rem;
+    opacity: 0.6;
+    font-size: 0.8rem;
     text-align: center;
   }
   

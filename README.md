@@ -9,6 +9,7 @@ Generate LoFi music on the go. You create your own atmosphere; LoFi Engine sets 
    <img  alt="Screenshot" src="screenshots/screenshot.jpeg" />
 </p>
 
+![alt text](image.png)
 ## 🙏 致謝
 
 本專案基於 [meel-hd/lofi-engine](https://github.com/meel-hd/lofi-engine) 開發，感謝原作者的貢獻！

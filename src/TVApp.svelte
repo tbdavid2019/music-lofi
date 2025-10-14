@@ -3,37 +3,116 @@
   import TVControls from "./lib/components/TVControls.svelte";
   import Config from "./lib/Config.svelte";
   import TVAmbientTracks from "./lib/components/TVAmbientTracks.svelte";
+  import TVBPMControl from "./lib/components/TVBPMControl.svelte";
+  import { onMount } from 'svelte';
+
+  // 跑馬燈狀態資訊
+  let marqueeText = "🎧 LoFi Music TV Player";
+  let currentBPM = 140;
+  let currentKey = "C";
+  let currentVolume = 70;
+  let isPlaying = false;
+
+  // 更新跑馬燈內容
+  function updateMarquee() {
+    const statusParts = [
+      "🎧 LoFi Music TV Player",
+      `🎵 調性: ${currentKey}`,
+      `🎚 BPM: ${currentBPM}`,
+      `🔊 音量: ${currentVolume}%`,
+      isPlaying ? "▶️ 播放中" : "⏸️ 已暫停"
+    ];
+    marqueeText = statusParts.join(" • ");
+  }
+
+  // 監聽各種狀態變化事件
+  if (typeof window !== 'undefined') {
+    // BPM 變更
+    window.addEventListener('bpmChange', (e: CustomEvent) => {
+      currentBPM = e.detail;
+      updateMarquee();
+    });
+
+    // 其他狀態監聽
+    window.addEventListener('keyChange', (e: CustomEvent) => {
+      currentKey = e.detail;
+      updateMarquee();
+    });
+
+    window.addEventListener('volumeChange', (e: CustomEvent) => {
+      currentVolume = e.detail;
+      updateMarquee();
+    });
+
+    window.addEventListener('playStateChange', (e: CustomEvent) => {
+      isPlaying = e.detail;
+      updateMarquee();
+    });
+  }
+
+  onMount(() => {
+    // 初始化讀取保存的 BPM
+    if (typeof window !== 'undefined') {
+      const savedBPM = localStorage.getItem('LofiEngine_BPM');
+      if (savedBPM) {
+        currentBPM = parseInt(savedBPM);
+      }
+    }
+    updateMarquee();
+  });
 </script>
 
 <main id="bg" class="tv-container">
   <Config />
   
-  <!-- TV 專用介面 -->
+  <!-- TV 兩欄式佈局 -->
   <div class="tv-layout">
-    <div class="tv-header">
-      <h1 class="tv-title">🎵 LoFi Music</h1>
-      <p class="tv-subtitle">TV Edition - 電視版</p>
-    </div>
+    <!-- 頂部跑馬燈狀態欄 -->
+    <header class="tv-header">
+      <div class="marquee-container">
+        <div class="marquee-text">{marqueeText}</div>
+      </div>
+    </header>
     
-    <div class="tv-main">
-      <!-- 主播放控制 (Tone.js 音樂生成) -->
-      <div class="tv-player-section">
-        <TVPlayButton />
+    <!-- 主要內容區域：左右兩欄 -->
+    <div class="tv-main-grid">
+      <!-- 左欄：主音樂播放區 -->
+      <div class="tv-left-panel">
+        <div class="music-player-zone">
+          <div class="player-wrapper">
+            <TVPlayButton />
+          </div>
+        </div>
+        
+        <!-- BPM 控制區 -->
+        <div class="bpm-control-zone">
+          <TVBPMControl />
+        </div>
+        
+        <!-- 遙控提示 -->
+        <div class="remote-hints">
+          <p class="hint-text">💡 遙控提示：↑↓音量 ←→切功能 OK確認</p>
+        </div>
       </div>
       
-      <!-- 右側控制面板 -->
-      <div class="tv-controls-section">
-        <!-- 環境音效控制 -->
-        <TVControls />
+      <!-- 右欄：分為兩個垂直區塊 -->
+      <div class="tv-right-panel">
+        <!-- 上半部：環境音效控制 -->
+        <div class="control-zone control-zone-top">
+          <TVControls />
+        </div>
         
-        <!-- 環境音軌控制 -->
-        <TVAmbientTracks />
+        <!-- 下半部：背景音軌控制 -->
+        <div class="control-zone control-zone-bottom">
+          <TVAmbientTracks />
+        </div>
       </div>
     </div>
     
-    <div class="tv-footer">
-      <p>🎮 Space 播放 | R 重新生成 | 1-4 環境音效 | 🌐 music.david888.com</p>
-    </div>
+    <!-- 底部狀態欄 -->
+    <footer class="tv-footer">
+      <p>🎮 Space播放 | R重新生成 | 1-5音軌切換 | 🌐 music.david888.com</p>
+    </footer>
   </div>
 </main>
 
@@ -54,60 +133,166 @@
   .tv-layout {
     width: 100%;
     height: 100%;
-    max-width: 1400px;
+    max-width: 1600px;
     display: flex;
     flex-direction: column;
-    text-align: center;
     color: white;
   }
 
   .tv-header {
-    margin-bottom: 1rem;
-    flex-shrink: 0;
+    background: rgba(0, 0, 0, 0.3);
+    border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+    padding: 0.8rem 1rem;
+    backdrop-filter: blur(10px);
+    overflow: hidden;
+    height: 60px;
+    display: flex;
+    align-items: center;
+  }
+
+  .marquee-container {
+    width: 100%;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  .marquee-text {
+    display: inline-block;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #f0f8ff;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+    animation: marquee 20s linear infinite;
+    padding-left: 100%;
+  }
+
+  @keyframes marquee {
+    0% {
+      transform: translateX(0%);
+    }
+    100% {
+      transform: translateX(-100%);
+    }
   }
 
   .tv-title {
-    font-size: 3.5rem;
-    font-weight: bold;
+    font-size: 2.2rem;
+    font-weight: 700;
     margin: 0;
-    text-shadow: 3px 3px 6px rgba(0,0,0,0.5);
-    background: linear-gradient(45deg, #fff, #f0f8ff);
+    text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+    background: linear-gradient(45deg, #fff, #66bb6a);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
 
-  .tv-subtitle {
-    font-size: 1.4rem;
-    margin: 0.5rem 0 0 0;
-    opacity: 0.9;
-    font-weight: 300;
-  }
 
-  .tv-main {
+
+  .tv-main-grid {
     flex: 1;
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     gap: 2rem;
-    padding: 0 2rem;
+    padding: 2rem;
+    min-height: 0;
   }
 
-  .tv-player-section {
-    flex: 1;
-    display: flex;
-    justify-content: center;
+  /* 左欄：主音樂播放區 */
+  .tv-left-panel {
+    display: grid;
+    grid-template-rows: 1fr auto auto;
+    gap: 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 20px;
+    padding: 1.5rem;
+    backdrop-filter: blur(15px);
+    height: 100%;
+    overflow: hidden;
   }
 
-  .tv-controls-section {
+  .music-player-zone {
     flex: 1;
     display: flex;
     flex-direction: column;
+    align-items: center;
     justify-content: center;
+    gap: 2rem;
+  }
+
+  .zone-title {
+    font-size: 1.8rem;
+    font-weight: 600;
+    margin: 0;
+    text-align: center;
+    color: #f0f8ff;
+    text-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+    border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+    padding-bottom: 1rem;
+    width: 100%;
+  }
+
+    .player-wrapper {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .bpm-control-zone {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 15px;
+    padding: 1.2rem;
+    backdrop-filter: blur(10px);
+  }
+
+  .remote-hints {
+    background: rgba(102, 187, 106, 0.1);
+    border: 1px solid rgba(102, 187, 106, 0.3);
+    border-radius: 15px;
+    padding: 1rem 1.5rem;
+    text-align: center;
+  }
+
+  .hint-text {
+    margin: 0;
+    font-size: 1.1rem;
+    color: #66bb6a;
+    font-weight: 500;
+  }
+
+  /* 右欄：控制面板 */
+  .tv-right-panel {
+    display: grid;
+    grid-template-rows: 1fr 1fr; /* 平均分配上下兩個控制區域 */
     gap: 1rem;
-    max-height: 100%;
-    overflow-y: auto;
+    height: 100%;
+    overflow: hidden; /* 完全禁用捲軸 */
+  }
+
+  .control-zone {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 15px;
+    padding: 1rem;
+    backdrop-filter: blur(10px);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 0; /* 允許 flex 項目縮小 */
+  }
+
+  /* 上半部控制區域 - 環境音效 + BPM */
+  .control-zone-top {
+    border-bottom: 2px solid rgba(102, 187, 106, 0.2);
+    max-height: 50vh; /* 限制最大高度 */
+  }
+
+  /* 下半部控制區域 - 背景音軌 */
+  .control-zone-bottom {
+    border-top: 2px solid rgba(255, 193, 7, 0.2);
+    max-height: 50vh; /* 限制最大高度 */
   }
 
   .tv-footer {
@@ -128,14 +313,6 @@
       padding: 1.5rem;
     }
     
-    .tv-title {
-      font-size: 3rem;
-    }
-    
-    .tv-subtitle {
-      font-size: 1.3rem;
-    }
-    
     .tv-main {
       gap: 1.5rem;
       padding: 0 1rem;
@@ -148,21 +325,9 @@
       padding: 1rem;
     }
     
-    .tv-title {
-      font-size: 2.5rem;
-    }
-    
-    .tv-subtitle {
-      font-size: 1.1rem;
-    }
-    
     .tv-main {
       gap: 1rem;
       padding: 0 0.5rem;
-    }
-    
-    .tv-header {
-      margin-bottom: 0.5rem;
     }
     
     .tv-footer p {
@@ -176,21 +341,9 @@
       padding: 0.5rem;
     }
     
-    .tv-title {
-      font-size: 2rem;
-    }
-    
-    .tv-subtitle {
-      font-size: 1rem;
-    }
-    
     .tv-main {
       gap: 0.5rem;
       padding: 0;
-    }
-    
-    .tv-header {
-      margin-bottom: 0.3rem;
     }
     
     .tv-footer {
@@ -250,10 +403,6 @@
     .tv-main {
       flex-direction: row;
       align-items: flex-start;
-    }
-    
-    .tv-header {
-      display: none; /* 在極小螢幕隱藏標題節省空間 */
     }
     
     .tv-footer {

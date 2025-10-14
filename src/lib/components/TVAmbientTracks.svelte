@@ -63,7 +63,7 @@
 </script>
 
 <div class="ambient-tracks">
-  <h3 class="section-title">🎧 背景音軌</h3>
+
   
   <div class="tracks-grid">
     {#each tracks as track}
