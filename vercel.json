@@ -4,14 +4,14 @@
   "devCommand": "pnpm dev",
   "installCommand": "pnpm install",
   "framework": "vite",
-  "routes": [
+  "rewrites": [
     {
-      "src": "/tv",
-      "dest": "/index.html"
+      "source": "/tv",
+      "destination": "/index.html"
     },
     {
-      "src": "/(.*)",
-      "dest": "/index.html"
+      "source": "/((?!api/).*)",
+      "destination": "/index.html"
     }
   ]
 }
