@@ -15,8 +15,8 @@
   let autoPlayReady = false;
   
   // 響應式 BPM 顯示 - 初始化時讀取 localStorage
-  let currentBPM = 84;
-  let grooveStyle: GrooveStyle = "cafe";
+  let currentBPM = 160;
+  let grooveStyle: GrooveStyle = "relaxing";
 
   function updateTransportBpm(newBpm: number, persist = false) {
     if (typeof newBpm !== 'number' || Number.isNaN(newBpm)) {
@@ -42,6 +42,7 @@
   let melodyOff = false;
   let melodyDirectionPreference: -1 | 0 | 1 = 0;
   let melodyLeapPreference = 0;
+  let melodyUpStreak = 0;
   let loopsRemainingForProgression = 0;
   let loopsCompletedForProgression = 0;
   
@@ -58,7 +59,7 @@
   // 音量節點引用 (在 startAudioContext 中初始化)
   let volumeNode: any = null;
 
-  type GrooveStyle = "cafe" | "jazz";
+  type GrooveStyle = "cafe" | "jazz" | "relaxing";
 
   type StrumPattern = {
     offsets: number[];
@@ -212,6 +213,42 @@ const grooveStyles: Record<GrooveStyle, GrooveStyleConfig> = {
       durationRangeSeconds: [260, 310],
     },
   },
+  relaxing: {
+    displayName: "Relaxing",
+    defaultBpm: 160,
+    swing: 0,
+    swingSubdivision: "4n",
+    strumPatterns: [
+      {
+        offsets: [0],
+        release: "2n",
+        velocityRange: [0.24, 0.32],
+        invertChance: 0.15,
+        tailSpacing: 0.4,
+      },
+      {
+        offsets: [0, 0.55],
+        release: "1n",
+        velocityRange: [0.22, 0.3],
+        invertChance: 0.05,
+        tailSpacing: 0.38,
+      },
+    ],
+    chordTriadChance: 0.85,
+    melodyDensityRange: [0.1, 0.2],
+    melodyOffChance: 0.5,
+    melodyVelocityRange: [0.16, 0.28],
+    melodyDurationOptions: [
+      { duration: "2n", weight: 2.8 },
+      { duration: "1n", weight: 1.5 },
+      { duration: "4n", weight: 1.2 },
+    ],
+    rotation: {
+      durationRangeSeconds: [360, 450],
+      reuseProbability: 0.6,
+      poolSize: 2,
+    },
+  },
 };
 
 if (typeof window !== 'undefined') {
@@ -342,11 +379,12 @@ melodyDensity = initialDensityMin + (initialDensityMax - initialDensityMin) * 0.
     melodyDensity = densityMin + (densityMax - densityMin) * 0.5;
     melodyOff = false;
     const directionChoices: Array<-1 | 0 | 1> =
-      grooveStyle === "jazz" ? [-1, 0, 0, 1, 1, 1] : [-1, 0, 0, 1, 1];
+      grooveStyle === "jazz" ? [-1, 0, 1, 1, 1, 1] : [-1, 0, 1, 1, 1];
     melodyDirectionPreference =
       directionChoices[Math.floor(Math.random() * directionChoices.length)];
-    const leapBias = grooveStyle === "jazz" ? 0.5 : 0.35;
+    const leapBias = grooveStyle === "jazz" ? 0.55 : 0.4;
     melodyLeapPreference = Math.random() < leapBias ? 1 : 0;
+    melodyUpStreak = 0;
   }
 
   function ensureLoopsTarget(style: GrooveStyle = grooveStyle) {
@@ -463,6 +501,8 @@ melodyDensity = initialDensityMin + (initialDensityMax - initialDensityMin) * 0.
       melodyOff = false;
     }
 
+    melodyUpStreak = 0;
+
     const needFreshPool = previous !== style || progressionPool.length === 0;
 
     if (needFreshPool) {
@@ -481,7 +521,9 @@ melodyDensity = initialDensityMin + (initialDensityMax - initialDensityMin) * 0.
   }
 
   function toggleGrooveStyle() {
-    const nextStyle: GrooveStyle = grooveStyle === "cafe" ? "jazz" : "cafe";
+    const order: GrooveStyle[] = ["cafe", "relaxing", "jazz"];
+    const currentIdx = order.indexOf(grooveStyle);
+    const nextStyle = order[(currentIdx + 1) % order.length];
     setGrooveStyle(nextStyle, { resetBpm: true });
   }
 
@@ -683,11 +725,12 @@ melodyDensity = initialDensityMin + (initialDensityMax - initialDensityMin) * 0.
       melodyDensity = densityMin + Math.random() * (densityMax - densityMin);
       melodyOff = Math.random() < config.melodyOffChance;
       const directionChoices: Array<-1 | 0 | 1> =
-        grooveStyle === "jazz" ? [-1, 0, 0, 1, 1, 1] : [-1, 0, 0, 1, 1];
+        grooveStyle === "jazz" ? [-1, 0, 1, 1, 1, 1] : [-1, 0, 1, 1, 1];
       melodyDirectionPreference =
         directionChoices[Math.floor(Math.random() * directionChoices.length)];
-      const leapBias = grooveStyle === "jazz" ? 0.5 : 0.35;
+      const leapBias = grooveStyle === "jazz" ? 0.55 : 0.4;
       melodyLeapPreference = Math.random() < leapBias ? 1 : 0;
+      melodyUpStreak = 0;
       handleProgressionLoopComplete();
     }
   }
@@ -699,7 +742,7 @@ melodyDensity = initialDensityMin + (initialDensityMax - initialDensityMin) * 0.
     if (note) {
       const config = grooveStyles[grooveStyle];
       const [velocityMin, velocityMax] = config.melodyVelocityRange;
-      const melodyVelocity = velocityMin + Math.random() * (velocityMax - velocityMin);
+      const melodyVelocityBase = velocityMin + Math.random() * (velocityMax - velocityMin);
       const totalWeight = config.melodyDurationOptions.reduce(
         (sum, option) => sum + option.weight,
         0,
@@ -713,24 +756,30 @@ melodyDensity = initialDensityMin + (initialDensityMax - initialDensityMin) * 0.
           break;
         }
       }
+      const melodyVelocity = Math.min(
+        1,
+        melodyVelocityBase * (melodyDirectionPreference === -1 ? 0.92 : 1.04),
+      );
       // @ts-ignore
       pn.triggerAttackRelease(note, melodyDuration, undefined, melodyVelocity);
     }
     
-    // 簡單的旋律運動
     const upAvailable = scalePos < scale.length - 1;
     const downAvailable = scalePos > 0;
 
     let direction = 0;
+    let ascendBias = grooveStyle === "jazz" ? 0.7 : 0.63;
+    if (melodyDirectionPreference === 1) {
+      ascendBias = 0.9;
+    } else if (melodyDirectionPreference === -1) {
+      ascendBias = grooveStyle === "jazz" ? 0.45 : 0.5;
+    }
+    if (melodyUpStreak >= 2) {
+      ascendBias = 0.95;
+    }
+
     if (upAvailable && downAvailable) {
-      if (melodyDirectionPreference === 1) {
-        direction = 1;
-      } else if (melodyDirectionPreference === -1) {
-        direction = -1;
-      } else {
-        const ascendBias = grooveStyle === "jazz" ? 0.6 : 0.55;
-        direction = Math.random() < ascendBias ? 1 : -1;
-      }
+      direction = Math.random() < ascendBias ? 1 : -1;
     } else if (upAvailable) {
       direction = 1;
     } else if (downAvailable) {
@@ -738,11 +787,21 @@ melodyDensity = initialDensityMin + (initialDensityMax - initialDensityMin) * 0.
     }
 
     let step = 1;
-    if (melodyLeapPreference === 1 && Math.random() < 0.6) {
+    if (direction > 0 && melodyLeapPreference === 1 && Math.random() < 0.6) {
       step = 2 + Math.floor(Math.random() * 2);
     }
 
+    if (direction < 0) {
+      step = 1;
+    }
+
     scalePos = clamp(scalePos + direction * step, 0, scale.length - 1);
+
+    if (direction > 0) {
+      melodyUpStreak += 1;
+    } else if (direction < 0) {
+      melodyUpStreak = Math.max(0, melodyUpStreak - 1);
+    }
   }
   
   function adjustVolume(delta: number) {
@@ -825,11 +884,12 @@ melodyDensity = initialDensityMin + (initialDensityMax - initialDensityMin) * 0.
       class="control-btn style-toggle"
       on:click={toggleGrooveStyle}
       disabled={!contextStarted}
-      aria-pressed={grooveStyle === 'jazz'}
-      title={`切換至 ${grooveStyle === 'cafe' ? 'Jazz' : 'Cafe'} 風格`}
+      title={`切換風格（目前 ${grooveStyles[grooveStyle].displayName}）`}
     >
       {#if grooveStyle === 'cafe'}
         ☕ Cafe
+      {:else if grooveStyle === 'relaxing'}
+        🌙 Relax
       {:else}
         🎷 Jazz
       {/if}

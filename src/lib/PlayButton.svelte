@@ -55,7 +55,7 @@
 
   const GROOVE_STYLE_KEY = "LofiEngine_GrooveStyle";
 
-  type GrooveStyle = "cafe" | "jazz";
+  type GrooveStyle = "cafe" | "jazz" | "relaxing";
 
   type StrumPattern = {
     offsets: number[];
@@ -240,6 +240,60 @@
         durationRangeSeconds: [260, 310],
       },
     },
+    relaxing: {
+      displayName: "Relaxing",
+      defaultBpm: 160,
+      swing: 0,
+      swingSubdivision: "4n",
+      strumPatterns: [
+        {
+          offsets: [0],
+          release: "2n",
+          velocityRange: [0.26, 0.34],
+          invertChance: 0.2,
+          tailSpacing: 0.4,
+        },
+        {
+          offsets: [0, 0.5],
+          release: "1n",
+          velocityRange: [0.24, 0.32],
+          invertChance: 0.1,
+          tailSpacing: 0.35,
+        },
+        {
+          offsets: [0, 0.65],
+          release: "1n",
+          velocityRange: [0.22, 0.3],
+          invertChance: 0.05,
+          tailSpacing: 0.4,
+        },
+      ],
+      chordTriadChance: 0.85,
+      melodyDensityRange: [0.1, 0.2],
+      melodyOffChance: 0.45,
+      melodyVelocityRange: [0.18, 0.32],
+      melodyDurationOptions: [
+        { duration: "2n", weight: 2.5 },
+        { duration: "1n", weight: 1.2 },
+        { duration: "4n", weight: 1.8 },
+      ],
+      muteChances: {
+        kick: 0.95,
+        snare: 0.98,
+        hat: 0.92,
+      },
+      kickProbabilities: {
+        main: 0.1,
+        ghost: 0,
+      },
+      snareHitProbability: 0.05,
+      hatHitProbability: 0.08,
+      rotation: {
+        durationRangeSeconds: [340, 420],
+        poolSize: 2,
+        reuseProbability: 0.6,
+      },
+    },
   };
 
   type ProgressionState = {
@@ -250,7 +304,7 @@
     style: GrooveStyle;
   };
 
-  let grooveStyle: GrooveStyle = "cafe";
+  let grooveStyle: GrooveStyle = "relaxing";
 
   let progressionPool: ProgressionState[] = [];
   let progressionPoolIndex = -1;
@@ -545,6 +599,7 @@
   let melodyOff = false;
   let melodyDirectionPreference: -1 | 0 | 1 = 0;
   let melodyLeapPreference = 0;
+  let melodyUpStreak = 0;
 
   setGrooveStyle(grooveStyle, { persist: false });
 
@@ -745,11 +800,12 @@
       }
 
       const directionChoices: Array<-1 | 0 | 1> =
-        grooveStyle === "jazz" ? [-1, 0, 0, 1, 1, 1] : [-1, 0, 0, 1, 1];
+        grooveStyle === "jazz" ? [-1, 0, 1, 1, 1, 1] : [-1, 0, 1, 1, 1];
       melodyDirectionPreference =
         directionChoices[Math.floor(Math.random() * directionChoices.length)];
-      const leapBias = grooveStyle === "jazz" ? 0.5 : 0.35;
+      const leapBias = grooveStyle === "jazz" ? 0.55 : 0.4;
       melodyLeapPreference = Math.random() < leapBias ? 1 : 0;
+      melodyUpStreak = 0;
     } else {
       progress = nextProgress;
     }
@@ -859,17 +915,19 @@
     let ascend = ascendRange > 1;
 
     if (descend && ascend) {
+      let ascendBias = grooveStyle === "jazz" ? 0.72 : 0.65;
       if (melodyDirectionPreference === 1) {
-        descend = false;
+        ascendBias = 0.9;
       } else if (melodyDirectionPreference === -1) {
-        ascend = false;
+        ascendBias = grooveStyle === "jazz" ? 0.4 : 0.45;
+      }
+      if (melodyUpStreak >= 2) {
+        ascendBias = 0.95;
+      }
+      if (Math.random() < ascendBias) {
+        descend = false;
       } else {
-        const ascendBias = grooveStyle === "jazz" ? 0.6 : 0.55;
-        if (Math.random() < ascendBias) {
-          descend = false;
-        } else {
-          ascend = false;
-        }
+        ascend = false;
       }
     }
 
@@ -887,10 +945,10 @@
       ? intervalWeights.slice(0, descendRange)
       : intervalWeights.slice(0, ascendRange);
 
-    if (melodyLeapPreference === 1) {
-      weights = weights.map((w, idx) => (idx >= 2 ? w * 1.6 : w * 0.65));
+    if (melodyLeapPreference === 1 && ascend) {
+      weights = weights.map((w, idx) => (idx >= 2 ? w * 1.45 : w * 0.75));
     } else {
-      weights = weights.map((w, idx) => (idx <= 1 ? w * 1.25 : w * 0.85));
+      weights = weights.map((w, idx) => (idx <= 1 ? w * 1.3 : w * 0.8));
     }
 
     const sum = weights.reduce((prev, curr) => prev + curr, 0);
@@ -918,10 +976,11 @@
     const newScalePos = scalePos + scalePosChange;
 
     scalePos = clamp(newScalePos, 0, scale.length - 1);
-    
+
     const config = grooveStyles[grooveStyle];
     const [velocityMin, velocityMax] = config.melodyVelocityRange;
-    const melodyVelocity = velocityMin + Math.random() * (velocityMax - velocityMin);
+    const melodyVelocityBase = velocityMin + Math.random() * (velocityMax - velocityMin);
+    const melodyVelocity = Math.min(1, melodyVelocityBase * (descend ? 0.92 : 1.05));
     const durationTotal = config.melodyDurationOptions.reduce(
       (sum, option) => sum + option.weight,
       0,
@@ -938,6 +997,12 @@
     
     // @ts-ignore
     pn.triggerAttackRelease(scale[newScalePos], melodyDuration, undefined, melodyVelocity);
+
+    if (ascend) {
+      melodyUpStreak += 1;
+    } else {
+      melodyUpStreak = Math.max(0, melodyUpStreak - 1);
+    }
   }
 
   function generateProgression() {
@@ -1040,6 +1105,8 @@
       melodyOff = false;
     }
 
+    melodyUpStreak = 0;
+
     const poolNeedsReset = previousStyle !== style || progressionPool.length === 0;
 
     if (poolNeedsReset) {
@@ -1064,7 +1131,9 @@
   }
 
   function toggleGrooveStyle() {
-    const nextStyle: GrooveStyle = grooveStyle === "cafe" ? "jazz" : "cafe";
+    const order: GrooveStyle[] = ["cafe", "relaxing", "jazz"];
+    const currentIdx = order.indexOf(grooveStyle);
+    const nextStyle = order[(currentIdx + 1) % order.length];
     setGrooveStyle(nextStyle, { resetBpm: true });
   }
 
@@ -1214,12 +1283,13 @@
       class="styleBtn"
       on:click={toggleGrooveStyle}
       disabled={!allSamplesLoaded}
-      aria-pressed={grooveStyle === 'jazz'}
-      title={`切換至 ${grooveStyle === 'cafe' ? grooveStyles.jazz.displayName : grooveStyles.cafe.displayName} 風格`}
-      aria-label={`切換至 ${grooveStyle === 'cafe' ? grooveStyles.jazz.displayName : grooveStyles.cafe.displayName} 風格`}
+      title={`切換風格（目前 ${grooveStyles[grooveStyle].displayName}）`}
+      aria-label={`切換風格（目前 ${grooveStyles[grooveStyle].displayName}）`}
     >
       {#if grooveStyle === 'cafe'}
         ☕ Cafe
+      {:else if grooveStyle === 'relaxing'}
+        🌙 Relax
       {:else}
         🎷 Jazz
       {/if}

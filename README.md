@@ -192,15 +192,15 @@ This system can generate **virtually infinite musical variations** while maintai
 
 ### ☕ Café 與 🎷 Jazz 曲風概覽
 
-| 特性 | Café | Jazz |
-| --- | --- | --- |
-| 基礎 BPM | 84 | 112 |
-| Swing | 0.45（輕微搖擺） | 0.58（較大搖擺） |
-| Chord Voicing | 多為 3 聲部 triad，偶爾加入 7th | triad 與延伸音混合，偏向 7th/9th | 
-| Strum 模式 | 緩慢掃弦、反向掃弦、單音 | 多音掃弦、快節奏切分、延長音 |
-| Melody Density | 18% – 33%，以流動平穩為主 | 28% – 48%，帶有 improvisation 感 |
-| Melody Direction | 偏向向上或平移，偶爾下行 | 在同 key 或鄰近 key 上做 step/leap 結合 |
-| Progression Duration | 約 4.5–5.5 分鐘自動輪替 | 約 4–5 分鐘自動輪替 |
+| 特性 | Café | Relaxing | Jazz |
+| --- | --- | --- | --- |
+| 基礎 BPM | 84 | 160 | 112 |
+| Swing | 0.45（輕微搖擺） | 0（無 swing） | 0.58（較大搖擺） |
+| Chord Voicing | 多為 3 聲部 triad，偶爾加入 7th | 長延音 triad、偶爾純根與五度 | triad 與延伸音混合，偏向 7th/9th | 
+| Strum 模式 | 緩慢掃弦、反向掃弦、單音 | 單顆延音或慢速 arpeggio，極少反向掃 | 多音掃弦、快節奏切分、延長音 |
+| Melody Density | 18% – 33%，以流動平穩為主 | 10% – 20%，以停留與長音為主 | 28% – 48%，帶有 improvisation 感 |
+| Melody Direction | 偏向向上或平移，偶爾下行 | 緩慢上行或同音停留，跳音極少 | 在同 key 或鄰近 key 上做 step/leap 結合 |
+| Progression Duration | 約 4.5–5.5 分鐘自動輪替 | 約 6–7.5 分鐘自動輪替 | 約 4–5 分鐘自動輪替 |
 
 ### 🧠 長篇章編曲機制（New）
 
