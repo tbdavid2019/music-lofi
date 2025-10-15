@@ -386,10 +386,23 @@
   
   <!-- 音量控制 -->
   <div class="volume-control">
-    <span>🔊 音量: {Math.round(volume * 100)}%</span>
     <div class="volume-buttons">
-      <button class="volume-btn" on:click={() => adjustVolume(-0.1)}>➖</button>
-      <button class="volume-btn" on:click={() => adjustVolume(0.1)}>➕</button>
+      <button
+        class="volume-btn"
+        aria-label="降低音量"
+        title="降低音量"
+        on:click={() => adjustVolume(-0.1)}
+      >
+        ➖
+      </button>
+      <button
+        class="volume-btn"
+        aria-label="提高音量"
+        title="提高音量"
+        on:click={() => adjustVolume(0.1)}
+      >
+        ➕
+      </button>
     </div>
   </div>
 </div>
