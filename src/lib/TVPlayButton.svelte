@@ -40,6 +40,8 @@
   let activeProgressionIndex = 0;
   let melodyDensity = 0.26;
   let melodyOff = false;
+  let melodyDirectionPreference: -1 | 0 | 1 = 0;
+  let melodyLeapPreference = 0;
   let loopsRemainingForProgression = 0;
   let loopsCompletedForProgression = 0;
   
@@ -83,9 +85,10 @@
     melodyVelocityRange: [number, number];
     melodyDurationOptions: MelodyDurationOption[];
     rotation: {
-      loopsRange: [number, number];
+      loopsRange?: [number, number];
       reuseProbability: number;
       poolSize?: number;
+      durationRangeSeconds: [number, number];
     };
   };
 
@@ -154,6 +157,8 @@ const grooveStyles: Record<GrooveStyle, GrooveStyleConfig> = {
     rotation: {
       loopsRange: [3, 5],
       reuseProbability: 0.55,
+      poolSize: 3,
+      durationRangeSeconds: [280, 320],
     },
   },
   jazz: {
@@ -203,6 +208,8 @@ const grooveStyles: Record<GrooveStyle, GrooveStyleConfig> = {
     rotation: {
       loopsRange: [3, 4],
       reuseProbability: 0.45,
+      poolSize: 4,
+      durationRangeSeconds: [260, 310],
     },
   },
 };
@@ -236,6 +243,11 @@ melodyDensity = initialDensityMin + (initialDensityMax - initialDensityMin) * 0.
   function randomIntInRange([min, max]: [number, number]) {
     if (max <= min) return min;
     return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+
+  function randomInRange([min, max]: [number, number]) {
+    if (max <= min) return min;
+    return Math.random() * (max - min) + min;
   }
 
   function clamp(value: number, min: number, max: number) {
@@ -329,15 +341,35 @@ melodyDensity = initialDensityMin + (initialDensityMax - initialDensityMin) * 0.
     const [densityMin, densityMax] = config.melodyDensityRange;
     melodyDensity = densityMin + (densityMax - densityMin) * 0.5;
     melodyOff = false;
+    const directionChoices: Array<-1 | 0 | 1> =
+      grooveStyle === "jazz" ? [-1, 0, 0, 1, 1, 1] : [-1, 0, 0, 1, 1];
+    melodyDirectionPreference =
+      directionChoices[Math.floor(Math.random() * directionChoices.length)];
+    const leapBias = grooveStyle === "jazz" ? 0.5 : 0.35;
+    melodyLeapPreference = Math.random() < leapBias ? 1 : 0;
   }
 
   function ensureLoopsTarget(style: GrooveStyle = grooveStyle) {
     const config = grooveStyles[style];
     loopsCompletedForProgression = 0;
-    loopsRemainingForProgression = Math.max(
-      1,
-      randomIntInRange(config.rotation.loopsRange),
-    );
+    const rotation = config.rotation;
+    if (rotation.durationRangeSeconds) {
+      const targetSeconds = randomInRange(rotation.durationRangeSeconds);
+      const barsPerLoop = Math.max(1, progression?.length ?? 8);
+      const barDuration = (60 / Tone.Transport.bpm.value) * 4;
+      const loopDurationSeconds = barDuration * barsPerLoop;
+      loopsRemainingForProgression = Math.max(
+        1,
+        Math.round(targetSeconds / loopDurationSeconds),
+      );
+    } else if (rotation.loopsRange) {
+      loopsRemainingForProgression = Math.max(
+        1,
+        randomIntInRange(rotation.loopsRange),
+      );
+    } else {
+      loopsRemainingForProgression = 4;
+    }
   }
 
   function registerProgression(state: ProgressionState) {
@@ -376,6 +408,8 @@ melodyDensity = initialDensityMin + (initialDensityMax - initialDensityMin) * 0.
 
     applyProgression(nextState, true);
     ensureLoopsTarget(grooveStyle);
+
+    return nextState;
   }
 
   function handleProgressionLoopComplete() {
@@ -385,8 +419,25 @@ melodyDensity = initialDensityMin + (initialDensityMax - initialDensityMin) * 0.
     }
 
     if (loopsRemainingForProgression <= 0) {
-      rotateProgression(false);
+      const nextState = rotateProgression(false);
+      previewNextSegment(nextState);
     }
+  }
+
+  function previewNextSegment(nextState?: ProgressionState) {
+    if (!nextState || !nextState.progression?.length || !pn) {
+      return;
+    }
+
+    const barDuration = (60 / Tone.Transport.bpm.value) * 4;
+    const previewTime = Tone.now() + Math.max(0.05, barDuration - PREVIEW_OFFSET_SECONDS);
+    const previewChord = nextState.progression[0];
+    strumChord(previewChord, {
+      time: previewTime,
+      velocityScale: 0.65,
+      releaseOverride: "2n",
+      jitterRange: 0.03,
+    });
   }
 
   function setGrooveStyle(
@@ -551,11 +602,29 @@ melodyDensity = initialDensityMin + (initialDensityMax - initialDensityMin) * 0.
     console.log(`🎵 新的進行生成: ${key} 調`);
   }
   
-  function playChord(time?: number) {
-    if (!pianoLoaded || !progression[progress]) return;
-    
-    const chord = progression[progress];
+  function strumChord(
+    chord: any,
+    options: {
+      time?: number;
+      velocityScale?: number;
+      patternOverride?: StrumPattern;
+      releaseOverride?: string;
+      jitterRange?: number;
+    } = {},
+  ) {
+    if (!pianoLoaded || !progression[progress] || !chord || !pn) return;
+
+    const {
+      time = Tone.now(),
+      velocityScale = 1,
+      patternOverride,
+      releaseOverride,
+      jitterRange = 0.05,
+    } = options;
+
     const config = grooveStyles[grooveStyle];
+    const patterns = config.strumPatterns;
+    const pattern = patternOverride ?? patterns[Math.floor(Math.random() * patterns.length)];
     // @ts-ignore
     const root = Tone.Frequency(key + "3").transpose(chord.semitoneDist);
     const chordSize = Math.random() < config.chordTriadChance ? 3 : 4;
@@ -565,28 +634,38 @@ melodyDensity = initialDensityMin + (initialDensityMax - initialDensityMin) * 0.
     const notes = Tone.Frequency(root)
       .harmonize(voicing)
       .map((f: any) => Tone.Frequency(f).toNote());
-    const patterns = config.strumPatterns;
-    const pattern = patterns[Math.floor(Math.random() * patterns.length)];
+
     const strumNotes = Math.random() < (pattern.invertChance ?? 0) ? [...notes].reverse() : [...notes];
-    const baseTime = typeof time === "number" ? time : Tone.now();
     strumNotes.forEach((note, idx) => {
       const baseOffset =
         pattern.offsets[idx] !== undefined
           ? pattern.offsets[idx]
           : pattern.offsets[pattern.offsets.length - 1] +
             (idx - pattern.offsets.length + 1) * (pattern.tailSpacing ?? 0.22);
-      const jitter = idx === 0 ? 0 : (Math.random() * 0.05) - 0.02;
+      const jitter = idx === 0 ? 0 : (Math.random() * jitterRange) - jitterRange / 2;
       const velocityMin = pattern.velocityRange?.[0] ?? 0.32;
       const velocityMax = pattern.velocityRange?.[1] ?? 0.46;
-      const velocity = velocityMin + Math.random() * (velocityMax - velocityMin);
+      const baseVelocity = velocityMin + Math.random() * (velocityMax - velocityMin);
+      const velocity = Math.min(1, baseVelocity * velocityScale);
+      const release = releaseOverride ?? pattern.release;
       // @ts-ignore Tone definitions don't expose triggerAttackRelease signature we use here
       pn.triggerAttackRelease(
         note,
-        pattern.release,
-        baseTime + Math.max(0, baseOffset + jitter),
+        release,
+        Math.max(0, time + Math.max(0, baseOffset + jitter)),
         velocity,
       );
     });
+  }
+
+  const PREVIEW_OFFSET_SECONDS = 0.45;
+
+  function playChord(time?: number) {
+    if (!pianoLoaded || !progression[progress]) return;
+    
+    const chord = progression[progress];
+    const baseTime = typeof time === "number" ? time : Tone.now();
+    strumChord(chord, { time: baseTime });
     
     nextChord();
   }
@@ -603,6 +682,12 @@ melodyDensity = initialDensityMin + (initialDensityMax - initialDensityMin) * 0.
       const [densityMin, densityMax] = config.melodyDensityRange;
       melodyDensity = densityMin + Math.random() * (densityMax - densityMin);
       melodyOff = Math.random() < config.melodyOffChance;
+      const directionChoices: Array<-1 | 0 | 1> =
+        grooveStyle === "jazz" ? [-1, 0, 0, 1, 1, 1] : [-1, 0, 0, 1, 1];
+      melodyDirectionPreference =
+        directionChoices[Math.floor(Math.random() * directionChoices.length)];
+      const leapBias = grooveStyle === "jazz" ? 0.5 : 0.35;
+      melodyLeapPreference = Math.random() < leapBias ? 1 : 0;
       handleProgressionLoopComplete();
     }
   }
@@ -633,8 +718,31 @@ melodyDensity = initialDensityMin + (initialDensityMax - initialDensityMin) * 0.
     }
     
     // 簡單的旋律運動
-    const direction = Math.random() > 0.5 ? 1 : -1;
-    scalePos = Math.max(0, Math.min(scale.length - 1, scalePos + direction));
+    const upAvailable = scalePos < scale.length - 1;
+    const downAvailable = scalePos > 0;
+
+    let direction = 0;
+    if (upAvailable && downAvailable) {
+      if (melodyDirectionPreference === 1) {
+        direction = 1;
+      } else if (melodyDirectionPreference === -1) {
+        direction = -1;
+      } else {
+        const ascendBias = grooveStyle === "jazz" ? 0.6 : 0.55;
+        direction = Math.random() < ascendBias ? 1 : -1;
+      }
+    } else if (upAvailable) {
+      direction = 1;
+    } else if (downAvailable) {
+      direction = -1;
+    }
+
+    let step = 1;
+    if (melodyLeapPreference === 1 && Math.random() < 0.6) {
+      step = 2 + Math.floor(Math.random() * 2);
+    }
+
+    scalePos = clamp(scalePos + direction * step, 0, scale.length - 1);
   }
   
   function adjustVolume(delta: number) {

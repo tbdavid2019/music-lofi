@@ -93,9 +93,10 @@
     snareHitProbability: number;
     hatHitProbability: number;
     rotation: {
-      loopsRange: [number, number];
+      loopsRange?: [number, number];
       poolSize: number;
       reuseProbability: number;
+      durationRangeSeconds: [number, number];
     };
   };
 
@@ -174,6 +175,7 @@
         loopsRange: [3, 5],
         poolSize: 3,
         reuseProbability: 0.55,
+        durationRangeSeconds: [280, 320],
       },
     },
     jazz: {
@@ -235,6 +237,7 @@
         loopsRange: [3, 4],
         poolSize: 4,
         reuseProbability: 0.45,
+        durationRangeSeconds: [260, 310],
       },
     },
   };
@@ -257,6 +260,11 @@
   function randomIntInRange([min, max]: [number, number]) {
     if (max <= min) return min;
     return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+
+  function randomInRange([min, max]: [number, number]) {
+    if (max <= min) return min;
+    return Math.random() * (max - min) + min;
   }
 
   function pickKeyForStyle(
@@ -354,10 +362,25 @@
   function ensureLoopsTarget(style: GrooveStyle = grooveStyle) {
     const config = grooveStyles[style];
     loopsCompletedForProgression = 0;
-    loopsRemainingForProgression = Math.max(
-      1,
-      randomIntInRange(config.rotation.loopsRange),
-    );
+    const { rotation } = config;
+
+    if (rotation.durationRangeSeconds) {
+      const targetSeconds = randomInRange(rotation.durationRangeSeconds);
+      const barsPerLoop = Math.max(1, progression?.length ?? 8);
+      const barDuration = (60 / Tone.Transport.bpm.value) * 4;
+      const loopDurationSeconds = barDuration * barsPerLoop;
+      loopsRemainingForProgression = Math.max(
+        1,
+        Math.round(targetSeconds / loopDurationSeconds),
+      );
+    } else if (rotation.loopsRange) {
+      loopsRemainingForProgression = Math.max(
+        1,
+        randomIntInRange(rotation.loopsRange),
+      );
+    } else {
+      loopsRemainingForProgression = 4;
+    }
   }
 
   function registerStateInPool(state: ProgressionState, style: GrooveStyle = grooveStyle) {
@@ -428,7 +451,8 @@
     }
 
     if (loopsRemainingForProgression <= 0) {
-      rotateProgression({ persist: true });
+      const nextState = rotateProgression({ persist: true });
+      previewNextSegment(nextState);
     }
   }
   if (typeof window !== "undefined") {
@@ -519,6 +543,8 @@
   let hatOff = instrumentVolumes.hat === 0;
   let melodyDensity = grooveStyles[grooveStyle].melodyDensityRange[0];
   let melodyOff = false;
+  let melodyDirectionPreference: -1 | 0 | 1 = 0;
+  let melodyLeapPreference = 0;
 
   setGrooveStyle(grooveStyle, { persist: false });
 
@@ -717,6 +743,13 @@
       if (hatLoop) {
         hatLoop.events = hatPatterns[currentHatPatternIdx];
       }
+
+      const directionChoices: Array<-1 | 0 | 1> =
+        grooveStyle === "jazz" ? [-1, 0, 0, 1, 1, 1] : [-1, 0, 0, 1, 1];
+      melodyDirectionPreference =
+        directionChoices[Math.floor(Math.random() * directionChoices.length)];
+      const leapBias = grooveStyle === "jazz" ? 0.5 : 0.35;
+      melodyLeapPreference = Math.random() < leapBias ? 1 : 0;
     } else {
       progress = nextProgress;
     }
@@ -731,39 +764,87 @@
 
 
 
-  function playChord(time?: number) {
-    const chord = progression[progress];
-    const root = Tone.Frequency(key + "3").transpose(chord.semitoneDist);
+  function strumChord(
+    chord: any,
+    options: {
+      time?: number;
+      velocityScale?: number;
+      patternOverride?: StrumPattern;
+      releaseOverride?: string;
+      jitterRange?: number;
+    } = {},
+  ) {
+    if (!pn || !chord) {
+      return;
+    }
+
+    const {
+      time = Tone.now(),
+      velocityScale = 1,
+      patternOverride,
+      releaseOverride,
+      jitterRange = 0.05,
+    } = options;
+
     const config = grooveStyles[grooveStyle];
+    const pattern = patternOverride ??
+      config.strumPatterns[Math.floor(Math.random() * config.strumPatterns.length)];
+
+    const root = Tone.Frequency(key + "3").transpose(chord.semitoneDist);
     const chordSize = Math.random() < config.chordTriadChance ? 3 : 4;
     const voicing = chord.generateVoicing(chordSize);
     const notes = Tone.Frequency(root)
       .harmonize(voicing)
       .map((f) => Tone.Frequency(f).toNote());
 
-    const pattern = config.strumPatterns[Math.floor(Math.random() * config.strumPatterns.length)];
     const strumNotes = Math.random() < (pattern.invertChance ?? 0) ? [...notes].reverse() : [...notes];
-    const baseTime = typeof time === "number" ? time : Tone.now();
     strumNotes.forEach((note, idx) => {
       const baseOffset =
         pattern.offsets[idx] !== undefined
           ? pattern.offsets[idx]
           : pattern.offsets[pattern.offsets.length - 1] +
             (idx - pattern.offsets.length + 1) * (pattern.tailSpacing ?? 0.22);
-      const jitter = idx === 0 ? 0 : (Math.random() * 0.05) - 0.02;
+      const jitter = idx === 0 ? 0 : (Math.random() * jitterRange) - jitterRange / 2;
       const velocityMin = pattern.velocityRange?.[0] ?? 0.32;
       const velocityMax = pattern.velocityRange?.[1] ?? 0.46;
-      const velocity = velocityMin + Math.random() * (velocityMax - velocityMin);
-      // @ts-ignore Tone definitions don't expose triggerAttackRelease signature we use here
+      const baseVelocity = velocityMin + Math.random() * (velocityMax - velocityMin);
+      const velocity = Math.min(1, baseVelocity * velocityScale);
+      const release = releaseOverride ?? pattern.release;
+      // @ts-ignore Tone typings
       pn.triggerAttackRelease(
         note,
-        pattern.release,
-        baseTime + Math.max(0, baseOffset + jitter),
+        release,
+        Math.max(0, time + Math.max(0, baseOffset + jitter)),
         velocity,
       );
     });
+  }
+
+  const PREVIEW_OFFSET_SECONDS = 0.45;
+
+  function playChord(time?: number) {
+    const chord = progression[progress];
+    const baseTime = typeof time === "number" ? time : Tone.now();
+
+    strumChord(chord, { time: baseTime });
 
     nextChord();
+  }
+
+  function previewNextSegment(nextState: ProgressionState | undefined) {
+    if (!nextState || !nextState.progression?.length || !pn) {
+      return;
+    }
+
+    const barDuration = (60 / Tone.Transport.bpm.value) * 4;
+    const previewTime = Tone.now() + Math.max(0.05, barDuration - PREVIEW_OFFSET_SECONDS);
+    const previewChord = nextState.progression[0];
+    strumChord(previewChord, {
+      time: previewTime,
+      velocityScale: 0.65,
+      releaseOverride: "2n",
+      jitterRange: 0.03,
+    });
   }
 
   function playMelody() {
@@ -778,16 +859,39 @@
     let ascend = ascendRange > 1;
 
     if (descend && ascend) {
-      if (Math.random() > 0.5) {
-        ascend = !descend;
+      if (melodyDirectionPreference === 1) {
+        descend = false;
+      } else if (melodyDirectionPreference === -1) {
+        ascend = false;
       } else {
-        descend = !ascend;
+        const ascendBias = grooveStyle === "jazz" ? 0.6 : 0.55;
+        if (Math.random() < ascendBias) {
+          descend = false;
+        } else {
+          ascend = false;
+        }
+      }
+    }
+
+    if (!ascend && !descend) {
+      if (ascendRange > 1) {
+        ascend = true;
+      } else if (descendRange > 1) {
+        descend = true;
+      } else {
+        return;
       }
     }
 
     let weights = descend
       ? intervalWeights.slice(0, descendRange)
       : intervalWeights.slice(0, ascendRange);
+
+    if (melodyLeapPreference === 1) {
+      weights = weights.map((w, idx) => (idx >= 2 ? w * 1.6 : w * 0.65));
+    } else {
+      weights = weights.map((w, idx) => (idx <= 1 ? w * 1.25 : w * 0.85));
+    }
 
     const sum = weights.reduce((prev, curr) => prev + curr, 0);
     weights = weights.map((w) => w / sum);
@@ -806,10 +910,14 @@
       }
     }
 
+    if (scaleDist === 0 && weights.length > 1) {
+      scaleDist = 1;
+    }
+
     const scalePosChange = descend ? -scaleDist : scaleDist;
     const newScalePos = scalePos + scalePosChange;
 
-    scalePos = newScalePos;
+    scalePos = clamp(newScalePos, 0, scale.length - 1);
     
     const config = grooveStyles[grooveStyle];
     const [velocityMin, velocityMax] = config.melodyVelocityRange;

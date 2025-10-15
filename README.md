@@ -190,6 +190,40 @@ High-Pass Filter (150Hz) → Compressor → Low-Pass Filter (1200Hz) → Reverb 
 
 This system can generate **virtually infinite musical variations** while maintaining musical coherence and the characteristic LoFi aesthetic!
 
+### ☕ Café 與 🎷 Jazz 曲風概覽
+
+| 特性 | Café | Jazz |
+| --- | --- | --- |
+| 基礎 BPM | 84 | 112 |
+| Swing | 0.45（輕微搖擺） | 0.58（較大搖擺） |
+| Chord Voicing | 多為 3 聲部 triad，偶爾加入 7th | triad 與延伸音混合，偏向 7th/9th | 
+| Strum 模式 | 緩慢掃弦、反向掃弦、單音 | 多音掃弦、快節奏切分、延長音 |
+| Melody Density | 18% – 33%，以流動平穩為主 | 28% – 48%，帶有 improvisation 感 |
+| Melody Direction | 偏向向上或平移，偶爾下行 | 在同 key 或鄰近 key 上做 step/leap 結合 |
+| Progression Duration | 約 4.5–5.5 分鐘自動輪替 | 約 4–5 分鐘自動輪替 |
+
+### 🧠 長篇章編曲機制（New）
+
+為了避免「短迴圈感」，現在的生成邏輯會預先配置長達 5 分鐘的編曲片段，並在段落之間加入自然過渡：
+
+1. **段落池（Progression Pool）**  
+   - 每種曲風維持一個近似 5 分鐘的段落池，Cafe 預設 3 段、Jazz 預設 4 段。  
+   - 透過 circle-of-fifths 與相鄰 key 偏好，讓下一段 harmonic movement 更自然。  
+
+2. **自動輪替**  
+   - 每段播放時間落在設定的 `durationRangeSeconds` 範圍（約 260–320 秒）。  
+   - 播放次數或時間達標後，預載下一段並以小音量“預告”掃弦（preview strum）接上。 
+
+3. **旋律方向偏好**  
+   - 每段開始時設定一個方向偏好（上行／平行／少量下行）與 leap 機率。  
+   - Melody 會依偏好調整 interval weight，避免長時間下行造成情緒低落。  
+
+4. **鋼琴掃弦優化**  
+   - 新增 `strumChord` helper 控制 velocity、jitter、反向掃弦。  
+   - 在段落轉換前預掃新和弦，讓耳朵提前適應下一主題。  
+
+> PC 與 TV 版本共用上述音樂機制，TV 介面新增 Café/Jazz 切換鍵、響應式尺寸與同樣的長篇章播放。 
+
 ---
 
 ## 📺 TV Version
@@ -481,4 +515,3 @@ We welcome contributions from the community! If you're interested in contributin
 3. Make your changes and commit them with clear and descriptive messages.
 4. Push your changes to your fork.
 5. Open a Pull Request to the `main` branch of this repository.
-
