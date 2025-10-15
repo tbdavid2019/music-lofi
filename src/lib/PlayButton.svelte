@@ -54,7 +54,7 @@
   Tone.Master.chain(cmp, lpf, reverb, vol);
   
   // 初始化 BPM (從 localStorage 讀取或使用默認值)
-  let currentBPM = 156;
+  let currentBPM = 84;
   if (typeof window !== 'undefined') {
     const savedBPM = localStorage.getItem('LofiEngine_BPM');
     if (savedBPM) {
@@ -84,7 +84,8 @@
   }
 
   updateTransportBpm(currentBPM);
-  Tone.Transport.swing = 1;
+  Tone.Transport.swing = 0.45;
+  Tone.Transport.swingSubdivision = "8n";
 
   // State variables
   let key = "C";
@@ -126,11 +127,42 @@
     ["C4", "", "C4", "C4", "", "C4", "", "C4"],
   ];
 
+  const strumPatterns = [
+    {
+      offsets: [0, 0.24, 0.46, 0.74],
+      release: "1n",
+      velocityRange: [0.32, 0.46],
+      invertChance: 0.55,
+      tailSpacing: 0.22,
+    },
+    {
+      offsets: [0, 0.32, 0.66],
+      release: "1n",
+      velocityRange: [0.3, 0.42],
+      invertChance: 0.4,
+      tailSpacing: 0.2,
+    },
+    {
+      offsets: [0, 0.2, 0.48, 0.88],
+      release: "2n",
+      velocityRange: [0.28, 0.4],
+      invertChance: 0.5,
+      tailSpacing: 0.18,
+    },
+    {
+      offsets: [0],
+      release: "2n",
+      velocityRange: [0.26, 0.38],
+      invertChance: 0.35,
+      tailSpacing: 0.24,
+    },
+  ];
+
   // Initialize instrument on/off states based on volumes
   let kickOff = instrumentVolumes.kick === 0;
   let snareOff = instrumentVolumes.snare === 0;  // ← 預設靜音時設為 true
   let hatOff = instrumentVolumes.hat === 0;
-  let melodyDensity = 0.33;
+  let melodyDensity = 0.26;
   let melodyOff = false;
 
   let isPlaying = false;
@@ -179,10 +211,10 @@
     kickLoop = new Tone.Sequence(
       (time, note) => {
         if (!kickOff) {
-          if (note === "C4" && Math.random() < 0.9) {
+          if (note === "C4" && Math.random() < 0.65) {
             // @ts-ignore
             kick.triggerAttack(note);
-          } else if (note === "." && Math.random() < 0.1) {
+          } else if (note === "." && Math.random() < 0.05) {
             // @ts-ignore
             kick.triggerAttack("C4");
           }
@@ -195,7 +227,7 @@
     snareLoop = new Tone.Sequence(
       (time, note) => {
         if (!snareOff) {
-          if (note !== "" && Math.random() < 0.8) {
+          if (note !== "" && Math.random() < 0.5) {
             // @ts-ignore
             snare.triggerAttack(note);
           }
@@ -209,7 +241,7 @@
       (time, note) => {
         if (!hatOff) {
           // @ts-ignore
-          if (note !== "" && Math.random() < 0.8) {
+          if (note !== "" && Math.random() < 0.6) {
             // @ts-ignore
             hat.triggerAttack(note);
           }
@@ -296,11 +328,11 @@
   function nextChord() {
     const nextProgress = progress === progression.length - 1 ? 0 : progress + 1;
     
-    const nextKickOff = Math.random() < 0.15;
-    const nextSnareOff = Math.random() < 0.2;
-    const nextHatOff = Math.random() < 0.25;
-    const nextMelodyDensity = Math.random() * 0.3 + 0.2;
-    const nextMelodyOff = Math.random() < 0.25;
+    const nextKickOff = Math.random() < 0.08;
+    const nextSnareOff = Math.random() < 0.15;
+    const nextHatOff = Math.random() < 0.18;
+    const nextMelodyDensity = Math.random() * 0.15 + 0.18;
+    const nextMelodyOff = Math.random() < 0.32;
 
     if (progress === 4) {
       progress = nextProgress;
@@ -335,20 +367,32 @@
   function playChord(time?: number) {
     const chord = progression[progress];
     const root = Tone.Frequency(key + "3").transpose(chord.semitoneDist);
-    const chordSize = Math.random() < 0.35 ? 3 : 4;
+    const chordSize = Math.random() < 0.6 ? 3 : 4;
     const voicing = chord.generateVoicing(chordSize);
     const notes = Tone.Frequency(root)
       .harmonize(voicing)
       .map((f) => Tone.Frequency(f).toNote());
 
-    const strumNotes = Math.random() < 0.5 ? [...notes] : [...notes].reverse();
+    const pattern = strumPatterns[Math.floor(Math.random() * strumPatterns.length)];
+    const strumNotes = Math.random() < (pattern.invertChance ?? 0) ? [...notes].reverse() : [...notes];
     const baseTime = typeof time === "number" ? time : Tone.now();
-    const strumSpacing = 0.06 + Math.random() * 0.02;
-    strumNotes.forEach((note, i) => {
-      const jitter = i === 0 ? 0 : (Math.random() * 0.035) - 0.015;
-      const velocity = 0.46 + Math.random() * 0.18;
-      const delay = i === 0 ? 0 : i * strumSpacing + jitter;
-      pn.triggerAttackRelease(note, "1n", baseTime + delay, velocity);
+    strumNotes.forEach((note, idx) => {
+      const baseOffset =
+        pattern.offsets[idx] !== undefined
+          ? pattern.offsets[idx]
+          : pattern.offsets[pattern.offsets.length - 1] +
+            (idx - pattern.offsets.length + 1) * (pattern.tailSpacing ?? 0.22);
+      const jitter = idx === 0 ? 0 : (Math.random() * 0.05) - 0.02;
+      const velocityMin = pattern.velocityRange?.[0] ?? 0.32;
+      const velocityMax = pattern.velocityRange?.[1] ?? 0.46;
+      const velocity = velocityMin + Math.random() * (velocityMax - velocityMin);
+      // @ts-ignore Tone definitions don't expose triggerAttackRelease signature we use here
+      pn.triggerAttackRelease(
+        note,
+        pattern.release,
+        baseTime + Math.max(0, baseOffset + jitter),
+        velocity,
+      );
     });
 
     nextChord();
@@ -400,8 +444,9 @@
     scalePos = newScalePos;
     
     // 降低旋律音量，讓它更柔和
-    const melodyVelocity = 0.25 + Math.random() * 0.22; // 0.25-0.47
-    const melodyDuration = Math.random() < 0.4 ? "4n" : "2n";
+    const melodyVelocity = 0.2 + Math.random() * 0.15; // 0.2-0.35
+    const durationRoll = Math.random();
+    const melodyDuration = durationRoll < 0.25 ? "8n" : durationRoll < 0.75 ? "4n" : "2n";
     
     // @ts-ignore
     pn.triggerAttackRelease(scale[newScalePos], melodyDuration, undefined, melodyVelocity);

@@ -15,7 +15,7 @@
   let autoPlayReady = false;
   
   // 響應式 BPM 顯示 - 初始化時讀取 localStorage
-  let currentBPM = 156;
+  let currentBPM = 84;
   if (typeof window !== 'undefined') {
     const savedBPM = localStorage.getItem('LofiEngine_BPM');
     if (savedBPM) {
@@ -35,7 +35,7 @@
       localStorage.setItem('LofiEngine_BPM', newBpm.toString());
     }
   }
-  
+
   // 音樂狀態
   let key = "C";
   let progression = [];
@@ -43,6 +43,8 @@
   let progress = 0;
   let scalePos = 0;
   let activeProgressionIndex = 0;
+  let melodyDensity = 0.26;
+  let melodyOff = false;
   
   // 簡化的樂器
   let pianoLoaded = false;
@@ -56,7 +58,38 @@
   
   // 音量節點引用 (在 startAudioContext 中初始化)
   let volumeNode: any = null;
-  
+
+  const strumPatterns = [
+    {
+      offsets: [0, 0.24, 0.46, 0.74],
+      release: "1n",
+      velocityRange: [0.32, 0.46],
+      invertChance: 0.55,
+      tailSpacing: 0.22,
+    },
+    {
+      offsets: [0, 0.32, 0.66],
+      release: "1n",
+      velocityRange: [0.3, 0.42],
+      invertChance: 0.4,
+      tailSpacing: 0.2,
+    },
+    {
+      offsets: [0, 0.2, 0.48, 0.88],
+      release: "2n",
+      velocityRange: [0.28, 0.4],
+      invertChance: 0.5,
+      tailSpacing: 0.18,
+    },
+    {
+      offsets: [0],
+      release: "2n",
+      velocityRange: [0.26, 0.38],
+      invertChance: 0.35,
+      tailSpacing: 0.24,
+    },
+  ];
+
   // 初始化 Tone.js 音樂引擎
   async function startAudioContext() {
     if (contextStarted) return;
@@ -81,9 +114,11 @@
       const lpf = new Tone.Filter(2000, "lowpass");
       volumeNode = new Tone.Volume(linearToDb(volume));
       Tone.Master.chain(cmp, lpf, volumeNode);
+      Tone.Transport.swing = 0.45;
+      Tone.Transport.swingSubdivision = "8n";
       
       // 初始化 BPM (從 localStorage 讀取或使用默認值)
-      let savedBPM = 156;
+      let savedBPM = 84;
       if (typeof window !== 'undefined') {
         const bpmFromStorage = localStorage.getItem('LofiEngine_BPM');
         if (bpmFromStorage) {
@@ -115,7 +150,7 @@
     // 和弦序列 - 原作者版本
     chords = new Tone.Sequence(
       (time, note) => {
-        playChord();
+        playChord(time);
       },
       [""],
       "1n",
@@ -193,39 +228,63 @@
     console.log(`🎵 新的進行生成: ${key} 調`);
   }
   
-  function playChord() {
+  function playChord(time?: number) {
     if (!pianoLoaded || !progression[progress]) return;
     
     const chord = progression[progress];
-    
     // @ts-ignore
     const root = Tone.Frequency(key + "3").transpose(chord.semitoneDist);
-    const size = 4;
+    const chordSize = Math.random() < 0.6 ? 3 : 4;
     // @ts-ignore
-    const voicing = chord.generateVoicing(size);
+    const voicing = chord.generateVoicing(chordSize);
     // @ts-ignore
     const notes = Tone.Frequency(root)
       .harmonize(voicing)
       .map((f: any) => Tone.Frequency(f).toNote());
-    
-    // @ts-ignore
-    pn.triggerAttackRelease(notes, "1n");
+    const pattern = strumPatterns[Math.floor(Math.random() * strumPatterns.length)];
+    const strumNotes = Math.random() < (pattern.invertChance ?? 0) ? [...notes].reverse() : [...notes];
+    const baseTime = typeof time === "number" ? time : Tone.now();
+    strumNotes.forEach((note, idx) => {
+      const baseOffset =
+        pattern.offsets[idx] !== undefined
+          ? pattern.offsets[idx]
+          : pattern.offsets[pattern.offsets.length - 1] +
+            (idx - pattern.offsets.length + 1) * (pattern.tailSpacing ?? 0.22);
+      const jitter = idx === 0 ? 0 : (Math.random() * 0.05) - 0.02;
+      const velocityMin = pattern.velocityRange?.[0] ?? 0.32;
+      const velocityMax = pattern.velocityRange?.[1] ?? 0.46;
+      const velocity = velocityMin + Math.random() * (velocityMax - velocityMin);
+      // @ts-ignore Tone definitions don't expose triggerAttackRelease signature we use here
+      pn.triggerAttackRelease(
+        note,
+        pattern.release,
+        baseTime + Math.max(0, baseOffset + jitter),
+        velocity,
+      );
+    });
     
     nextChord();
   }
-  
+
   function nextChord() {
     activeProgressionIndex = progress;
     progress = progress === progression.length - 1 ? 0 : progress + 1;
+    if (progress === 0) {
+      melodyDensity = Math.random() * 0.15 + 0.18;
+      melodyOff = Math.random() < 0.32;
+    }
   }
-  
+
   function playMelody() {
-    if (!pianoLoaded || Math.random() < 0.7) return; // 30% 機率播放旋律
+    if (!pianoLoaded || melodyOff || Math.random() >= melodyDensity) return;
     
     const note = scale[scalePos];
     if (note) {
+      const durationRoll = Math.random();
+      const melodyDuration = durationRoll < 0.25 ? "8n" : durationRoll < 0.75 ? "4n" : "2n";
+      const melodyVelocity = 0.2 + Math.random() * 0.15;
       // @ts-ignore
-      pn.triggerAttackRelease(note, "2n");
+      pn.triggerAttackRelease(note, melodyDuration, undefined, melodyVelocity);
     }
     
     // 簡單的旋律運動
