@@ -16,12 +16,7 @@
   
   // 響應式 BPM 顯示 - 初始化時讀取 localStorage
   let currentBPM = 84;
-  if (typeof window !== 'undefined') {
-    const savedBPM = localStorage.getItem('LofiEngine_BPM');
-    if (savedBPM) {
-      currentBPM = parseInt(savedBPM);
-    }
-  }
+  let grooveStyle: GrooveStyle = "cafe";
 
   function updateTransportBpm(newBpm: number, persist = false) {
     if (typeof newBpm !== 'number' || Number.isNaN(newBpm)) {
@@ -45,6 +40,8 @@
   let activeProgressionIndex = 0;
   let melodyDensity = 0.26;
   let melodyOff = false;
+  let loopsRemainingForProgression = 0;
+  let loopsCompletedForProgression = 0;
   
   // 簡化的樂器
   let pianoLoaded = false;
@@ -59,36 +56,383 @@
   // 音量節點引用 (在 startAudioContext 中初始化)
   let volumeNode: any = null;
 
-  const strumPatterns = [
-    {
-      offsets: [0, 0.24, 0.46, 0.74],
-      release: "1n",
-      velocityRange: [0.32, 0.46],
-      invertChance: 0.55,
-      tailSpacing: 0.22,
-    },
-    {
-      offsets: [0, 0.32, 0.66],
-      release: "1n",
-      velocityRange: [0.3, 0.42],
-      invertChance: 0.4,
-      tailSpacing: 0.2,
-    },
-    {
-      offsets: [0, 0.2, 0.48, 0.88],
-      release: "2n",
-      velocityRange: [0.28, 0.4],
-      invertChance: 0.5,
-      tailSpacing: 0.18,
-    },
-    {
-      offsets: [0],
-      release: "2n",
-      velocityRange: [0.26, 0.38],
-      invertChance: 0.35,
-      tailSpacing: 0.24,
-    },
+  type GrooveStyle = "cafe" | "jazz";
+
+  type StrumPattern = {
+    offsets: number[];
+    release: string;
+    velocityRange: [number, number];
+    invertChance?: number;
+    tailSpacing?: number;
+  };
+
+  type MelodyDurationOption = {
+    duration: string;
+    weight: number;
+  };
+
+  type GrooveStyleConfig = {
+    displayName: string;
+    defaultBpm: number;
+    swing: number;
+    swingSubdivision: string;
+    strumPatterns: StrumPattern[];
+    chordTriadChance: number;
+    melodyDensityRange: [number, number];
+    melodyOffChance: number;
+    melodyVelocityRange: [number, number];
+    melodyDurationOptions: MelodyDurationOption[];
+    rotation: {
+      loopsRange: [number, number];
+      reuseProbability: number;
+      poolSize?: number;
+    };
+  };
+
+  const GROOVE_STYLE_KEY = "LofiEngine_TV_GrooveStyle";
+
+  const KEY_RING = [
+    "C",
+    "G",
+    "D",
+    "A",
+    "E",
+    "B",
+    "Gb",
+    "Db",
+    "Ab",
+    "Eb",
+    "Bb",
+    "F",
   ];
+
+const grooveStyles: Record<GrooveStyle, GrooveStyleConfig> = {
+  cafe: {
+    displayName: "Cafe",
+    defaultBpm: 84,
+    swing: 0.45,
+    swingSubdivision: "8n",
+    strumPatterns: [
+      {
+        offsets: [0, 0.24, 0.46, 0.74],
+        release: "1n",
+        velocityRange: [0.32, 0.46],
+        invertChance: 0.55,
+        tailSpacing: 0.22,
+      },
+      {
+        offsets: [0, 0.32, 0.66],
+        release: "1n",
+        velocityRange: [0.3, 0.42],
+        invertChance: 0.4,
+        tailSpacing: 0.2,
+      },
+      {
+        offsets: [0, 0.2, 0.48, 0.88],
+        release: "2n",
+        velocityRange: [0.28, 0.4],
+        invertChance: 0.5,
+        tailSpacing: 0.18,
+      },
+      {
+        offsets: [0],
+        release: "2n",
+        velocityRange: [0.26, 0.38],
+        invertChance: 0.35,
+        tailSpacing: 0.24,
+      },
+    ],
+    chordTriadChance: 0.6,
+    melodyDensityRange: [0.18, 0.33],
+    melodyOffChance: 0.32,
+    melodyVelocityRange: [0.2, 0.35],
+    melodyDurationOptions: [
+      { duration: "8n", weight: 1 },
+      { duration: "4n", weight: 2 },
+      { duration: "2n", weight: 1 },
+    ],
+    rotation: {
+      loopsRange: [3, 5],
+      reuseProbability: 0.55,
+    },
+  },
+  jazz: {
+    displayName: "Jazz",
+    defaultBpm: 112,
+    swing: 0.58,
+    swingSubdivision: "8n",
+    strumPatterns: [
+      {
+        offsets: [0, 0.18, 0.34, 0.58, 0.82],
+        release: "1n",
+        velocityRange: [0.34, 0.52],
+        invertChance: 0.45,
+        tailSpacing: 0.18,
+      },
+      {
+        offsets: [0, 0.22, 0.41, 0.63],
+        release: "1n",
+        velocityRange: [0.36, 0.54],
+        invertChance: 0.6,
+        tailSpacing: 0.18,
+      },
+      {
+        offsets: [0, 0.27, 0.5],
+        release: "2n",
+        velocityRange: [0.3, 0.48],
+        invertChance: 0.4,
+        tailSpacing: 0.24,
+      },
+      {
+        offsets: [0, 0.15, 0.44, 0.74],
+        release: "1n",
+        velocityRange: [0.35, 0.5],
+        invertChance: 0.5,
+        tailSpacing: 0.2,
+      },
+    ],
+    chordTriadChance: 0.35,
+    melodyDensityRange: [0.28, 0.48],
+    melodyOffChance: 0.18,
+    melodyVelocityRange: [0.28, 0.48],
+    melodyDurationOptions: [
+      { duration: "8n", weight: 2.5 },
+      { duration: "4n", weight: 2 },
+      { duration: "2n", weight: 0.8 },
+    ],
+    rotation: {
+      loopsRange: [3, 4],
+      reuseProbability: 0.45,
+    },
+  },
+};
+
+if (typeof window !== 'undefined') {
+  const savedBPM = localStorage.getItem('LofiEngine_BPM');
+  if (savedBPM) {
+    currentBPM = parseInt(savedBPM);
+  }
+  const savedStyle = localStorage.getItem(GROOVE_STYLE_KEY);
+  if (savedStyle === "cafe" || savedStyle === "jazz") {
+    grooveStyle = savedStyle;
+  }
+}
+
+const initialConfig = grooveStyles[grooveStyle];
+const [initialDensityMin, initialDensityMax] = initialConfig.melodyDensityRange;
+melodyDensity = initialDensityMin + (initialDensityMax - initialDensityMin) * 0.5;
+
+  type ProgressionState = {
+    key: string;
+    progression: ReturnType<typeof ChordProgression.generate>;
+    scale: string[];
+    scalePos: number;
+    style: GrooveStyle;
+  };
+
+  let progressionPool: ProgressionState[] = [];
+  let progressionPoolIndex = -1;
+
+  function randomIntInRange([min, max]: [number, number]) {
+    if (max <= min) return min;
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+
+  function clamp(value: number, min: number, max: number) {
+    return Math.min(max, Math.max(min, value));
+  }
+
+  function pickKeyForStyle(style: GrooveStyle, previous?: ProgressionState) {
+    const fallback = Keys[Math.floor(Math.random() * Keys.length)];
+
+    if (!previous) return fallback;
+
+    if (style === "jazz") {
+      const stayChance = 0.6;
+      const neighborChance = 0.8;
+      if (Math.random() < stayChance) {
+        return previous.key;
+      }
+      const ringIndex = KEY_RING.indexOf(previous.key);
+      if (ringIndex !== -1 && Math.random() < neighborChance) {
+        const left = KEY_RING[(ringIndex + KEY_RING.length - 1) % KEY_RING.length];
+        const right = KEY_RING[(ringIndex + 1) % KEY_RING.length];
+        return Math.random() < 0.5 ? left : right;
+      }
+      return fallback;
+    }
+
+    if (Math.random() < 0.45) {
+      return previous.key;
+    }
+
+    const idx = Keys.indexOf(previous.key);
+    if (idx !== -1 && Keys.length > 2) {
+      const neighborOffsets = [-2, -1, 1, 2];
+      const offset = neighborOffsets[Math.floor(Math.random() * neighborOffsets.length)];
+      const nextIdx = (idx + Keys.length + offset) % Keys.length;
+      return Keys[nextIdx];
+    }
+
+    return fallback;
+  }
+
+  function createProgressionState(style: GrooveStyle, previous?: ProgressionState): ProgressionState {
+    const _scale = fiveToFive;
+    const nextKey = pickKeyForStyle(style, previous);
+    const nextScale = Tone.Frequency(nextKey + "5")
+      .harmonize(_scale)
+      .map((f: any) => Tone.Frequency(f).toNote());
+    const nextProgression = ChordProgression.generate(8);
+
+    let nextScalePos = Math.floor(Math.random() * _scale.length);
+    if (previous && previous.key === nextKey) {
+      const deltaCandidates = [-2, -1, 0, 1, 2];
+      const delta = deltaCandidates[Math.floor(Math.random() * deltaCandidates.length)];
+      nextScalePos = clamp(previous.scalePos + delta, 0, _scale.length - 1);
+    }
+
+    return {
+      key: nextKey,
+      progression: nextProgression,
+      scale: nextScale,
+      scalePos: nextScalePos,
+      style,
+    };
+  }
+
+  function captureProgression(): ProgressionState {
+    return {
+      key,
+      progression,
+      scale,
+      scalePos,
+      style: grooveStyle,
+    };
+  }
+
+  function applyProgression(state: ProgressionState, persist = true) {
+    key = state.key;
+    progression = state.progression;
+    scale = state.scale;
+    scalePos = state.scalePos;
+    progress = 0;
+    genChordsOnce = true;
+    activeProgressionIndex = 0;
+
+    if (persist && typeof window !== 'undefined') {
+      // Persist key to keep UI consistent with Play version expectations
+      window.dispatchEvent(new CustomEvent('keyChange', { detail: key }));
+    }
+
+    const config = grooveStyles[grooveStyle];
+    const [densityMin, densityMax] = config.melodyDensityRange;
+    melodyDensity = densityMin + (densityMax - densityMin) * 0.5;
+    melodyOff = false;
+  }
+
+  function ensureLoopsTarget(style: GrooveStyle = grooveStyle) {
+    const config = grooveStyles[style];
+    loopsCompletedForProgression = 0;
+    loopsRemainingForProgression = Math.max(
+      1,
+      randomIntInRange(config.rotation.loopsRange),
+    );
+  }
+
+  function registerProgression(state: ProgressionState) {
+    progressionPool.push(state);
+    const config = grooveStyles[state.style];
+    const maxSize = config.rotation.poolSize ?? 3;
+    while (progressionPool.length > maxSize) {
+      progressionPool.shift();
+      progressionPoolIndex = Math.max(-1, progressionPoolIndex - 1);
+    }
+    progressionPoolIndex = progressionPool.length - 1;
+  }
+
+  function rotateProgression(forceNew = false) {
+    const config = grooveStyles[grooveStyle];
+    const currentSnapshot = progression.length ? captureProgression() : undefined;
+
+    const candidates = progressionPool
+      .map((state, idx) => ({ state, idx }))
+      .filter(({ state, idx }) => idx !== progressionPoolIndex && state.style === grooveStyle);
+
+    let nextState: ProgressionState | undefined;
+
+    const canReuse = candidates.length > 0 && Math.random() < config.rotation.reuseProbability;
+
+    if (!forceNew && canReuse) {
+      const reusePick = candidates[Math.floor(Math.random() * candidates.length)];
+      nextState = reusePick.state;
+      progressionPoolIndex = reusePick.idx;
+    }
+
+    if (!nextState) {
+      nextState = createProgressionState(grooveStyle, currentSnapshot);
+      registerProgression(nextState);
+    }
+
+    applyProgression(nextState, true);
+    ensureLoopsTarget(grooveStyle);
+  }
+
+  function handleProgressionLoopComplete() {
+    loopsCompletedForProgression += 1;
+    if (loopsRemainingForProgression > 0) {
+      loopsRemainingForProgression -= 1;
+    }
+
+    if (loopsRemainingForProgression <= 0) {
+      rotateProgression(false);
+    }
+  }
+
+  function setGrooveStyle(
+    style: GrooveStyle,
+    options: { resetBpm?: boolean; persist?: boolean; preserveDynamics?: boolean } = {},
+  ) {
+    const { resetBpm = false, persist = true, preserveDynamics = false } = options;
+
+    const previous = grooveStyle;
+    grooveStyle = style;
+    const config = grooveStyles[style];
+
+    Tone.Transport.swing = config.swing;
+    Tone.Transport.swingSubdivision = config.swingSubdivision as any;
+
+    if (resetBpm) {
+      updateTransportBpm(config.defaultBpm, true);
+    }
+
+    if (!preserveDynamics) {
+      const [densityMin, densityMax] = config.melodyDensityRange;
+      melodyDensity = densityMin + (densityMax - densityMin) * 0.5;
+      melodyOff = false;
+    }
+
+    const needFreshPool = previous !== style || progressionPool.length === 0;
+
+    if (needFreshPool) {
+      progressionPool = [];
+      progressionPoolIndex = -1;
+      loopsRemainingForProgression = 0;
+      loopsCompletedForProgression = 0;
+      rotateProgression(true);
+    } else {
+      ensureLoopsTarget(style);
+    }
+
+    if (persist && typeof window !== 'undefined') {
+      localStorage.setItem(GROOVE_STYLE_KEY, style);
+    }
+  }
+
+  function toggleGrooveStyle() {
+    const nextStyle: GrooveStyle = grooveStyle === "cafe" ? "jazz" : "cafe";
+    setGrooveStyle(nextStyle, { resetBpm: true });
+  }
 
   // 初始化 Tone.js 音樂引擎
   async function startAudioContext() {
@@ -114,8 +458,6 @@
       const lpf = new Tone.Filter(2000, "lowpass");
       volumeNode = new Tone.Volume(linearToDb(volume));
       Tone.Master.chain(cmp, lpf, volumeNode);
-      Tone.Transport.swing = 0.45;
-      Tone.Transport.swingSubdivision = "8n";
       
       // 初始化 BPM (從 localStorage 讀取或使用默認值)
       let savedBPM = 84;
@@ -130,7 +472,7 @@
       console.log(`🎵 TV版音頻初始化 BPM: ${savedBPM}`);
       
       setupSequences();
-      generateProgression();
+      setGrooveStyle(grooveStyle, { persist: false, preserveDynamics: true });
       
       // 初始化完成後，再次檢查最新的 BPM 設定
       setTimeout(() => {
@@ -193,7 +535,7 @@
 
   function startMusic() {
     if (!genChordsOnce) {
-      generateProgression();
+      rotateProgression(true);
     }
     Tone.Transport.start();
     chords.start(0);
@@ -205,26 +547,7 @@
   }
   
   function generateProgression() {
-    const _scale = fiveToFive;
-    const newKey = Keys[Math.floor(Math.random() * Keys.length)];
-    // @ts-ignore
-    const newScale = Tone.Frequency(newKey + "5")
-      .harmonize(_scale)
-      .map((f: any) => Tone.Frequency(f).toNote());
-    // @ts-ignore
-    const newProgression = ChordProgression.generate(8);
-    const newScalePos = Math.floor(Math.random() * _scale.length);
-
-    key = newKey;
-    progress = 0;
-    progression = newProgression;
-    scale = newScale;
-    genChordsOnce = true;
-    scalePos = newScalePos;
-    
-    // 發送調性變更事件
-    window.dispatchEvent(new CustomEvent('keyChange', { detail: newKey }));
-    
+    rotateProgression(true);
     console.log(`🎵 新的進行生成: ${key} 調`);
   }
   
@@ -232,16 +555,18 @@
     if (!pianoLoaded || !progression[progress]) return;
     
     const chord = progression[progress];
+    const config = grooveStyles[grooveStyle];
     // @ts-ignore
     const root = Tone.Frequency(key + "3").transpose(chord.semitoneDist);
-    const chordSize = Math.random() < 0.6 ? 3 : 4;
+    const chordSize = Math.random() < config.chordTriadChance ? 3 : 4;
     // @ts-ignore
     const voicing = chord.generateVoicing(chordSize);
     // @ts-ignore
     const notes = Tone.Frequency(root)
       .harmonize(voicing)
       .map((f: any) => Tone.Frequency(f).toNote());
-    const pattern = strumPatterns[Math.floor(Math.random() * strumPatterns.length)];
+    const patterns = config.strumPatterns;
+    const pattern = patterns[Math.floor(Math.random() * patterns.length)];
     const strumNotes = Math.random() < (pattern.invertChance ?? 0) ? [...notes].reverse() : [...notes];
     const baseTime = typeof time === "number" ? time : Tone.now();
     strumNotes.forEach((note, idx) => {
@@ -267,11 +592,18 @@
   }
 
   function nextChord() {
+    const config = grooveStyles[grooveStyle];
+    const nextProgress = progress === progression.length - 1 ? 0 : progress + 1;
+    const wraps = nextProgress === 0;
+
     activeProgressionIndex = progress;
-    progress = progress === progression.length - 1 ? 0 : progress + 1;
-    if (progress === 0) {
-      melodyDensity = Math.random() * 0.15 + 0.18;
-      melodyOff = Math.random() < 0.32;
+    progress = nextProgress;
+
+    if (wraps) {
+      const [densityMin, densityMax] = config.melodyDensityRange;
+      melodyDensity = densityMin + Math.random() * (densityMax - densityMin);
+      melodyOff = Math.random() < config.melodyOffChance;
+      handleProgressionLoopComplete();
     }
   }
 
@@ -280,9 +612,22 @@
     
     const note = scale[scalePos];
     if (note) {
-      const durationRoll = Math.random();
-      const melodyDuration = durationRoll < 0.25 ? "8n" : durationRoll < 0.75 ? "4n" : "2n";
-      const melodyVelocity = 0.2 + Math.random() * 0.15;
+      const config = grooveStyles[grooveStyle];
+      const [velocityMin, velocityMax] = config.melodyVelocityRange;
+      const melodyVelocity = velocityMin + Math.random() * (velocityMax - velocityMin);
+      const totalWeight = config.melodyDurationOptions.reduce(
+        (sum, option) => sum + option.weight,
+        0,
+      );
+      let roll = Math.random() * totalWeight;
+      let melodyDuration = config.melodyDurationOptions[config.melodyDurationOptions.length - 1].duration;
+      for (const option of config.melodyDurationOptions) {
+        roll -= option.weight;
+        if (roll <= 0) {
+          melodyDuration = option.duration;
+          break;
+        }
+      }
       // @ts-ignore
       pn.triggerAttackRelease(note, melodyDuration, undefined, melodyVelocity);
     }
@@ -367,6 +712,19 @@
     <!-- 重新生成按鈕 -->
     <button class="control-btn" on:click={generateProgression} disabled={!contextStarted}>
       🔄 重新生成
+    </button>
+    <button
+      class="control-btn style-toggle"
+      on:click={toggleGrooveStyle}
+      disabled={!contextStarted}
+      aria-pressed={grooveStyle === 'jazz'}
+      title={`切換至 ${grooveStyle === 'cafe' ? 'Jazz' : 'Cafe'} 風格`}
+    >
+      {#if grooveStyle === 'cafe'}
+        ☕ Cafe
+      {:else}
+        🎷 Jazz
+      {/if}
     </button>
   </div>
   
@@ -525,6 +883,11 @@
       width: 190px;
       height: 130px;
     }
+
+    .control-btn.style-toggle {
+      width: 150px;
+      height: 100px;
+    }
     
     .play-text {
       font-size: 1.3rem;
@@ -558,6 +921,11 @@
       width: 170px;
       height: 110px;
       font-size: 1rem;
+    }
+
+    .control-btn.style-toggle {
+      width: 130px;
+      height: 90px;
     }
     
     .play-text {
@@ -636,6 +1004,11 @@
       height: 100px;
       font-size: 0.95rem;
     }
+
+    .control-btn.style-toggle {
+      width: 120px;
+      height: 85px;
+    }
     
     .volume-control {
       font-size: 1.1rem;
@@ -704,6 +1077,11 @@
       width: 130px;
       height: 90px;
       font-size: 0.85rem;
+    }
+
+    .control-btn.style-toggle {
+      width: 110px;
+      height: 75px;
     }
     
     .volume-control {
@@ -809,6 +1187,16 @@
     transform: scale(1.05);
   }
 
+  .style-toggle {
+    width: 140px;
+    height: 80px;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+  }
+
   .control-btn:active {
     transform: scale(0.98);
   }
@@ -869,6 +1257,11 @@
     
     .control-btn {
       width: 140px;
+    }
+
+    .control-btn.style-toggle {
+      width: 120px;
+      height: 80px;
     }
   }
 </style>

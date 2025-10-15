@@ -52,9 +52,395 @@
   reverb.generate?.().catch?.(() => {});
   const vol = new Tone.Volume(linearToDb(volumes.main_track) + 3); // 只提升 3dB
   Tone.Master.chain(cmp, lpf, reverb, vol);
+
+  const GROOVE_STYLE_KEY = "LofiEngine_GrooveStyle";
+
+  type GrooveStyle = "cafe" | "jazz";
+
+  type StrumPattern = {
+    offsets: number[];
+    release: string;
+    velocityRange: [number, number];
+    invertChance?: number;
+    tailSpacing?: number;
+  };
+
+  type MelodyDurationOption = {
+    duration: string;
+    weight: number;
+  };
+
+  type GrooveStyleConfig = {
+    displayName: string;
+    defaultBpm: number;
+    swing: number;
+    swingSubdivision: string;
+    strumPatterns: StrumPattern[];
+    chordTriadChance: number;
+    melodyDensityRange: [number, number];
+    melodyOffChance: number;
+    melodyVelocityRange: [number, number];
+    melodyDurationOptions: MelodyDurationOption[];
+    muteChances: {
+      kick: number;
+      snare: number;
+      hat: number;
+    };
+    kickProbabilities: {
+      main: number;
+      ghost: number;
+    };
+    snareHitProbability: number;
+    hatHitProbability: number;
+    rotation: {
+      loopsRange: [number, number];
+      poolSize: number;
+      reuseProbability: number;
+    };
+  };
+
+  const KEY_RING = [
+    "C",
+    "G",
+    "D",
+    "A",
+    "E",
+    "B",
+    "Gb",
+    "Db",
+    "Ab",
+    "Eb",
+    "Bb",
+    "F",
+  ];
+
+  const grooveStyles: Record<GrooveStyle, GrooveStyleConfig> = {
+    cafe: {
+      displayName: "Cafe",
+      defaultBpm: 84,
+      swing: 0.45,
+      swingSubdivision: "8n",
+      strumPatterns: [
+        {
+          offsets: [0, 0.24, 0.46, 0.74],
+          release: "1n",
+          velocityRange: [0.32, 0.46],
+          invertChance: 0.55,
+          tailSpacing: 0.22,
+        },
+        {
+          offsets: [0, 0.32, 0.66],
+          release: "1n",
+          velocityRange: [0.3, 0.42],
+          invertChance: 0.4,
+          tailSpacing: 0.2,
+        },
+        {
+          offsets: [0, 0.2, 0.48, 0.88],
+          release: "2n",
+          velocityRange: [0.28, 0.4],
+          invertChance: 0.5,
+          tailSpacing: 0.18,
+        },
+        {
+          offsets: [0],
+          release: "2n",
+          velocityRange: [0.26, 0.38],
+          invertChance: 0.35,
+          tailSpacing: 0.24,
+        },
+      ],
+      chordTriadChance: 0.6,
+      melodyDensityRange: [0.18, 0.33],
+      melodyOffChance: 0.32,
+      melodyVelocityRange: [0.2, 0.35],
+      melodyDurationOptions: [
+        { duration: "8n", weight: 1 },
+        { duration: "4n", weight: 2 },
+        { duration: "2n", weight: 1 },
+      ],
+      muteChances: {
+        kick: 0.08,
+        snare: 0.15,
+        hat: 0.18,
+      },
+      kickProbabilities: {
+        main: 0.65,
+        ghost: 0.05,
+      },
+      snareHitProbability: 0.5,
+      hatHitProbability: 0.6,
+      rotation: {
+        loopsRange: [3, 5],
+        poolSize: 3,
+        reuseProbability: 0.55,
+      },
+    },
+    jazz: {
+      displayName: "Jazz",
+      defaultBpm: 112,
+      swing: 0.58,
+      swingSubdivision: "8n",
+      strumPatterns: [
+        {
+          offsets: [0, 0.18, 0.34, 0.58, 0.82],
+          release: "1n",
+          velocityRange: [0.34, 0.52],
+          invertChance: 0.45,
+          tailSpacing: 0.18,
+        },
+        {
+          offsets: [0, 0.22, 0.41, 0.63],
+          release: "1n",
+          velocityRange: [0.36, 0.54],
+          invertChance: 0.6,
+          tailSpacing: 0.18,
+        },
+        {
+          offsets: [0, 0.27, 0.5],
+          release: "2n",
+          velocityRange: [0.3, 0.48],
+          invertChance: 0.4,
+          tailSpacing: 0.24,
+        },
+        {
+          offsets: [0, 0.15, 0.44, 0.74],
+          release: "1n",
+          velocityRange: [0.35, 0.5],
+          invertChance: 0.5,
+          tailSpacing: 0.2,
+        },
+      ],
+      chordTriadChance: 0.35,
+      melodyDensityRange: [0.28, 0.48],
+      melodyOffChance: 0.18,
+      melodyVelocityRange: [0.28, 0.48],
+      melodyDurationOptions: [
+        { duration: "8n", weight: 2.5 },
+        { duration: "4n", weight: 2 },
+        { duration: "2n", weight: 0.8 },
+      ],
+      muteChances: {
+        kick: 0.05,
+        snare: 0.1,
+        hat: 0.12,
+      },
+      kickProbabilities: {
+        main: 0.45,
+        ghost: 0.18,
+      },
+      snareHitProbability: 0.4,
+      hatHitProbability: 0.7,
+      rotation: {
+        loopsRange: [3, 4],
+        poolSize: 4,
+        reuseProbability: 0.45,
+      },
+    },
+  };
+
+  type ProgressionState = {
+    key: string;
+    progression: ReturnType<typeof ChordProgression.generate>;
+    scale: string[];
+    scalePos: number;
+    style: GrooveStyle;
+  };
+
+  let grooveStyle: GrooveStyle = "cafe";
+
+  let progressionPool: ProgressionState[] = [];
+  let progressionPoolIndex = -1;
+  let loopsRemainingForProgression = 0;
+  let loopsCompletedForProgression = 0;
+
+  function randomIntInRange([min, max]: [number, number]) {
+    if (max <= min) return min;
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+
+  function pickKeyForStyle(
+    style: GrooveStyle,
+    previous?: ProgressionState,
+  ): string {
+    const defaultKey = Keys[Math.floor(Math.random() * Keys.length)];
+
+    if (!previous) {
+      return defaultKey;
+    }
+
+    if (style === "jazz") {
+      const keepSameProbability = 0.6;
+      const neighborProbability = 0.8;
+
+      if (Math.random() < keepSameProbability) {
+        return previous.key;
+      }
+
+      const ringIndex = KEY_RING.indexOf(previous.key);
+      if (ringIndex !== -1 && Math.random() < neighborProbability) {
+        const left = KEY_RING[(ringIndex + KEY_RING.length - 1) % KEY_RING.length];
+        const right = KEY_RING[(ringIndex + 1) % KEY_RING.length];
+        return Math.random() < 0.5 ? left : right;
+      }
+
+      return defaultKey;
+    }
+
+    // Cafe: bias to staying close but allow more randomness
+    const stayChance = 0.45;
+    if (Math.random() < stayChance) {
+      return previous.key;
+    }
+
+    const idx = Keys.indexOf(previous.key);
+    if (idx !== -1 && Keys.length > 2) {
+      const neighborOffsets = [-2, -1, 1, 2];
+      const offset = neighborOffsets[Math.floor(Math.random() * neighborOffsets.length)];
+      const nextIdx = (idx + Keys.length + offset) % Keys.length;
+      return Keys[nextIdx];
+    }
+
+    return defaultKey;
+  }
+
+  function clamp(value: number, min: number, max: number) {
+    return Math.min(max, Math.max(min, value));
+  }
+
+  function createProgressionState(
+    style: GrooveStyle = grooveStyle,
+    previous?: ProgressionState,
+  ): ProgressionState {
+    const _scale = fiveToFive;
+    const newKey = pickKeyForStyle(style, previous);
+    const newScale = Tone.Frequency(newKey + "5")
+      .harmonize(_scale)
+      .map((f) => Tone.Frequency(f).toNote());
+    const newProgression = ChordProgression.generate(8);
+
+    let newScalePos = Math.floor(Math.random() * _scale.length);
+    if (previous && previous.key === newKey) {
+      const deltaOptions = [-2, -1, 0, 1, 2];
+      const delta = deltaOptions[Math.floor(Math.random() * deltaOptions.length)];
+      newScalePos = clamp(previous.scalePos + delta, 0, _scale.length - 1);
+    }
+
+    return {
+      key: newKey,
+      progression: newProgression,
+      scale: newScale,
+      scalePos: newScalePos,
+      style,
+    };
+  }
+
+  function applyProgressionState(
+    state: ProgressionState,
+    options: { persist?: boolean } = {},
+  ) {
+    key = state.key;
+    progress = 0;
+    progression = state.progression;
+    scale = state.scale;
+    scalePos = state.scalePos;
+    genChordsOnce = true;
+
+    if (options.persist) {
+      saveCurrentState();
+    }
+  }
+
+  function ensureLoopsTarget(style: GrooveStyle = grooveStyle) {
+    const config = grooveStyles[style];
+    loopsCompletedForProgression = 0;
+    loopsRemainingForProgression = Math.max(
+      1,
+      randomIntInRange(config.rotation.loopsRange),
+    );
+  }
+
+  function registerStateInPool(state: ProgressionState, style: GrooveStyle = grooveStyle) {
+    const config = grooveStyles[style];
+    progressionPool.push(state);
+    while (progressionPool.length > config.rotation.poolSize) {
+      progressionPool.shift();
+      if (progressionPoolIndex >= 0) {
+        progressionPoolIndex = Math.max(0, progressionPoolIndex - 1);
+      }
+    }
+    progressionPoolIndex = progressionPool.length - 1;
+  }
+
+  function rotateProgression(
+    options: { forceNew?: boolean; persist?: boolean; mode?: "auto" | "manual" } = {},
+  ): ProgressionState {
+    const { forceNew = false, persist = true } = options;
+    const config = grooveStyles[grooveStyle];
+
+    const hasCurrentProgression = progression.length > 0 && scale.length > 0;
+    const previousSnapshot = hasCurrentProgression
+      ? captureCurrentProgression()
+      : undefined;
+
+    let nextState: ProgressionState | undefined;
+
+    const reusableIndices = progressionPool
+      .map((state, index) => ({ state, index }))
+      .filter(({ state, index }) => index !== progressionPoolIndex && state.style === grooveStyle);
+
+    const shouldReuse =
+      !forceNew &&
+      reusableIndices.length > 0 &&
+      Math.random() < config.rotation.reuseProbability;
+
+    if (shouldReuse) {
+      const choice = reusableIndices[Math.floor(Math.random() * reusableIndices.length)];
+      nextState = choice.state;
+      progressionPoolIndex = choice.index;
+    }
+
+    if (!nextState) {
+      nextState = createProgressionState(grooveStyle, previousSnapshot);
+      registerStateInPool(nextState);
+    }
+
+    applyProgressionState(nextState, { persist });
+    ensureLoopsTarget(grooveStyle);
+
+    return nextState;
+  }
+
+  function captureCurrentProgression(): ProgressionState {
+    return {
+      key,
+      progression,
+      scale,
+      scalePos,
+      style: grooveStyle,
+    };
+  }
+
+  function handleProgressionLoopComplete() {
+    loopsCompletedForProgression += 1;
+    if (loopsRemainingForProgression > 0) {
+      loopsRemainingForProgression -= 1;
+    }
+
+    if (loopsRemainingForProgression <= 0) {
+      rotateProgression({ persist: true });
+    }
+  }
+  if (typeof window !== "undefined") {
+    const savedStyle = localStorage.getItem(GROOVE_STYLE_KEY);
+    if (savedStyle === "cafe" || savedStyle === "jazz") {
+      grooveStyle = savedStyle;
+    }
+  }
+
   
   // 初始化 BPM (從 localStorage 讀取或使用默認值)
-  let currentBPM = 84;
+  let currentBPM = grooveStyles[grooveStyle].defaultBpm;
   if (typeof window !== 'undefined') {
     const savedBPM = localStorage.getItem('LofiEngine_BPM');
     if (savedBPM) {
@@ -84,8 +470,8 @@
   }
 
   updateTransportBpm(currentBPM);
-  Tone.Transport.swing = 0.45;
-  Tone.Transport.swingSubdivision = "8n";
+  Tone.Transport.swing = grooveStyles[grooveStyle].swing;
+  Tone.Transport.swingSubdivision = grooveStyles[grooveStyle].swingSubdivision as any;
 
   // State variables
   let key = "C";
@@ -127,43 +513,14 @@
     ["C4", "", "C4", "C4", "", "C4", "", "C4"],
   ];
 
-  const strumPatterns = [
-    {
-      offsets: [0, 0.24, 0.46, 0.74],
-      release: "1n",
-      velocityRange: [0.32, 0.46],
-      invertChance: 0.55,
-      tailSpacing: 0.22,
-    },
-    {
-      offsets: [0, 0.32, 0.66],
-      release: "1n",
-      velocityRange: [0.3, 0.42],
-      invertChance: 0.4,
-      tailSpacing: 0.2,
-    },
-    {
-      offsets: [0, 0.2, 0.48, 0.88],
-      release: "2n",
-      velocityRange: [0.28, 0.4],
-      invertChance: 0.5,
-      tailSpacing: 0.18,
-    },
-    {
-      offsets: [0],
-      release: "2n",
-      velocityRange: [0.26, 0.38],
-      invertChance: 0.35,
-      tailSpacing: 0.24,
-    },
-  ];
-
   // Initialize instrument on/off states based on volumes
   let kickOff = instrumentVolumes.kick === 0;
   let snareOff = instrumentVolumes.snare === 0;  // ← 預設靜音時設為 true
   let hatOff = instrumentVolumes.hat === 0;
-  let melodyDensity = 0.26;
+  let melodyDensity = grooveStyles[grooveStyle].melodyDensityRange[0];
   let melodyOff = false;
+
+  setGrooveStyle(grooveStyle, { persist: false });
 
   let isPlaying = false;
 
@@ -211,10 +568,11 @@
     kickLoop = new Tone.Sequence(
       (time, note) => {
         if (!kickOff) {
-          if (note === "C4" && Math.random() < 0.65) {
+          const config = grooveStyles[grooveStyle];
+          if (note === "C4" && Math.random() < config.kickProbabilities.main) {
             // @ts-ignore
             kick.triggerAttack(note);
-          } else if (note === "." && Math.random() < 0.05) {
+          } else if (note === "." && Math.random() < config.kickProbabilities.ghost) {
             // @ts-ignore
             kick.triggerAttack("C4");
           }
@@ -227,7 +585,8 @@
     snareLoop = new Tone.Sequence(
       (time, note) => {
         if (!snareOff) {
-          if (note !== "" && Math.random() < 0.5) {
+          const config = grooveStyles[grooveStyle];
+          if (note !== "" && Math.random() < config.snareHitProbability) {
             // @ts-ignore
             snare.triggerAttack(note);
           }
@@ -240,8 +599,9 @@
     hatLoop = new Tone.Sequence(
       (time, note) => {
         if (!hatOff) {
+          const config = grooveStyles[grooveStyle];
           // @ts-ignore
-          if (note !== "" && Math.random() < 0.6) {
+          if (note !== "" && Math.random() < config.hatHitProbability) {
             // @ts-ignore
             hat.triggerAttack(note);
           }
@@ -327,12 +687,15 @@
 
   function nextChord() {
     const nextProgress = progress === progression.length - 1 ? 0 : progress + 1;
+    const wrapsAround = nextProgress === 0;
     
-    const nextKickOff = Math.random() < 0.08;
-    const nextSnareOff = Math.random() < 0.15;
-    const nextHatOff = Math.random() < 0.18;
-    const nextMelodyDensity = Math.random() * 0.15 + 0.18;
-    const nextMelodyOff = Math.random() < 0.32;
+    const config = grooveStyles[grooveStyle];
+    const nextKickOff = Math.random() < config.muteChances.kick;
+    const nextSnareOff = Math.random() < config.muteChances.snare;
+    const nextHatOff = Math.random() < config.muteChances.hat;
+    const [densityMin, densityMax] = config.melodyDensityRange;
+    const nextMelodyDensity = densityMin + Math.random() * (densityMax - densityMin);
+    const nextMelodyOff = Math.random() < config.melodyOffChance;
 
     if (progress === 4) {
       progress = nextProgress;
@@ -360,6 +723,10 @@
 
     // 調試訊息
     console.log(`🎵 和弦進行: ${progress+1}/${progression.length}, 樂器狀態: kick=${!kickOff}, snare=${!snareOff}, hat=${!hatOff} (用戶音量: kick=${instrumentVolumes.kick}, snare=${instrumentVolumes.snare}, hat=${instrumentVolumes.hat})`);
+
+    if (wrapsAround) {
+      handleProgressionLoopComplete();
+    }
   }
 
 
@@ -367,13 +734,14 @@
   function playChord(time?: number) {
     const chord = progression[progress];
     const root = Tone.Frequency(key + "3").transpose(chord.semitoneDist);
-    const chordSize = Math.random() < 0.6 ? 3 : 4;
+    const config = grooveStyles[grooveStyle];
+    const chordSize = Math.random() < config.chordTriadChance ? 3 : 4;
     const voicing = chord.generateVoicing(chordSize);
     const notes = Tone.Frequency(root)
       .harmonize(voicing)
       .map((f) => Tone.Frequency(f).toNote());
 
-    const pattern = strumPatterns[Math.floor(Math.random() * strumPatterns.length)];
+    const pattern = config.strumPatterns[Math.floor(Math.random() * config.strumPatterns.length)];
     const strumNotes = Math.random() < (pattern.invertChance ?? 0) ? [...notes].reverse() : [...notes];
     const baseTime = typeof time === "number" ? time : Tone.now();
     strumNotes.forEach((note, idx) => {
@@ -443,33 +811,29 @@
 
     scalePos = newScalePos;
     
-    // 降低旋律音量，讓它更柔和
-    const melodyVelocity = 0.2 + Math.random() * 0.15; // 0.2-0.35
-    const durationRoll = Math.random();
-    const melodyDuration = durationRoll < 0.25 ? "8n" : durationRoll < 0.75 ? "4n" : "2n";
+    const config = grooveStyles[grooveStyle];
+    const [velocityMin, velocityMax] = config.melodyVelocityRange;
+    const melodyVelocity = velocityMin + Math.random() * (velocityMax - velocityMin);
+    const durationTotal = config.melodyDurationOptions.reduce(
+      (sum, option) => sum + option.weight,
+      0,
+    );
+    let durationRoll = Math.random() * durationTotal;
+    let melodyDuration = config.melodyDurationOptions[config.melodyDurationOptions.length - 1].duration;
+    for (const option of config.melodyDurationOptions) {
+      durationRoll -= option.weight;
+      if (durationRoll <= 0) {
+        melodyDuration = option.duration;
+        break;
+      }
+    }
     
     // @ts-ignore
     pn.triggerAttackRelease(scale[newScalePos], melodyDuration, undefined, melodyVelocity);
   }
 
   function generateProgression() {
-    const _scale = fiveToFive;
-    const newKey = Keys[Math.floor(Math.random() * Keys.length)];
-    const newScale = Tone.Frequency(newKey + "5")
-      .harmonize(_scale)
-      .map((f) => Tone.Frequency(f).toNote());
-    const newProgression = ChordProgression.generate(8);
-    const newScalePos = Math.floor(Math.random() * _scale.length);
-
-    key = newKey;
-    progress = 0;
-    progression = newProgression;
-    scale = newScale;
-    genChordsOnce = true;
-    scalePos = newScalePos;
-    
-    // Save current state
-    saveCurrentState();
+    rotateProgression({ forceNew: true, persist: true, mode: "manual" });
   }
 
   function saveCurrentState() {
@@ -482,6 +846,7 @@
       hatOff,
       melodyDensity,
       melodyOff,
+      grooveStyle,
       background: parseInt(localStorage.getItem("bg-id") || "1"),
     };
     localStorage.setItem(CURRENT_STATE_KEY, JSON.stringify(currentState));
@@ -521,6 +886,10 @@
     if (state.melodyDensity !== undefined) melodyDensity = state.melodyDensity;
     if (state.melodyOff !== undefined) melodyOff = state.melodyOff;
 
+    if (state.grooveStyle === "cafe" || state.grooveStyle === "jazz") {
+      setGrooveStyle(state.grooveStyle, { persist: false, preserveDynamics: true });
+    }
+
     // Load volumes
     if (state.volumes) {
       volumes = state.volumes;
@@ -533,6 +902,62 @@
       localStorage.setItem("bg-id", state.background.toString());
       window.dispatchEvent(new CustomEvent("changeBg", { detail: state.background }));
     }
+
+    const presetState = captureCurrentProgression();
+    progressionPool = [presetState];
+    progressionPoolIndex = 0;
+    ensureLoopsTarget(grooveStyle);
+  }
+
+  function setGrooveStyle(
+    style: GrooveStyle,
+    options: { resetBpm?: boolean; persist?: boolean; preserveDynamics?: boolean } = {},
+  ) {
+    const { resetBpm = false, persist = true, preserveDynamics = false } = options;
+
+    const previousStyle = grooveStyle;
+    grooveStyle = style;
+    const config = grooveStyles[style];
+
+    Tone.Transport.swing = config.swing;
+    Tone.Transport.swingSubdivision = config.swingSubdivision as any;
+
+    if (resetBpm) {
+      updateTransportBpm(config.defaultBpm, { persist: true });
+    }
+
+    if (!preserveDynamics) {
+      const [densityMin, densityMax] = config.melodyDensityRange;
+      melodyDensity = densityMin + (densityMax - densityMin) * 0.5;
+      melodyOff = false;
+    }
+
+    const poolNeedsReset = previousStyle !== style || progressionPool.length === 0;
+
+    if (poolNeedsReset) {
+      progressionPool = [];
+      progressionPoolIndex = -1;
+      loopsRemainingForProgression = 0;
+      loopsCompletedForProgression = 0;
+      rotateProgression({ forceNew: true, persist: false, mode: "manual" });
+    } else {
+      ensureLoopsTarget(style);
+    }
+
+    if (typeof window !== "undefined" && persist) {
+      localStorage.setItem(GROOVE_STYLE_KEY, style);
+    }
+
+    if (persist) {
+      saveCurrentState();
+    }
+
+    console.log(`🎼 Groove style set to ${config.displayName}`);
+  }
+
+  function toggleGrooveStyle() {
+    const nextStyle: GrooveStyle = grooveStyle === "cafe" ? "jazz" : "cafe";
+    setGrooveStyle(nextStyle, { resetBpm: true });
   }
 
   function toggle() {
@@ -677,6 +1102,20 @@
         <IconPlayerPlayFilled size={30} />
       {/if}
     </button>
+    <button
+      class="styleBtn"
+      on:click={toggleGrooveStyle}
+      disabled={!allSamplesLoaded}
+      aria-pressed={grooveStyle === 'jazz'}
+      title={`切換至 ${grooveStyle === 'cafe' ? grooveStyles.jazz.displayName : grooveStyles.cafe.displayName} 風格`}
+      aria-label={`切換至 ${grooveStyle === 'cafe' ? grooveStyles.jazz.displayName : grooveStyles.cafe.displayName} 風格`}
+    >
+      {#if grooveStyle === 'cafe'}
+        ☕ Cafe
+      {:else}
+        🎷 Jazz
+      {/if}
+    </button>
     <button class="generateBtn" on:click={generateProgression}>
       <IconRefresh size={16} />
     </button>
@@ -748,6 +1187,31 @@
     outline: none;
   }
 
+  .styleBtn {
+    background-color: #00000018;
+    backdrop-filter: blur(10px);
+    color: white;
+    border: none;
+    border-radius: 9999px;
+    padding: 6px 16px;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+  }
+
+  .styleBtn:hover:enabled {
+    background-color: #00000033;
+    transform: translateY(-1px);
+  }
+
+  .styleBtn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
   .progressionList {
     position: fixed;
     bottom: 0;
@@ -785,6 +1249,10 @@
   @media only screen and (max-width: 600px) {
     .play-button {
       margin-bottom: 40px;
+    }
+    .styleBtn {
+      font-size: 0.75rem;
+      padding: 5px 12px;
     }
     .progressionList {
       bottom: 0;
