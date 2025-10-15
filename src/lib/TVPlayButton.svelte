@@ -52,6 +52,7 @@
   let chords: any, melody: any;
   
   // 音量控制 - LoFi 適中音量
+  const MASTER_GAIN_DB = 12;
   let volume = 0.8; // 調整為 0.8，平衡音量和 LoFi 感覺
   const linearToDb = (value: number) =>
     value === 0 ? -Infinity : 20 * Math.log10(value);
@@ -549,7 +550,7 @@ melodyDensity = initialDensityMin + (initialDensityMax - initialDensityMin) * 0.
         release: 0.1,
       });
       const lpf = new Tone.Filter(2000, "lowpass");
-      volumeNode = new Tone.Volume(linearToDb(volume));
+      volumeNode = new Tone.Volume(linearToDb(volume) + MASTER_GAIN_DB);
       Tone.Master.chain(cmp, lpf, volumeNode);
       
       // 初始化 BPM (從 localStorage 讀取或使用默認值)
@@ -807,7 +808,7 @@ melodyDensity = initialDensityMin + (initialDensityMax - initialDensityMin) * 0.
   function adjustVolume(delta: number) {
     volume = Math.max(0, Math.min(1, volume + delta));
     if (contextStarted && volumeNode) {
-      volumeNode.volume.value = linearToDb(volume) + 3; // 使用正確的音量節點
+      volumeNode.volume.value = linearToDb(volume) + MASTER_GAIN_DB;
     }
     
     // 發送音量變更事件

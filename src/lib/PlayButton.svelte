@@ -50,7 +50,10 @@
   // 柔和殘響，非同步預先生成即可
   // @ts-ignore Tone 型別未必包含 generate
   reverb.generate?.().catch?.(() => {});
-  const vol = new Tone.Volume(linearToDb(volumes.main_track) + 3); // 只提升 3dB
+  const MASTER_GAIN_DB = 12;
+  const INSTRUMENT_GAIN_DB = 6;
+
+  const vol = new Tone.Volume(linearToDb(volumes.main_track) + MASTER_GAIN_DB);
   Tone.Master.chain(cmp, lpf, reverb, vol);
 
   const GROOVE_STYLE_KEY = "LofiEngine_GrooveStyle";
@@ -1173,7 +1176,8 @@
 
   function updateInstrumentVolumes() {
     // 轉換線性音量 (0-1) 到 dB
-    const linearToDbSimple = (value) => value === 0 ? -Infinity : 20 * Math.log10(value);
+    const linearToDbSimple = (value) =>
+      value === 0 ? -Infinity : 20 * Math.log10(value) + INSTRUMENT_GAIN_DB;
 
     // 更新各樂器音量
     if (pn && pn.volume) {
@@ -1192,7 +1196,8 @@
 
   // Apply volume for a specific instrument (called after loading)
   function applyInstrumentVolume(instrument: 'piano' | 'kick' | 'snare' | 'hat') {
-    const linearToDbSimple = (value) => value === 0 ? -Infinity : 20 * Math.log10(value);
+    const linearToDbSimple = (value) =>
+      value === 0 ? -Infinity : 20 * Math.log10(value) + INSTRUMENT_GAIN_DB;
     
     switch(instrument) {
       case 'piano':
@@ -1234,7 +1239,7 @@
     setInterval(() => {
       let updatedVol =
         JSON.parse(localStorage.getItem(STORAGE_KEY)) || DEFFAULT_VOLUMES;
-      vol.volume.value = linearToDb(updatedVol.main_track);
+      vol.volume.value = linearToDb(updatedVol.main_track) + MASTER_GAIN_DB;
     }, 100);
   });
   // automically start audio context after samples are loaded
