@@ -13,6 +13,12 @@
   import intervalWeights from "../lib/engine/Chords/IntervalWeights";
   import Keys from "../lib/engine/Chords/Keys";
   import { fiveToFive } from "../lib/engine/Chords/MajorScale";
+  import {
+    createCanonMelodyPattern,
+    generateCanonState,
+    type CanonMelodyStep,
+    type CanonState,
+  } from "../lib/engine/Canon/style";
   import Hat from "../lib/engine/Drums/Hat";
   import Kick from "../lib/engine/Drums/Kick";
   import Snare from "../lib/engine/Drums/Snare";
@@ -58,7 +64,7 @@
 
   const GROOVE_STYLE_KEY = "LofiEngine_GrooveStyle";
 
-  type GrooveStyle = "cafe" | "jazz" | "relaxing";
+  type GrooveStyle = "cafe" | "jazz" | "relaxing" | "canon";
 
   type StrumPattern = {
     offsets: number[];
@@ -297,6 +303,70 @@
         reuseProbability: 0.6,
       },
     },
+    canon: {
+      displayName: "🎼 Canon",
+      defaultBpm: 72,
+      swing: 0.12,
+      swingSubdivision: "8n",
+      strumPatterns: [
+        {
+          offsets: [0, 0.48, 0.92, 1.36],
+          release: "1n",
+          velocityRange: [0.24, 0.34],
+          invertChance: 0.2,
+          tailSpacing: 0.26,
+        },
+        {
+          offsets: [0, 0.32, 0.64, 1.12],
+          release: "1n",
+          velocityRange: [0.22, 0.3],
+          invertChance: 0.1,
+          tailSpacing: 0.24,
+        },
+        {
+          offsets: [0, 0.5, 1],
+          release: "2n",
+          velocityRange: [0.28, 0.36],
+          invertChance: 0.25,
+          tailSpacing: 0.32,
+        },
+      ],
+      chordTriadChance: 0.94,
+      melodyDensityRange: [0.24, 0.28],
+      melodyOffChance: 0.02,
+      melodyVelocityRange: [0.2, 0.34],
+      melodyDurationOptions: [
+        { duration: "8n", weight: 3.6 },
+        { duration: "4n", weight: 2.2 },
+        { duration: "2n", weight: 0.8 },
+      ],
+      muteChances: {
+        kick: 0.995,
+        snare: 0.995,
+        hat: 0.98,
+      },
+      kickProbabilities: {
+        main: 0.05,
+        ghost: 0,
+      },
+      snareHitProbability: 0.04,
+      hatHitProbability: 0.06,
+      rotation: {
+        durationRangeSeconds: [420, 560],
+        poolSize: 2,
+        reuseProbability: 0.7,
+      },
+    },
+  };
+
+  type CanonMeta = {
+    melodyPattern: CanonMelodyStep[];
+    baseScaleIndex: number;
+    voice: CanonState["voiceSettings"];
+    variationName: string;
+    anchorTrend: number[];
+    degrees: number[];
+    scaleLength: number;
   };
 
   type ProgressionState = {
@@ -305,6 +375,9 @@
     scale: string[];
     scalePos: number;
     style: GrooveStyle;
+    meta?: {
+      canon?: CanonMeta;
+    };
   };
 
   let grooveStyle: GrooveStyle = "relaxing";
@@ -313,6 +386,8 @@
   let progressionPoolIndex = -1;
   let loopsRemainingForProgression = 0;
   let loopsCompletedForProgression = 0;
+  let canonMeta: CanonMeta | null = null;
+  let canonMelodyIndex = 0;
 
   function randomIntInRange([min, max]: [number, number]) {
     if (max <= min) return min;
@@ -322,6 +397,15 @@
   function randomInRange([min, max]: [number, number]) {
     if (max <= min) return min;
     return Math.random() * (max - min) + min;
+  }
+
+  function cloneVoiceSettings(settings: CanonState["voiceSettings"]): CanonState["voiceSettings"] {
+    return {
+      entryInterval: settings.entryInterval,
+      velocityProfile: [...settings.velocityProfile],
+      transpose: [...settings.transpose],
+      voices: settings.voices,
+    };
   }
 
   function pickKeyForStyle(
@@ -347,6 +431,24 @@
         const left = KEY_RING[(ringIndex + KEY_RING.length - 1) % KEY_RING.length];
         const right = KEY_RING[(ringIndex + 1) % KEY_RING.length];
         return Math.random() < 0.5 ? left : right;
+      }
+
+      return defaultKey;
+    }
+
+    if (style === "canon") {
+      const stayProbability = 0.78;
+      if (Math.random() < stayProbability) {
+        return previous.key;
+      }
+
+      const ringIndex = KEY_RING.indexOf(previous.key);
+      if (ringIndex !== -1) {
+        const candidates = [
+          KEY_RING[(ringIndex + KEY_RING.length - 1) % KEY_RING.length],
+          KEY_RING[(ringIndex + 1) % KEY_RING.length],
+        ];
+        return candidates[Math.floor(Math.random() * candidates.length)];
       }
 
       return defaultKey;
@@ -382,13 +484,38 @@
     const newScale = Tone.Frequency(newKey + "5")
       .harmonize(_scale)
       .map((f) => Tone.Frequency(f).toNote());
-    const newProgression = ChordProgression.generate(8);
-
+    let newProgression = ChordProgression.generate(8);
     let newScalePos = Math.floor(Math.random() * _scale.length);
-    if (previous && previous.key === newKey) {
-      const deltaOptions = [-2, -1, 0, 1, 2];
-      const delta = deltaOptions[Math.floor(Math.random() * deltaOptions.length)];
-      newScalePos = clamp(previous.scalePos + delta, 0, _scale.length - 1);
+    let canonMetadata: CanonMeta | undefined;
+
+    if (style === "canon") {
+      const canonState = generateCanonState();
+      newProgression = canonState.chords;
+      const baseIndexFromTop = clamp(canonState.baseScaleOffset, 0, _scale.length - 1);
+      const baseIndex = clamp(_scale.length - 1 - baseIndexFromTop, 0, _scale.length - 1);
+      const melodyPattern = createCanonMelodyPattern({
+        variationName: canonState.variationName,
+        anchorTrend: canonState.anchorTrend,
+        baseScaleIndex: baseIndex,
+        scaleLength: _scale.length,
+        degrees: canonState.degrees,
+      });
+      newScalePos = baseIndex;
+      canonMetadata = {
+        melodyPattern,
+        baseScaleIndex: baseIndex,
+        voice: cloneVoiceSettings(canonState.voiceSettings),
+        variationName: canonState.variationName,
+        anchorTrend: [...canonState.anchorTrend],
+        degrees: [...canonState.degrees],
+        scaleLength: _scale.length,
+      };
+    } else {
+      if (previous && previous.key === newKey) {
+        const deltaOptions = [-2, -1, 0, 1, 2];
+        const delta = deltaOptions[Math.floor(Math.random() * deltaOptions.length)];
+        newScalePos = clamp(previous.scalePos + delta, 0, _scale.length - 1);
+      }
     }
 
     return {
@@ -397,6 +524,7 @@
       scale: newScale,
       scalePos: newScalePos,
       style,
+      meta: canonMetadata ? { canon: canonMetadata } : undefined,
     };
   }
 
@@ -410,10 +538,87 @@
     scale = state.scale;
     scalePos = state.scalePos;
     genChordsOnce = true;
+    canonPadHoldCounter = 0;
+    const incomingCanon = state.meta?.canon;
+    canonMeta = incomingCanon
+      ? {
+          melodyPattern: incomingCanon.melodyPattern.map((step) => ({ ...step })),
+          baseScaleIndex: clamp(incomingCanon.baseScaleIndex, 0, scale.length - 1),
+          voice: cloneVoiceSettings(incomingCanon.voice),
+          variationName: incomingCanon.variationName,
+          anchorTrend: [...incomingCanon.anchorTrend],
+          degrees: [...incomingCanon.degrees],
+          scaleLength: scale.length,
+        }
+      : null;
+    canonMelodyIndex = 0;
+
+    if (canonMeta && grooveStyle === "canon") {
+      scalePos = canonMeta.baseScaleIndex;
+      console.log(
+        `🎼 Canon variation set: ${canonMeta.variationName} (voices: ${canonMeta.voice.voices})`,
+      );
+    }
 
     if (options.persist) {
       saveCurrentState();
     }
+  }
+
+  function updateCanonPadDynamics(style: GrooveStyle) {
+    if (!canonPadGain) {
+      return;
+    }
+    if (style === "canon") {
+      const targetVolume = -18 + Math.random() * 4;
+      canonPadGain.volume.rampTo(targetVolume, 0.6);
+      canonPadHoldCounter = 0;
+    } else {
+      canonPadGain.volume.rampTo(-Infinity, 0.4);
+      canonPad?.releaseAll();
+      canonPadHoldCounter = 0;
+    }
+  }
+
+  function regenerateCanonMelodyPattern() {
+    if (!canonMeta || !canonMeta.anchorTrend.length) {
+      return;
+    }
+
+    const scaleLength = scale.length;
+    if (scaleLength <= 0) {
+      return;
+    }
+
+    if (Math.random() < 0.35) {
+      const delta = Math.random() < 0.5 ? -1 : 1;
+      canonMeta.baseScaleIndex = clamp(
+        canonMeta.baseScaleIndex + delta,
+        1,
+        Math.max(1, scaleLength - 2),
+      );
+    }
+
+    if (Math.random() < 0.25) {
+      const trendDelta = Math.random() < 0.5 ? -1 : 1;
+      canonMeta.anchorTrend = canonMeta.anchorTrend.map((value) =>
+        clamp(value + trendDelta, 0, scaleLength - 2),
+      );
+    }
+
+    const refreshedPattern = createCanonMelodyPattern({
+      variationName: canonMeta.variationName,
+      anchorTrend: canonMeta.anchorTrend,
+      baseScaleIndex: canonMeta.baseScaleIndex,
+      scaleLength,
+      degrees: canonMeta.degrees,
+    });
+
+    canonMeta = {
+      ...canonMeta,
+      melodyPattern: refreshedPattern,
+      scaleLength,
+    };
   }
 
   function ensureLoopsTarget(style: GrooveStyle = grooveStyle) {
@@ -486,6 +691,9 @@
     }
 
     applyProgressionState(nextState, { persist });
+    if (grooveStyle === "canon") {
+      regenerateCanonMelodyPattern();
+    }
     ensureLoopsTarget(grooveStyle);
 
     return nextState;
@@ -498,6 +706,19 @@
       scale,
       scalePos,
       style: grooveStyle,
+      meta: canonMeta
+        ? {
+            canon: {
+              melodyPattern: canonMeta.melodyPattern.map((step) => ({ ...step })),
+              baseScaleIndex: canonMeta.baseScaleIndex,
+              voice: cloneVoiceSettings(canonMeta.voice),
+              variationName: canonMeta.variationName,
+              anchorTrend: [...canonMeta.anchorTrend],
+              degrees: [...canonMeta.degrees],
+              scaleLength: canonMeta.scaleLength,
+            },
+          }
+        : undefined,
     };
   }
 
@@ -513,8 +734,9 @@
     }
   }
   if (typeof window !== "undefined") {
-    const savedStyle = localStorage.getItem(GROOVE_STYLE_KEY);
-    if (savedStyle === "cafe" || savedStyle === "jazz") {
+    const savedStyle = localStorage.getItem(GROOVE_STYLE_KEY) as GrooveStyle | null;
+    const supportedStyles: GrooveStyle[] = ["cafe", "relaxing", "jazz", "canon"];
+    if (savedStyle && supportedStyles.includes(savedStyle)) {
       grooveStyle = savedStyle;
     }
   }
@@ -565,6 +787,11 @@
   let kickLoaded = false;
   let snareLoaded = false;
   let hatLoaded = false;
+  let canonPad: Tone.PolySynth | null = null;
+  let canonPadGain: Tone.Volume | null = null;
+  let canonPadFilter: Tone.Filter | null = null;
+  let canonPadLfo: Tone.LFO | null = null;
+  let canonPadHoldCounter = 0;
 
   let contextStarted = false;
   let genChordsOnce = false;
@@ -626,6 +853,22 @@
     hatLoaded = true;
     applyInstrumentVolume('hat');
   }).sampler;
+
+  const padChorus = new Tone.Chorus(0.35, 1.8, 0.35).start();
+  padChorus.wet.value = 0.45;
+  canonPadFilter = new Tone.Filter(1600, "lowpass");
+  const padReverb = new Tone.Reverb({ decay: 7.5, wet: 0.55 });
+  // @ts-ignore
+  padReverb.generate?.().catch?.(() => {});
+  canonPadGain = new Tone.Volume(-Infinity);
+  canonPad = new Tone.PolySynth(Tone.Synth, {
+    oscillator: { type: "triangle" },
+    envelope: { attack: 0.9, decay: 0.3, sustain: 0.62, release: 5.4 },
+  });
+  canonPad.chain(padChorus, canonPadFilter, padReverb, canonPadGain, vol);
+  canonPadLfo = new Tone.LFO({ frequency: 0.05, min: 950, max: 1850 }).start();
+  canonPadLfo.connect(canonPadFilter.frequency);
+
   // Sequences
   let chords, melody, kickLoop, snareLoop, hatLoop;
   let currentKickPatternIdx = 0;
@@ -642,8 +885,8 @@
     );
 
     melody = new Tone.Sequence(
-      (time, note) => {
-        playMelody();
+      (time) => {
+        playMelody(time);
       },
       [""],
       "8n",
@@ -817,6 +1060,10 @@
     console.log(`🎵 和弦進行: ${progress+1}/${progression.length}, 樂器狀態: kick=${!kickOff}, snare=${!snareOff}, hat=${!hatOff} (用戶音量: kick=${instrumentVolumes.kick}, snare=${instrumentVolumes.snare}, hat=${instrumentVolumes.hat})`);
 
     if (wrapsAround) {
+      if (grooveStyle === "canon") {
+        regenerateCanonMelodyPattern();
+        canonMelodyIndex = 0;
+      }
       handleProgressionLoopComplete();
     }
   }
@@ -850,11 +1097,18 @@
       config.strumPatterns[Math.floor(Math.random() * config.strumPatterns.length)];
 
     const root = Tone.Frequency(key + "3").transpose(chord.semitoneDist);
-    const chordSize = Math.random() < config.chordTriadChance ? 3 : 4;
+    const chordSize = grooveStyle === "canon"
+      ? 3
+      : Math.random() < config.chordTriadChance
+        ? 3
+        : 4;
     const voicing = chord.generateVoicing(chordSize);
     const notes = Tone.Frequency(root)
       .harmonize(voicing)
       .map((f) => Tone.Frequency(f).toNote());
+
+    const localJitterRange = grooveStyle === "canon" ? Math.min(jitterRange, 0.03) : jitterRange;
+    const styleVelocityScale = grooveStyle === "canon" ? velocityScale * 0.92 : velocityScale;
 
     const strumNotes = Math.random() < (pattern.invertChance ?? 0) ? [...notes].reverse() : [...notes];
     strumNotes.forEach((note, idx) => {
@@ -863,11 +1117,11 @@
           ? pattern.offsets[idx]
           : pattern.offsets[pattern.offsets.length - 1] +
             (idx - pattern.offsets.length + 1) * (pattern.tailSpacing ?? 0.22);
-      const jitter = idx === 0 ? 0 : (Math.random() * jitterRange) - jitterRange / 2;
+      const jitter = idx === 0 ? 0 : (Math.random() * localJitterRange) - localJitterRange / 2;
       const velocityMin = pattern.velocityRange?.[0] ?? 0.32;
       const velocityMax = pattern.velocityRange?.[1] ?? 0.46;
       const baseVelocity = velocityMin + Math.random() * (velocityMax - velocityMin);
-      const velocity = Math.min(1, baseVelocity * velocityScale);
+      const velocity = Math.min(1, baseVelocity * styleVelocityScale);
       const release = releaseOverride ?? pattern.release;
       // @ts-ignore Tone typings
       pn.triggerAttackRelease(
@@ -881,11 +1135,36 @@
 
   const PREVIEW_OFFSET_SECONDS = 0.45;
 
+  function triggerCanonPad(chord: any, suggestedTime: number) {
+    if (!canonPad || grooveStyle !== "canon") {
+      return;
+    }
+
+    if (canonPadHoldCounter > 0) {
+      canonPadHoldCounter -= 1;
+      return;
+    }
+
+    const padRoot = Tone.Frequency(key + "2").transpose(chord.semitoneDist - 12);
+    const padNotes = Tone.Frequency(padRoot)
+      .harmonize([0, 7, 12, 19])
+      .map((f) => Tone.Frequency(f).toNote());
+
+    const padTime = Math.max(suggestedTime, Tone.now());
+    const velocity = 0.16 + Math.random() * 0.05;
+    canonPadFilter?.frequency.rampTo(1100 + Math.random() * 700, 1.5);
+    canonPad.triggerAttackRelease(padNotes, "2m", padTime, velocity);
+    canonPadHoldCounter = 1;
+  }
+
   function playChord(time?: number) {
     const chord = progression[progress];
     const baseTime = typeof time === "number" ? time : Tone.now();
 
     strumChord(chord, { time: baseTime });
+    if (grooveStyle === "canon") {
+      triggerCanonPad(chord, baseTime);
+    }
 
     nextChord();
   }
@@ -906,7 +1185,115 @@
     });
   }
 
-  function playMelody() {
+  function scheduleCanonFollowers(params: {
+    note: string;
+    duration: string;
+    velocity: number;
+    baseTime: number;
+  }) {
+    if (!pn || !canonMeta) {
+      return;
+    }
+
+    const settings = canonMeta.voice;
+    const voices = Math.max(1, Math.min(3, settings.voices));
+    if (voices <= 1) {
+      return;
+    }
+
+    const intervalSeconds = Tone.Time(settings.entryInterval ?? "1m").toSeconds();
+    const velocityProfile = settings.velocityProfile ?? [1, 0.78, 0.65];
+    const transpose = settings.transpose ?? [0, -7, -12];
+
+    for (let voiceIndex = 1; voiceIndex < voices; voiceIndex++) {
+      const delaySeconds = intervalSeconds * voiceIndex;
+      const jitter = (Math.random() - 0.5) * 0.07;
+      const scheduledTime = params.baseTime + delaySeconds + jitter;
+      const semitoneShift = transpose[voiceIndex] ?? 0;
+      const followerNote = Tone.Frequency(params.note)
+        .transpose(semitoneShift)
+        .toNote();
+      const followerVelocityScale = velocityProfile[voiceIndex] ?? 0.7;
+      const humanizeVelocity = 0.85 + Math.random() * 0.25;
+      const followerVelocity = Math.min(
+        1,
+        params.velocity * followerVelocityScale * humanizeVelocity,
+      );
+      pn.triggerAttackRelease(
+        followerNote,
+        params.duration,
+        Math.max(scheduledTime, Tone.now()),
+        followerVelocity,
+      );
+    }
+  }
+
+  function playCanonMelody(time?: number) {
+    if (!pn || !canonMeta || !scale.length) {
+      return;
+    }
+
+    if (!canonMeta.melodyPattern.length) {
+      regenerateCanonMelodyPattern();
+    }
+
+    const pattern = canonMeta.melodyPattern;
+    if (!pattern.length) {
+      return;
+    }
+
+    const step = pattern[canonMelodyIndex] ?? pattern[0];
+    const scaleLength = scale.length;
+    const referenceLength = canonMeta.scaleLength || scaleLength;
+
+    let targetIndex: number;
+    if (typeof step.scaleIndex === "number" && referenceLength > 0) {
+      const normalizedIndex = clamp(step.scaleIndex, 0, referenceLength - 1);
+      if (referenceLength !== scaleLength && referenceLength > 1) {
+        const ratio = (scaleLength - 1) / (referenceLength - 1);
+        targetIndex = clamp(Math.round(normalizedIndex * ratio), 0, scaleLength - 1);
+      } else {
+        targetIndex = clamp(normalizedIndex, 0, scaleLength - 1);
+      }
+    } else {
+      targetIndex = clamp(
+        canonMeta.baseScaleIndex + (step.offset ?? 0),
+        0,
+        scaleLength - 1,
+      );
+    }
+
+    canonMeta.scaleLength = scaleLength;
+    scalePos = targetIndex;
+
+    const config = grooveStyles[grooveStyle];
+    const [velocityMin, velocityMax] = config.melodyVelocityRange;
+    const humanize = 0.92 + Math.random() * 0.12;
+    const baseVelocity = velocityMin + Math.random() * (velocityMax - velocityMin);
+    const velocity = Math.min(1, baseVelocity * (step.accent ?? 1) * humanize);
+    const duration = step.duration;
+    const note = scale[targetIndex];
+    const timeBase = typeof time === "number" ? time : Tone.now();
+    const timingJitter = (Math.random() - 0.5) * 0.03;
+    const triggerTime = Math.max(timeBase + timingJitter, Tone.now());
+
+    pn.triggerAttackRelease(note, duration, triggerTime, velocity);
+    scheduleCanonFollowers({
+      note,
+      duration,
+      velocity,
+      baseTime: triggerTime,
+    });
+
+    canonMelodyIndex = (canonMelodyIndex + 1) % pattern.length;
+  }
+
+  function playMelody(time?: number) {
+    if (grooveStyle === "canon") {
+      playCanonMelody(time);
+      return;
+    }
+
     if (melodyOff || !(Math.random() < melodyDensity)) {
       return;
     }
@@ -997,9 +1384,14 @@
         break;
       }
     }
-    
+    const triggerTime = typeof time === "number" ? time : undefined;
     // @ts-ignore
-    pn.triggerAttackRelease(scale[newScalePos], melodyDuration, undefined, melodyVelocity);
+    pn.triggerAttackRelease(
+      scale[newScalePos],
+      melodyDuration,
+      triggerTime,
+      melodyVelocity,
+    );
 
     if (ascend) {
       melodyUpStreak += 1;
@@ -1062,8 +1454,9 @@
     if (state.melodyDensity !== undefined) melodyDensity = state.melodyDensity;
     if (state.melodyOff !== undefined) melodyOff = state.melodyOff;
 
-    if (state.grooveStyle === "cafe" || state.grooveStyle === "jazz") {
-      setGrooveStyle(state.grooveStyle, { persist: false, preserveDynamics: true });
+    const presetStyle: GrooveStyle | undefined = state.grooveStyle;
+    if (presetStyle && ["cafe", "relaxing", "jazz", "canon"].includes(presetStyle)) {
+      setGrooveStyle(presetStyle, { persist: false, preserveDynamics: true });
     }
 
     // Load volumes
@@ -1094,6 +1487,13 @@
     const previousStyle = grooveStyle;
     grooveStyle = style;
     const config = grooveStyles[style];
+
+    if (style !== "canon") {
+      canonMeta = null;
+      canonMelodyIndex = 0;
+    }
+
+    updateCanonPadDynamics(style);
 
     Tone.Transport.swing = config.swing;
     Tone.Transport.swingSubdivision = config.swingSubdivision as any;
@@ -1130,11 +1530,15 @@
       saveCurrentState();
     }
 
+    if (grooveStyle === "canon" && canonMeta) {
+      regenerateCanonMelodyPattern();
+    }
+
     console.log(`🎼 Groove style set to ${config.displayName}`);
   }
 
   function toggleGrooveStyle() {
-    const order: GrooveStyle[] = ["cafe", "relaxing", "jazz"];
+    const order: GrooveStyle[] = ["cafe", "relaxing", "jazz", "canon"];
     const currentIdx = order.indexOf(grooveStyle);
     const nextStyle = order[(currentIdx + 1) % order.length];
     setGrooveStyle(nextStyle, { resetBpm: true });
@@ -1145,6 +1549,10 @@
     if (Tone.Transport.state === "started") {
       Tone.Transport.stop();
       isPlaying = false;
+      canonPad?.releaseAll();
+      if (grooveStyle === "canon") {
+        updateCanonPadDynamics(grooveStyle);
+      }
     } else {
       Tone.start();
       Tone.Transport.start();
@@ -1154,6 +1562,9 @@
       snareLoop.start(0);
       hatLoop.start(0);
       isPlaying = true;
+      if (grooveStyle === "canon") {
+        updateCanonPadDynamics(grooveStyle);
+      }
     }
   }
 
@@ -1163,6 +1574,7 @@
     // 淡出音量
     const fadeTime = 3; // 3 秒淡出
     vol.volume.rampTo(-Infinity, fadeTime);
+    canonPad?.releaseAll();
 
     // 淡出後停止播放
     setTimeout(() => {
@@ -1295,8 +1707,10 @@
         ☕ Cafe
       {:else if grooveStyle === 'relaxing'}
         🌙 Relax
-      {:else}
+      {:else if grooveStyle === 'jazz'}
         🎷 Jazz
+      {:else}
+        🎼 Canon
       {/if}
     </button>
     <button class="generateBtn" on:click={generateProgression}>

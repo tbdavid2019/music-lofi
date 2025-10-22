@@ -1,7 +1,9 @@
-# LoFi Engine
+# LoFi Music
 <p align="center">
     <img alt="Icon" align="center" width="100" height="100" src="app-icon.png" />
 </p>
+
+![alt text](image-2.png)
 
 Generate LoFi music on the go. You create your own atmosphere; LoFi Engine sets the mood.
 
