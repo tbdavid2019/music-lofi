@@ -118,7 +118,7 @@
     
     <!-- 底部狀態欄 -->
     <footer class="tv-footer">
-      <p>🎮 Space播放 | R重新生成 | 1-5音軌切換 | 🌐 music.david888.com</p>
+      <p>🎮 遙控：OK播放/暫停 ↑↓音量 ←→切功能 | 🌐 music.david888.com</p>
     </footer>
   </div>
 </main>

@@ -2,6 +2,7 @@
   // 導入 Tone.js 和音樂引擎組件 (簡化版)
   // @ts-ignore
   import * as Tone from "tone";
+  import { onMount } from "svelte";
   import ChordProgression from "./engine/Chords/ChordProgression";
   import Keys from "./engine/Chords/Keys";
   import { fiveToFive } from "./engine/Chords/MajorScale";
@@ -19,6 +20,11 @@
   let contextStarted = false;
   let genChordsOnce = false;
   let autoPlayReady = false;
+  let playButtonEl: HTMLButtonElement | null = null;
+
+  onMount(() => {
+    playButtonEl?.focus({ preventScroll: true });
+  });
   
   // 響應式 BPM 顯示 - 初始化時讀取 localStorage
   let currentBPM = 160;
@@ -1246,7 +1252,13 @@ melodyDensity = initialDensityMin + (initialDensityMax - initialDensityMin) * 0.
   <!-- 主要控制按鈕區域 -->
   <div class="main-controls">
     <!-- 主播放按鈕 -->
-    <button class="tv-play-button" class:initialized={contextStarted} on:click={togglePlay}>
+    <button
+      class="tv-play-button"
+      class:initialized={contextStarted}
+      on:click={togglePlay}
+      bind:this={playButtonEl}
+      autofocus
+    >
       <div class="play-text">
         {#if !contextStarted}
           🎵 點擊開始音樂
