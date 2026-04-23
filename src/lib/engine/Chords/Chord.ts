@@ -31,13 +31,17 @@ class Chord {
     generateVoicing(size) {
         if(size<3)
             return this.intervals.slice(0,3);
-        let voicing = this.intervals.slice(1,size);
-        voicing.sort(() => Math.random()-0.5);
-        for(let i = 1; i<voicing.length; i++) {
-            while(voicing[i] < voicing[i-1]){
-                voicing[i] += 12;
+        // Take a contiguous slice from intervals for smoother voicing
+        const upperIntervals = this.intervals.slice(1, Math.min(size, this.intervals.length));
+        // Open voicing: raise every other note by an octave for warmth
+        const voicing = upperIntervals.map((n, idx) => {
+            if (idx % 2 === 1 && Math.random() < 0.5) {
+                return n + 12;
             }
-        }
+            return n;
+        });
+        // Sort ascending to avoid crossed voices
+        voicing.sort((a, b) => a - b);
         voicing.unshift(0);
         return voicing;
     }

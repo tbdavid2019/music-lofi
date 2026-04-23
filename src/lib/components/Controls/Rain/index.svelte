@@ -48,8 +48,8 @@
       url: "assets/engine/effects/rain.mp3",
       loop: true,
       autostart: false,
-      grainSize: 1.2,
-      overlap: 0.4,
+      grainSize: 2.0,
+      overlap: 0.8,
     }).connect(rainVolumeNode);
     await rainPlayer.load();
   }

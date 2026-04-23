@@ -145,13 +145,14 @@
     overflow: hidden;
   }
   #title {
-    font-size: 16px;
-    font-weight: 600;
+    font-size: 22px;
+    font-weight: 700;
   }
   #info {
     display: flex;
     flex-wrap: wrap;
-    font-size: 11px;
+    font-size: 15px;
+    opacity: 0.9;
   }
   
   .playing {
@@ -207,11 +208,11 @@
     }
     
     #title {
-      font-size: 14px;
+      font-size: 20px;
     }
     
     #info {
-      font-size: 10px;
+      font-size: 14px;
       display: -webkit-box;
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;

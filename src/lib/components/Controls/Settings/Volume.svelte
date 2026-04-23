@@ -115,7 +115,7 @@
     }
     p {
         text-align: right;
-        font-size: 12px;
+        font-size: 14px;
         margin-right: 7%;
     }
     #volume-slider {

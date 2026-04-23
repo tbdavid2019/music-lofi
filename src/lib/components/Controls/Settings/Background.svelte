@@ -7,6 +7,7 @@
   // Get settings from localStorage
   let id: any = localStorage.getItem("bg-id");
   let useBingApi: boolean = localStorage.getItem("use-bing-api") === "true";
+  let useBingRandom: boolean = localStorage.getItem("use-bing-random") !== "false"; // 預設開啟隨機模式
   let useBeautyApi: boolean = localStorage.getItem("use-beauty-api") === "true";
   let currentBingUrl: string = localStorage.getItem("bing-bg-url") || "";
   let currentBeautyUrl: string = localStorage.getItem("beauty-bg-url") || "";
@@ -18,6 +19,15 @@
     // First time load - pick random background
     id = Math.floor(Math.random() * 10) + 1;
     localStorage.setItem("bg-id", id.toString());
+  }
+
+  // Toggle Bing Random Mode
+  function toggleBingRandom() {
+    useBingRandom = !useBingRandom;
+    localStorage.setItem("use-bing-random", useBingRandom.toString());
+    if (useBingApi) {
+      setBingWallpaper();
+    }
   }
   
   const bg = document.getElementById("bg");
@@ -78,9 +88,15 @@
       
       // Choose API based on device type
       const isMobile = isMobileDevice();
-      const bingApiUrl = isMobile 
+      let bingApiUrl = isMobile 
         ? `https://bing.img.run/m.php`           // 手機版 API
         : `https://bing.img.run/1920x1080.php`;  // 桌面版 API
+      
+      // If random mode is enabled, use random endpoint
+      if (useBingRandom) {
+        bingApiUrl = `https://bing.img.run/rand.php`; // 隨機 Bing API
+        console.log("🎲 使用 Bing 隨機模式");
+      }
       
       console.log(`🔍 偵測設備: ${isMobile ? '📱 手機' : '💻 桌面'}`);
       
@@ -283,16 +299,25 @@
   <!-- API 桌布選項 -->
   <div class="api-wallpaper-section">
     <!-- Bing 每日桌布按鈕 -->
-    <button 
-      class="api-btn bing-btn" 
-      class:active={useBingApi}
-      on:click={setBingWallpaper} 
-      title="使用 Bing 每日高清桌布（自動偵測手機/桌面版本）"
-      disabled={isLoadingBing}
-    >
-      <IconPhoto size={18} />
-      <span>{isLoadingBing ? '載入中...' : useBingApi ? '✓ Bing 每日桌布' : 'Bing 每日桌布'}</span>
-    </button>
+      <button 
+        class="api-btn bing-btn" 
+        class:active={useBingApi}
+        on:click={setBingWallpaper} 
+        title={useBingRandom ? "獲取隨機 Bing 高清桌布" : "使用 Bing 每日高清桌布（自動偵測手機/桌面版本）"}
+        disabled={isLoadingBing}
+      >
+        <IconPhoto size={18} />
+        <span>{isLoadingBing ? '載入中...' : useBingApi ? `✓ Bing ${useBingRandom ? '隨機' : '每日'}桌布` : `Bing ${useBingRandom ? '隨機' : '每日'}桌布`}</span>
+      </button>
+
+      <!-- Bing 模式切換 (每日/隨機) -->
+      <div class="bing-mode-toggle">
+        <label class="switch-container">
+          <input type="checkbox" checked={useBingRandom} on:change={toggleBingRandom} />
+          <span class="slider"></span>
+          <span class="label-text">Bing 隨機模式 {useBingRandom ? 'ON' : 'OFF'}</span>
+        </label>
+      </div>
     
     <!-- 美女桌布按鈕 -->
     <button 
@@ -446,11 +471,63 @@
   }
 
   .api-hint {
-    font-size: 12px;
+    font-size: 14px;
     padding: 4px 8px;
     border-radius: 4px;
     margin-top: 4px;
     animation: pulse 2s ease-in-out infinite;
+  }
+
+  /* Bing 模式切換開關 */
+  .bing-mode-toggle {
+    margin: 5px 0 15px 5px;
+  }
+
+  .switch-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.8);
+  }
+
+  .switch-container input {
+    display: none;
+  }
+
+  .slider {
+    position: relative;
+    display: inline-block;
+    width: 34px;
+    height: 18px;
+    background-color: rgba(255, 255, 255, 0.2);
+    border-radius: 20px;
+    transition: 0.4s;
+  }
+
+  .slider:before {
+    position: absolute;
+    content: "";
+    height: 12px;
+    width: 12px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    border-radius: 50%;
+    transition: 0.4s;
+  }
+
+  input:checked + .slider {
+    background-color: #0095ff;
+  }
+
+  input:checked + .slider:before {
+    transform: translateX(16px);
+  }
+
+  .label-text {
+    font-size: 13px;
   }
 
   .bing-hint {

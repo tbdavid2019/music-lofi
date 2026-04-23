@@ -1,6 +1,7 @@
 <script lang="ts">
   import { IconSettings } from "@tabler/icons-svelte";
   import { onMount } from "svelte";
+  import UIConfig from "./UIConfig.svelte";
   import Background from "./Background.svelte";
   import Volume from "./Volume.svelte";
   import InstrumentControls from "./InstrumentControls.svelte";
@@ -63,6 +64,7 @@
     <div class="settings-container">
       <div>
         <BPMControl on:bpmChange={handleBPMChange} />
+        <UIConfig />
         <Background />
         <Volume />
         <InstrumentControls />
@@ -94,7 +96,7 @@
     color: white;
     border-radius: 20px;
     backdrop-filter: blur(10px);
-    background-color: rgba(0, 0, 0, 40%);
+    background-color: rgb(0 0 0 / var(--menu-opacity, 0.4));
     overflow-y: auto;
     animation: show 0.4s ease-in-out;
   }
@@ -110,7 +112,7 @@
   }
   .info-label {
     display: block;
-    font-size: x-small;
+    font-size: 13px;
     margin-top: 30px;
     color: azure;
   }
@@ -119,7 +121,7 @@
     .settings-container {
       width: 80vw;
       right: -3vw;
-      background-color: rgba(0, 0, 0, 50%);
+      background-color: rgb(0 0 0 / calc(var(--menu-opacity, 0.4) + 0.1));
     }
     .info-label {
       opacity: 0;

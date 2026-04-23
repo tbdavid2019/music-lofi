@@ -40,18 +40,18 @@
   const linearToDb = (value) =>
     value === 0 ? -Infinity : 20 * Math.log10(value);
 
-  // Setup audio chain - 微妙音量提升，保持原始 LoFi 品質
+  // Setup audio chain - 柔和溫暖 LoFi 品質
   const cmp = new Tone.Compressor({
-    threshold: -6,
-    ratio: 3,
-    attack: 0.5,
-    release: 0.1,
+    threshold: -8,
+    ratio: 2.5,
+    attack: 0.8,
+    release: 0.2,
   });
-  const lpf = new Tone.Filter(2000, "lowpass");
+  const lpf = new Tone.Filter(1400, "lowpass");
   const reverb = new Tone.Reverb({
-    decay: 3.5,
-    preDelay: 0.02,
-    wet: 0.28,
+    decay: 4.5,
+    preDelay: 0.03,
+    wet: 0.35,
   });
   // 柔和殘響，非同步預先生成即可
   // @ts-ignore Tone 型別未必包含 generate
@@ -127,64 +127,64 @@
   const grooveStyles: Record<GrooveStyle, GrooveStyleConfig> = {
     cafe: {
       displayName: "Cafe",
-      defaultBpm: 84,
-      swing: 0.45,
+      defaultBpm: 76,
+      swing: 0.35,
       swingSubdivision: "8n",
       strumPatterns: [
         {
-          offsets: [0, 0.24, 0.46, 0.74],
+          offsets: [0, 0.12, 0.24, 0.38],
           release: "1n",
-          velocityRange: [0.32, 0.46],
-          invertChance: 0.55,
-          tailSpacing: 0.22,
+          velocityRange: [0.22, 0.34],
+          invertChance: 0.3,
+          tailSpacing: 0.14,
         },
         {
-          offsets: [0, 0.32, 0.66],
+          offsets: [0, 0.18, 0.36],
           release: "1n",
-          velocityRange: [0.3, 0.42],
-          invertChance: 0.4,
-          tailSpacing: 0.2,
+          velocityRange: [0.2, 0.32],
+          invertChance: 0.25,
+          tailSpacing: 0.16,
         },
         {
-          offsets: [0, 0.2, 0.48, 0.88],
+          offsets: [0, 0.14, 0.3, 0.5],
           release: "2n",
-          velocityRange: [0.28, 0.4],
-          invertChance: 0.5,
-          tailSpacing: 0.18,
+          velocityRange: [0.18, 0.3],
+          invertChance: 0.35,
+          tailSpacing: 0.12,
         },
         {
           offsets: [0],
           release: "2n",
-          velocityRange: [0.26, 0.38],
-          invertChance: 0.35,
-          tailSpacing: 0.24,
+          velocityRange: [0.2, 0.3],
+          invertChance: 0.2,
+          tailSpacing: 0.18,
         },
       ],
-      chordTriadChance: 0.6,
-      melodyDensityRange: [0.18, 0.33],
-      melodyOffChance: 0.32,
-      melodyVelocityRange: [0.2, 0.35],
+      chordTriadChance: 0.75,
+      melodyDensityRange: [0.12, 0.22],
+      melodyOffChance: 0.4,
+      melodyVelocityRange: [0.15, 0.28],
       melodyDurationOptions: [
-        { duration: "8n", weight: 1 },
-        { duration: "4n", weight: 2 },
-        { duration: "2n", weight: 1 },
+        { duration: "8n", weight: 0.8 },
+        { duration: "4n", weight: 2.5 },
+        { duration: "2n", weight: 1.5 },
       ],
       muteChances: {
-        kick: 0.08,
-        snare: 0.15,
-        hat: 0.18,
+        kick: 0.85,
+        snare: 0.92,
+        hat: 0.8,
       },
       kickProbabilities: {
-        main: 0.65,
-        ghost: 0.05,
+        main: 0.25,
+        ghost: 0.02,
       },
-      snareHitProbability: 0.5,
-      hatHitProbability: 0.6,
+      snareHitProbability: 0.15,
+      hatHitProbability: 0.25,
       rotation: {
-        loopsRange: [3, 5],
+        loopsRange: [4, 6],
         poolSize: 3,
-        reuseProbability: 0.55,
-        durationRangeSeconds: [280, 320],
+        reuseProbability: 0.6,
+        durationRangeSeconds: [320, 400],
       },
     },
     jazz: {

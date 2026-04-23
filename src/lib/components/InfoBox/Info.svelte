@@ -145,12 +145,12 @@
     margin: 10px 0px 5px 0px;
   }
   #app-info #version {
-    font-size: x-small;
+    font-size: 13px;
     margin: -2px 10px;
     color: lightgray;
   }
   #app-info #tagline {
-    font-size: small;
+    font-size: 15px;
     margin: 5px 10px;
     font-family: "Courier New", Courier, monospace;
   }
@@ -186,7 +186,7 @@
     border: none;
     border-bottom: 3px solid transparent;
     cursor: pointer;
-    font-size: 14px;
+    font-size: 15px;
     font-weight: 500;
     display: flex;
     align-items: center;

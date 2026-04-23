@@ -178,7 +178,7 @@
 
 <style>
   .track-list {
-    width: 28vw;
+    width: 32vw;
     height: 65vh;
     padding: 20px 10px;
     border-radius: 20px;
