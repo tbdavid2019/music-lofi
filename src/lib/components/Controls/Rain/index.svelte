@@ -7,13 +7,22 @@
   export let volume: number;
 
   const AMBIENT_GAIN_DB = 4;
+  const CROSSFADE_DURATION = 4; // Longer crossfade for smoothness
+  const RAIN_URL = "assets/engine/effects/rain.mp3";
+
   const linearToDb = (value: number) =>
     value === 0 ? -Infinity : 20 * Math.log10(value) + AMBIENT_GAIN_DB;
 
-  let rainPlayer: Tone.GrainPlayer | null = null;
-  let rainVolumeNode: Tone.Volume | null = null;
+  let playerA: Tone.Player | null = null;
+  let playerB: Tone.Player | null = null;
+  let gainA: Tone.Gain | null = null;
+  let gainB: Tone.Gain | null = null;
+  let masterVolume: Tone.Volume | null = null;
   let toneStarted = false;
   let isRaining = false;
+  let scheduleId: number | null = null;
+  let activePlayer: "A" | "B" = "A";
+  let audioBuffer: Tone.ToneAudioBuffer | null = null;
 
   async function ensureToneStarted() {
     if (!toneStarted) {
@@ -22,36 +31,124 @@
     }
   }
 
+  async function setupPlayers() {
+    if (playerA) return;
+
+    masterVolume = new Tone.Volume(linearToDb(volume)).toDestination();
+    
+    // Use Gain nodes for linear crossfading (smoother than decibel Volume nodes)
+    gainA = new Tone.Gain(1).connect(masterVolume);
+    gainB = new Tone.Gain(0).connect(masterVolume);
+
+    audioBuffer = new Tone.ToneAudioBuffer();
+    await audioBuffer.load(RAIN_URL);
+
+    playerA = new Tone.Player({
+      url: audioBuffer,
+      loop: false,
+      autostart: false,
+    }).connect(gainA);
+
+    playerB = new Tone.Player({
+      url: audioBuffer,
+      loop: false,
+      autostart: false,
+    }).connect(gainB);
+  }
+
   async function toggleRain() {
-    if (!rainPlayer) {
+    if (!playerA) {
       await ensureToneStarted();
-      await setupRainPlayer();
+      await setupPlayers();
     }
 
-    if (!rainPlayer) return;
+    if (!playerA || !playerB) return;
 
     if (isRaining) {
-      rainPlayer.stop();
+      stopRain();
     } else {
       await ensureToneStarted();
-      rainPlayer.start();
+      startRain();
     }
 
     isRaining = !isRaining;
   }
 
-  async function setupRainPlayer() {
-    if (rainPlayer) return;
+  function startRain() {
+    if (!playerA || !playerB || !gainA || !gainB || !audioBuffer) return;
 
-    rainVolumeNode = new Tone.Volume(linearToDb(volume)).toDestination();
-    rainPlayer = new Tone.GrainPlayer({
-      url: "assets/engine/effects/rain.mp3",
-      loop: true,
-      autostart: false,
-      grainSize: 2.0,
-      overlap: 0.8,
-    }).connect(rainVolumeNode);
-    await rainPlayer.load();
+    activePlayer = "A";
+    gainA.gain.value = 1;
+    gainB.gain.value = 0;
+    
+    const startTime = Tone.now() + 0.1;
+    playerA.start(startTime);
+
+    const duration = audioBuffer.duration;
+    if (duration <= 0) return;
+
+    // Schedule the next crossfade precisely
+    const interval = duration - CROSSFADE_DURATION;
+    
+    // Clear any existing schedule
+    if (scheduleId !== null) Tone.Transport.clear(scheduleId);
+
+    // Initial scheduling
+    scheduleNextCrossfade(interval);
+    
+    if (Tone.Transport.state !== "started") {
+      Tone.Transport.start();
+    }
+  }
+
+  function scheduleNextCrossfade(interval: number) {
+    scheduleId = Tone.Transport.scheduleOnce((time) => {
+      if (!isRaining) return;
+      performCrossfade(time);
+      // Recursively schedule next
+      scheduleNextCrossfade(interval);
+    }, `+${interval}`);
+  }
+
+  function performCrossfade(time: number) {
+    if (!playerA || !playerB || !gainA || !gainB) return;
+
+    const incoming = activePlayer === "A" ? playerB : playerA;
+    const outgoing = activePlayer === "A" ? playerA : playerB;
+    const incomingGain = activePlayer === "A" ? gainB : gainA;
+    const outgoingGain = activePlayer === "A" ? gainA : gainB;
+
+    // Start incoming player precisely at crossfade time
+    incoming.start(time);
+    
+    // Linear gain ramps are much smoother for noise/ambient loops
+    incomingGain.gain.setValueAtTime(0, time);
+    incomingGain.gain.linearRampToValueAtTime(1, time + CROSSFADE_DURATION);
+
+    outgoingGain.gain.setValueAtTime(1, time);
+    outgoingGain.gain.linearRampToValueAtTime(0, time + CROSSFADE_DURATION);
+
+    // Stop outgoing player after fade out completes
+    outgoing.stop(time + CROSSFADE_DURATION + 0.1);
+
+    activePlayer = activePlayer === "A" ? "B" : "A";
+  }
+
+  function stopRain() {
+    if (scheduleId !== null) {
+      Tone.Transport.clear(scheduleId);
+      scheduleId = null;
+    }
+    
+    // Fade out everything
+    const now = Tone.now();
+    if (gainA) gainA.gain.rampTo(0, 0.8, now);
+    if (gainB) gainB.gain.rampTo(0, 0.8, now);
+    
+    setTimeout(() => {
+      try { playerA?.stop(); } catch(e) {}
+      try { playerB?.stop(); } catch(e) {}
+    }, 1000);
   }
 
   const handleKeydown = (e: KeyboardEvent) => {
@@ -66,12 +163,16 @@
 
   onDestroy(() => {
     window.removeEventListener("keydown", handleKeydown);
-    rainPlayer?.dispose();
-    rainVolumeNode?.dispose();
+    if (scheduleId !== null) Tone.Transport.clear(scheduleId);
+    playerA?.dispose();
+    playerB?.dispose();
+    gainA?.dispose();
+    gainB?.dispose();
+    masterVolume?.dispose();
   });
 
-  $: if (rainVolumeNode) {
-    rainVolumeNode.volume.value = linearToDb(volume);
+  $: if (masterVolume) {
+    masterVolume.volume.value = linearToDb(volume);
   }
 </script>
 
@@ -94,3 +195,4 @@
     aspect-ratio: 4/4;
   }
 </style>
+

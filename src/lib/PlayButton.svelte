@@ -40,18 +40,18 @@
   const linearToDb = (value) =>
     value === 0 ? -Infinity : 20 * Math.log10(value);
 
-  // Setup audio chain - 柔和溫暖 LoFi 品質
+  // Setup audio chain - 溫暖明亮的咖啡廳 LoFi 品質
   const cmp = new Tone.Compressor({
     threshold: -8,
     ratio: 2.5,
     attack: 0.8,
     release: 0.2,
   });
-  const lpf = new Tone.Filter(1400, "lowpass");
+  const lpf = new Tone.Filter(1800, "lowpass");
   const reverb = new Tone.Reverb({
-    decay: 4.5,
-    preDelay: 0.03,
-    wet: 0.35,
+    decay: 3.8,
+    preDelay: 0.025,
+    wet: 0.32,
   });
   // 柔和殘響，非同步預先生成即可
   // @ts-ignore Tone 型別未必包含 generate
@@ -127,64 +127,57 @@
   const grooveStyles: Record<GrooveStyle, GrooveStyleConfig> = {
     cafe: {
       displayName: "Cafe",
-      defaultBpm: 76,
-      swing: 0.35,
-      swingSubdivision: "8n",
+      defaultBpm: 80,
+      swing: 0,
+      swingSubdivision: "4n",
       strumPatterns: [
-        {
-          offsets: [0, 0.12, 0.24, 0.38],
-          release: "1n",
-          velocityRange: [0.22, 0.34],
-          invertChance: 0.3,
-          tailSpacing: 0.14,
-        },
-        {
-          offsets: [0, 0.18, 0.36],
-          release: "1n",
-          velocityRange: [0.2, 0.32],
-          invertChance: 0.25,
-          tailSpacing: 0.16,
-        },
-        {
-          offsets: [0, 0.14, 0.3, 0.5],
-          release: "2n",
-          velocityRange: [0.18, 0.3],
-          invertChance: 0.35,
-          tailSpacing: 0.12,
-        },
         {
           offsets: [0],
           release: "2n",
-          velocityRange: [0.2, 0.3],
-          invertChance: 0.2,
-          tailSpacing: 0.18,
+          velocityRange: [0.28, 0.38],
+          invertChance: 0.1,
+          tailSpacing: 0.3,
+        },
+        {
+          offsets: [0, 0.4],
+          release: "1n",
+          velocityRange: [0.25, 0.35],
+          invertChance: 0.05,
+          tailSpacing: 0.25,
+        },
+        {
+          offsets: [0, 0.25],
+          release: "1n",
+          velocityRange: [0.22, 0.32],
+          invertChance: 0.1,
+          tailSpacing: 0.2,
         },
       ],
-      chordTriadChance: 0.75,
+      chordTriadChance: 0.8, // Match relaxing's simplicity
       melodyDensityRange: [0.12, 0.22],
       melodyOffChance: 0.4,
-      melodyVelocityRange: [0.15, 0.28],
+      melodyVelocityRange: [0.2, 0.35],
       melodyDurationOptions: [
-        { duration: "8n", weight: 0.8 },
-        { duration: "4n", weight: 2.5 },
-        { duration: "2n", weight: 1.5 },
+        { duration: "2n", weight: 3 },
+        { duration: "1n", weight: 1.5 },
+        { duration: "4n", weight: 1 },
       ],
       muteChances: {
-        kick: 0.85,
-        snare: 0.92,
-        hat: 0.8,
+        kick: 0.92,
+        snare: 0.96,
+        hat: 0.88,
       },
       kickProbabilities: {
-        main: 0.25,
-        ghost: 0.02,
+        main: 0.2,
+        ghost: 0,
       },
-      snareHitProbability: 0.15,
-      hatHitProbability: 0.25,
+      snareHitProbability: 0.1,
+      hatHitProbability: 0.15,
       rotation: {
-        loopsRange: [4, 6],
+        loopsRange: [4, 8],
         poolSize: 3,
         reuseProbability: 0.6,
-        durationRangeSeconds: [320, 400],
+        durationRangeSeconds: [350, 450],
       },
     },
     jazz: {
@@ -227,9 +220,9 @@
       melodyOffChance: 0.18,
       melodyVelocityRange: [0.28, 0.48],
       melodyDurationOptions: [
-        { duration: "8n", weight: 2.5 },
-        { duration: "4n", weight: 2 },
-        { duration: "2n", weight: 0.8 },
+        { duration: "4n", weight: 3.5 },
+        { duration: "2n", weight: 2 },
+        { duration: "1n", weight: 0.8 },
       ],
       muteChances: {
         kick: 0.05,
@@ -336,9 +329,9 @@
       melodyOffChance: 0.02,
       melodyVelocityRange: [0.2, 0.34],
       melodyDurationOptions: [
-        { duration: "8n", weight: 3.6 },
-        { duration: "4n", weight: 2.2 },
-        { duration: "2n", weight: 0.8 },
+        { duration: "4n", weight: 4.2 },
+        { duration: "2n", weight: 1.8 },
+        { duration: "1n", weight: 0.6 },
       ],
       muteChances: {
         kick: 0.995,
@@ -1046,10 +1039,14 @@
       }
 
       const directionChoices: Array<-1 | 0 | 1> =
-        grooveStyle === "jazz" ? [-1, 0, 1, 1, 1, 1] : [-1, 0, 1, 1, 1];
+        grooveStyle === "jazz" ? [-1, 0, 1, 1, 1, 1]
+        : grooveStyle === "cafe" ? [0, 1, 1, 1, 1, 1]
+        : [-1, 0, 1, 1, 1];
       melodyDirectionPreference =
         directionChoices[Math.floor(Math.random() * directionChoices.length)];
-      const leapBias = grooveStyle === "jazz" ? 0.55 : 0.4;
+      const leapBias = grooveStyle === "jazz" ? 0.55
+        : grooveStyle === "cafe" ? 0.3
+        : 0.4;
       melodyLeapPreference = Math.random() < leapBias ? 1 : 0;
       melodyUpStreak = 0;
     } else {
@@ -1305,14 +1302,18 @@
     let ascend = ascendRange > 1;
 
     if (descend && ascend) {
-      let ascendBias = grooveStyle === "jazz" ? 0.72 : 0.65;
+      let ascendBias = grooveStyle === "cafe" ? 0.92 // Extremely high upward bias
+        : grooveStyle === "jazz" ? 0.72
+        : 0.65;
       if (melodyDirectionPreference === 1) {
-        ascendBias = 0.9;
+        ascendBias = grooveStyle === "cafe" ? 0.98 : 0.9;
       } else if (melodyDirectionPreference === -1) {
-        ascendBias = grooveStyle === "jazz" ? 0.4 : 0.45;
+        ascendBias = grooveStyle === "cafe" ? 0.85 // Even if preferred down, still stay up mostly
+          : grooveStyle === "jazz" ? 0.4
+          : 0.45;
       }
       if (melodyUpStreak >= 2) {
-        ascendBias = 0.95;
+        ascendBias = grooveStyle === "cafe" ? 0.75 : 0.95; // Keep cafe up longer
       }
       if (Math.random() < ascendBias) {
         descend = false;
