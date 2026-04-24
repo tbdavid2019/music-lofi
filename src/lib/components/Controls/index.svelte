@@ -44,6 +44,9 @@
     border-radius: 50px;
     backdrop-filter: blur(2px);
     background-color: rgba(0, 0, 0, 28%);
+    z-index: 50;
+    pointer-events: auto;
+    position: relative;
   }
 
   @media only screen and (max-width: 600px) {

@@ -178,12 +178,17 @@
 
 <style>
   .track-list {
-    width: 32vw;
-    height: 65vh;
-    padding: 20px 10px;
-    border-radius: 20px;
-    backdrop-filter: blur(0px);
-    z-index: 20;
+    width: 400px;
+    height: 75vh;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    pointer-events: none;
+  }
+
+  .track-list > * {
+    pointer-events: auto;
   }
 
   .wrapper {

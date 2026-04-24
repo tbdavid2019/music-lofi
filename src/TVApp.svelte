@@ -5,6 +5,17 @@
   import TVAmbientTracks from "./lib/components/TVAmbientTracks.svelte";
   import TVBPMControl from "./lib/components/TVBPMControl.svelte";
   import { onMount } from 'svelte';
+  import { bgUrl } from "./lib/stores/bgStore";
+  
+  let isLoaded = false;
+  
+  const onImageLoad = () => {
+    isLoaded = true;
+  };
+
+  $: if ($bgUrl) {
+    isLoaded = false;
+  }
 
   // 跑馬燈狀態資訊
   let marqueeText = "🎧 LoFi Music TV Player";
@@ -63,6 +74,12 @@
 </script>
 
 <main id="bg" class="tv-container">
+  {#if $bgUrl}
+    <div class="bg-container" class:is-loaded={isLoaded}>
+      <img src={$bgUrl} alt="background" on:load={onImageLoad} class="bg-image" />
+    </div>
+  {/if}
+
   <Config />
   
   <!-- TV 兩欄式佈局 -->
@@ -135,6 +152,36 @@
     overflow: hidden;
     padding: 2rem;
     box-sizing: border-box;
+    position: relative;
+  }
+
+  .bg-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    opacity: 0;
+    transition: opacity 1.5s ease-in-out;
+    pointer-events: none;
+  }
+
+  .bg-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    transform: scale(1.1);
+    transition: transform 10s ease-out;
+  }
+
+  .bg-container.is-loaded {
+    opacity: 1;
+  }
+
+  .bg-container.is-loaded .bg-image {
+    transform: scale(1);
   }
 
   .tv-layout {
@@ -144,6 +191,8 @@
     display: flex;
     flex-direction: column;
     color: white;
+    z-index: 10;
+    position: relative;
   }
 
   .tv-header {

@@ -99,6 +99,7 @@
     background-color: rgb(0 0 0 / var(--menu-opacity, 0.4));
     overflow-y: auto;
     animation: show 0.4s ease-in-out;
+    z-index: 60;
   }
   @keyframes show {
     from {

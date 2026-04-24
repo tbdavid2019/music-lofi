@@ -18,6 +18,7 @@
     z-index: -1; /* behind the content */
     background: url("/rain.png");
     animation: rain 0.3s linear infinite;
+    pointer-events: none;
   }
 
   @keyframes rain {

@@ -1,7 +1,6 @@
 <script lang="ts">
   import { IconArrowLeft, IconArrowRight, IconRefresh, IconPhoto, IconHeart } from "@tabler/icons-svelte";
-
-  // Background source types
+  import { bgUrl } from "../../../stores/bgStore";
   type BgSource = 'bing' | 'beauty' | 'local';
   
   // Get settings from localStorage
@@ -30,7 +29,6 @@
     }
   }
   
-  const bg = document.getElementById("bg");
   let isLoadingBing = false;
   let isLoadingBeauty = false;
   
@@ -56,7 +54,7 @@
   // Load initial background based on priority: Beauty > Bing > Local
   else if (useBeautyApi && currentBeautyUrl && !shouldRefreshBeauty) {
     // Use cached Beauty wallpaper (same day)
-    bg.style.backgroundImage = `url('${currentBeautyUrl}')`;
+    bgUrl.set(currentBeautyUrl);
     console.log("📅 使用今日快取的美女桌布");
   } else if (shouldRefreshBeauty) {
     // Auto-refresh Beauty wallpaper (new day)
@@ -64,7 +62,7 @@
     fetchAndSetBeautyWallpaper();
   } else if (useBingApi && currentBingUrl && !shouldRefreshBing) {
     // Use cached Bing wallpaper (same day)
-    bg.style.backgroundImage = `url('${currentBingUrl}')`;
+    bgUrl.set(currentBingUrl);
     console.log("📅 使用今日快取的 Bing 桌布");
   } else if (shouldRefreshBing) {
     // Auto-refresh Bing wallpaper (new day)
@@ -72,7 +70,7 @@
     fetchAndSetBingWallpaper();
   } else {
     // Use local background
-    bg.style.backgroundImage = `url('assets/background/bg${id}.jpg')`;
+    bgUrl.set(`assets/background/bg${id}.jpg`);
   }
 
   // Detect if device is mobile
@@ -192,7 +190,7 @@
     
     if (bingUrl) {
       // Success - use Bing wallpaper
-      bg.style.backgroundImage = `url('${bingUrl}')`;
+      bgUrl.set(bingUrl);
       useBingApi = true;
       useBeautyApi = false; // 關閉美女桌布
       currentBingUrl = bingUrl;
@@ -207,7 +205,7 @@
       console.log("🔄 網路環境失敗，退回到本地背景");
       useBingApi = false;
       useBeautyApi = false;
-      bg.style.backgroundImage = `url('assets/background/bg${id}.jpg')`;
+      bgUrl.set(`assets/background/bg${id}.jpg`);
       localStorage.setItem("use-bing-api", "false");
       localStorage.setItem("use-beauty-api", "false");
     }
@@ -219,7 +217,7 @@
     
     if (beautyUrl) {
       // Success - use Beauty wallpaper
-      bg.style.backgroundImage = `url('${beautyUrl}')`;
+      bgUrl.set(beautyUrl);
       useBeautyApi = true;
       useBingApi = false; // 關閉 Bing 桌布
       currentBeautyUrl = beautyUrl;
@@ -234,7 +232,7 @@
       console.log("🔄 網路環境失敗，退回到本地背景");
       useBeautyApi = false;
       useBingApi = false;
-      bg.style.backgroundImage = `url('assets/background/bg${id}.jpg')`;
+      bgUrl.set(`assets/background/bg${id}.jpg`);
       localStorage.setItem("use-beauty-api", "false");
       localStorage.setItem("use-bing-api", "false");
     }
@@ -245,7 +243,7 @@
     useBingApi = false;
     useBeautyApi = false;
     id = bgId;
-    bg.style.backgroundImage = `url('assets/background/bg${id}.jpg')`;
+    bgUrl.set(`assets/background/bg${id}.jpg`);
     localStorage.setItem("bg-id", id.toString());
     localStorage.setItem("use-bing-api", "false");
     localStorage.setItem("use-beauty-api", "false");
