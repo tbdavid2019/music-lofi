@@ -8,15 +8,15 @@ importers:
 
   .:
     dependencies:
-      '@tabler/icons-svelte':
-        specifier: ^2.17.0
-        version: 2.47.0(svelte@3.59.2)
       '@tauri-apps/api':
         specifier: ^2.0.0
         version: 2.0.0
       '@tauri-apps/plugin-shell':
         specifier: ~2.3.0
         version: 2.3.0
+      lucide-svelte:
+        specifier: ^0.220.0
+        version: 0.220.0(svelte@3.59.2)
       tone:
         specifier: ^14.7.30
         version: 14.9.17
@@ -215,14 +215,6 @@ packages:
       svelte: ^3.54.0 || ^4.0.0 || ^5.0.0-next.0
       vite: ^4.0.0
 
-  '@tabler/icons-svelte@2.47.0':
-    resolution: {integrity: sha512-xL2NyCUUhBQv0lXylgNCpfHtMW4Ihu0hCacaYXeX+NiS1LO0geqXk/0lkrBH+u/ZLX6vyqUYNFjawjzmxthFjw==}
-    peerDependencies:
-      svelte: '>=3 <5'
-
-  '@tabler/icons@2.47.0':
-    resolution: {integrity: sha512-4w5evLh+7FUUiA1GucvGj2ReX2TvOjEr4ejXdwL/bsjoSkof6r1gQmzqI+VHrE2CpJpB3al7bCTulOkFa/RcyA==}
-
   '@tauri-apps/api@2.0.0':
     resolution: {integrity: sha512-moKgCp2EX7X5GiOx/G/bmoEpkFQVVmyS98UaJU4xUVzan+E1BdwlAKcbip+cGldshYOqL4JSwAEN1OkRXeug0Q==}
 
@@ -252,30 +244,35 @@ packages:
     engines: {node: '>= 10'}
     cpu: [arm64]
     os: [linux]
+    libc: [glibc]
 
   '@tauri-apps/cli-linux-arm64-musl@2.6.1':
     resolution: {integrity: sha512-CCgE0uqcWTtU48TmK/J03h5x/hxi3PEc11ci3LQ9WqIE15btyhynNzDKbxKwOyDCMcfbDT+MweoiCPnely2ZRA==}
     engines: {node: '>= 10'}
     cpu: [arm64]
     os: [linux]
+    libc: [musl]
 
   '@tauri-apps/cli-linux-riscv64-gnu@2.6.1':
     resolution: {integrity: sha512-2i3MYr2oKaJk7Tz2FZ+R5x8cV827CudvEXW6FzCER26pfx/PofH/55N7aRQf4+qPXi5O3T+3myq88nRerzHr6g==}
     engines: {node: '>= 10'}
     cpu: [riscv64]
     os: [linux]
+    libc: [glibc]
 
   '@tauri-apps/cli-linux-x64-gnu@2.6.1':
     resolution: {integrity: sha512-of5i3FW1tjTXECtMdirQsQnVIzcKq1s5Cad9YLVa6agEnFnZbFU3rKQ6/Wfu5SZbjSiI7SBO1hksjIAq1vkVcg==}
     engines: {node: '>= 10'}
     cpu: [x64]
     os: [linux]
+    libc: [glibc]
 
   '@tauri-apps/cli-linux-x64-musl@2.6.1':
     resolution: {integrity: sha512-QfAgg7VIlOrTa2X3fBLRp6ugbC5ZonSWgVhNCLDgHLp5Cga41XOi5qU7ZtZhjjCdcWNiE0DtBQmSb1YVhCp+SA==}
     engines: {node: '>= 10'}
     cpu: [x64]
     os: [linux]
+    libc: [musl]
 
   '@tauri-apps/cli-win32-arm64-msvc@2.6.1':
     resolution: {integrity: sha512-ee1h3jwamumGjLEXZA4VsSUcVWTtGpuvxy+nqFfu7wb2k6IcBrFEJGa6yXa7sQjuCAAorLfSIXGuDEJARqnpFw==}
@@ -388,7 +385,7 @@ packages:
 
   glob@7.2.3:
     resolution: {integrity: sha512-nFR0zLpU2YCaRxwoCJvL6UvCH2JFyFVIvwTLsIf21AuHlMskA1hhTdk+LlYJtOlYt9v6dvszD2BGRqBL+iQK9Q==}
-    deprecated: Glob versions prior to v9 are no longer supported
+    deprecated: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
 
   graceful-fs@4.2.11:
     resolution: {integrity: sha512-RbJ5/jmFcNNCcDV5o9eTnBLJ/HszWV0P73bc+Ff4nS/rJj+YaS6IGyiOL0VoBYX+l1Wrl3k63h/KrH+nhJ0XvQ==}
@@ -419,6 +416,12 @@ packages:
   kleur@4.1.5:
     resolution: {integrity: sha512-o+NO+8WrRiQEE4/7nwRJhN1HWpVmJm511pBHUxPLtp0BUISzlBplORYSmTclCnJvQq2tKu/sgl3xVpkc7ZWuQQ==}
     engines: {node: '>=6'}
+
+  lucide-svelte@0.220.0:
+    resolution: {integrity: sha512-NkMuVgKDXZOc3slRGZq/yWOJiWXmp0dnminAVHlqw0ntgT+6XufRXAqSGzsEB7gBvuGozRv1tMciiX97jx/JQg==}
+    deprecated: Package deprecated. Please use @lucide/svelte instead.
+    peerDependencies:
+      svelte: ^3.49.0
 
   magic-string@0.30.17:
     resolution: {integrity: sha512-sNPKHvyjVf7gyjwS4xGTaW/mCnF8wnjtifKBEhxfZ7E/S8tQ0rssrwGNn6q8JH/ohItJfSQp9mBtQYuTlH5QnA==}
@@ -729,13 +732,6 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@tabler/icons-svelte@2.47.0(svelte@3.59.2)':
-    dependencies:
-      '@tabler/icons': 2.47.0
-      svelte: 3.59.2
-
-  '@tabler/icons@2.47.0': {}
-
   '@tauri-apps/api@2.0.0': {}
 
   '@tauri-apps/api@2.6.0': {}
@@ -917,6 +913,10 @@ snapshots:
   is-number@7.0.0: {}
 
   kleur@4.1.5: {}
+
+  lucide-svelte@0.220.0(svelte@3.59.2):
+    dependencies:
+      svelte: 3.59.2
 
   magic-string@0.30.17:
     dependencies:
