@@ -1,11 +1,11 @@
 {
-  "name": "Lofi Music - DAVID888",
-  "short_name": "Lofi Music",
+  "name": "888 Music - DAVID888",
+  "short_name": "888 Music",
   "start_url": ".",
   "display": "standalone",
   "background_color": "#000000",
-  "theme_color": "#000000",
-  "description": "Listen to Lofi Music by DAVID888 on any device.",
+  "theme_color": "#EA580C",
+  "description": "888 Music - 24/7 Lo-Fi & Chill 線上音樂電台與白噪音混音器",
   "icons": [
     {
       "src": "/icons/icon-192.png",

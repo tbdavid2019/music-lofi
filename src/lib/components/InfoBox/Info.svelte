@@ -37,21 +37,23 @@
   <div class="info-overlay">
     <div id="info-box">
       <div id="top-section">
-        <button id="close-btn" on:click={toggleInfoBox}>
+        <button id="close-btn" type="button" title="關閉說明視窗" aria-label="關閉說明視窗" on:click={toggleInfoBox}>
           <X color="white" size={17} />
         </button>
         <button
           id="show-btn"
+          type="button"
           title="Show on start next time"
+          aria-label="Show on start next time"
           on:click={showNextTime}
         >
           <Eye color="white" size={17} />
         </button>
         <div id="app-info">
-          <img id="app-logo" src="LofiEngine.png" alt="" />
+          <img id="app-logo" src="LofiEngine.png" alt="888 Music Logo" />
           <div>
-            <h1>Music Lofi - DAVID888 </h1>
-            <p id="version">Version 1.1.0</p>
+            <h2 class="app-title">888 Music - DAVID888</h2>
+            <p id="version">Version 1.2.0</p>
             <p id="tagline">
               Create your own atmosphere, Lofi Engine sets the mood.
             </p>
@@ -141,8 +143,10 @@
     padding: 10px;
     gap: 20px;
   }
-  #app-info h1 {
+  #app-info .app-title {
     margin: 10px 0px 5px 0px;
+    font-size: 24px;
+    font-weight: 700;
   }
   #app-info #version {
     font-size: 13px;

@@ -1,5 +1,37 @@
 # 更新日誌 (Changelog)
 
+## [1.2.0] - 2026-10-23
+
+### 🎨 品牌識別升級與全方位 SEO / Open Graph 滿分優化 (Brand Identity & SEO 100/100 Upgrade)
+
+- **全新品牌 Logo 與跨平台圖標系統**：
+  - 設計高質感暖橘漸層背景（`#FF7A00` → `#EA580C`）搭配俐落雙行幾何無襯線白字（「888\nMusic」）向量品牌標誌 (`public/favicon.svg`)，圓角率 `rx="112"` 帶有細緻高光內框。
+  - 產出全套高解析度無失真圖標與抗鋸齒圖檔：
+    - `public/favicon.svg` (向量可縮放)
+    - `public/favicon-32x32.png` & `public/favicon-16x16.png`
+    - `public/favicon.ico` (多尺寸 16x16, 32x32, 48x48 複合圖標)
+    - `public/icons/apple-touch-icon.png` (180x180)
+    - `public/icons/icon-192.png` (192x192)
+    - `public/icons/icon-512.png` (512x512)
+    - `public/LofiEngine.png` & `app-icon.png` (512x512)
+- **1200x630 高規格社群分享卡片 (`public/og-image.png`)**：
+  - 專為 Open Graph 與 Twitter Card 打造的 1200x630 高解析社群分享圖卡。
+  - 深邃星空夜色氛圍背景（`#0f111a` → `#1a162b`）烘托溫暖橘光微暈，左側搭載「888\nMusic」品牌方塊，右側整合層次分明之「888 Music / 24/7 Lo-Fi & Chill Radio」、「Cafe Lounge • Lo-Fi Study • Chillhop • Piano Jazz • Ambient Mixer」與網域資訊。
+- **全站 SEO 與社群標籤滿分強化 (`index.html`)**：
+  - 設定 `<html lang="zh-TW">` 標準語系標記。
+  - 標題更新為 `888 Music - 24/7 Lo-Fi & Chill 線上音樂電台與白噪音混音器 | DAVID888`。
+  - 補齊完整 Meta Description、標準網址 Canonical (`https://music.david888.com/`) 與主題色 Theme Color (`#EA580C`)。
+  - 完整配置 Open Graph (`og:type`, `og:site_name`, `og:title`, `og:description`, `og:url`, `og:image`, `og:image:secure_url`, `og:image:width`, `og:image:height`, `og:image:alt`)。
+  - 完整配置 Twitter Card (`twitter:card` `summary_large_image`, `twitter:site`, `twitter:title`, `twitter:description`, `twitter:image`)。
+  - 植入 Google / Schema.org `WebApplication` 與 `WebSite` JSON-LD 結構化資料。
+- **單一語意化 H1 標題結構規範**：
+  - 於 `index.html` 內嵌無障礙隱藏樣式（`.sr-only`）並置入唯一全域主標題 `<h1 class="sr-only">888 Music - 24/7 Lo-Fi & Chill 線上音樂電台與環境白噪音混音器</h1>`。
+  - 重構 `src/lib/components/InfoBox/Info.svelte`，將彈窗內部原本的 `<h1>` 調整為 `<h2 class="app-title">888 Music - DAVID888</h2>`（同步更新 CSS 樣式命名與 Logo `alt="888 Music Logo"`），杜絕頁面產生多重 `<h1>` 的 SEO 扣分問題。
+- **PWA Web App Manifest 規範同步 (`public/site.webmanifest`)**：
+  - 同步更新應用程式名稱為 `888 Music - DAVID888`，短名稱 `888 Music`，主題色更新為品牌暖橘色 `#EA580C`。
+
+---
+
 ## [1.1.0] - 2026-10-23
 
 ### 🚀 重大重構：Route A 24/7 線上 Lo-Fi 電台 + 本地環境音效混音架構
