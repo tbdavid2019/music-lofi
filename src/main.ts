@@ -2,6 +2,15 @@ import "./styles.css";
 import App from "./App.svelte";
 import TVApp from "./TVApp.svelte";
 
+// Keep the app shell available when the browser is offline.
+if (import.meta.env.PROD && "serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js").catch((error) => {
+      console.error("Service worker registration failed:", error);
+    });
+  });
+}
+
 // 檢測當前路徑是否為 TV 版本
 const currentPath = window.location.pathname;
 const isTVMode = currentPath === '/tv' || currentPath === '/tv/' || currentPath.includes('/tv');
