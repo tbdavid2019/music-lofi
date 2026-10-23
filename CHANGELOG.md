@@ -1,5 +1,51 @@
 # 更新日誌 (Changelog)
 
+## [1.3.0] - 2026-10-23
+
+### 🎨 背景系統全面升級與微軟 Bing / 美女官方桌布架構重構 (Background System & Official Wallpaper Overhaul)
+
+- **微軟官方 Bing HPImageArchive 三級高可用桌布架構**：
+  - 徹底剔除已失效的第三方 `bing.img.run` 網域，啟動時主動清理 localStorage 舊有失效網址。
+  - **Tier 1 (同源官方微軟 API 代理)**：
+    - 在 `vercel.json` 設置 `/api/bing-official` 反向代理至 `https://www.bing.com/HPImageArchive.aspx`，並於 `vite.config.ts` 開發伺服器配置代理。
+    - 取得微軟官方每日/隨機高畫質桌布資料，動態適配桌面 (1920x1080) 與手機 (1080x1920) 官方 CDN 解析度，並同步寫入微軟官方版權與地名資訊 (`bgTitle`)。
+  - **Tier 2 (直連 CORS JSON 備援 API)**：
+    - 當靜態環境代理不可用時，自動回退請求 `bing.biturl.top` 及 `peapix.com` 官方摘要 JSON，提取官方微軟 CDN (`www.bing.com/th?id=OHR...`) 高清影像。
+  - **Tier 3 (微軟官方驗證 CDN 影像池)**：
+    - 內建 8 組經 HTTP 驗證為 200 OK 之微軟官方永久典藏桌布資源池，即便在無外部 API 環境下亦能穩定取得微軟官方桌布。
+
+- **美女 / 藝術肖像桌布二級高可用架構**：
+  - 徹底剔除失效的 `api.liuzhuai.com` 端點。
+  - **Tier 1 (即時 API 代理與直連)**：
+    - 在 `vercel.json` 與 `vite.config.ts` 設置 `/api/beauty-official` 代理轉發至 `https://api.btstu.cn/sjbz/api.php`，支援 3.5s 快速超時與 HTTPS 自動規格化。
+  - **Tier 2 (18 組高解析人像與藝術寫真資源池)**：
+    - 精選 13 組經 HTTP 驗證可用之 BTSTU 高畫質人像及 5 組 Unsplash 高畫質藝術寫真桌布，提供順暢隨機切換。
+
+- **10 組全新 16:9 Lo-Fi 原創風格本地主題插畫 (`bg1.jpg`–`bg10.jpg`)**：
+  - 全新生成 10 張風格高度一致的精美 16:9 Lo-Fi 插畫，深度對齊 6 大電台與 4 大環境音效主題：
+    1. `bg1.jpg`：咖啡廳輕音樂 (Cafe Lounge)
+    2. `bg2.jpg`：專注 Lo-Fi Beats (Lo-Fi Study)
+    3. `bg3.jpg`：Chillhop 律動 (Chillhop Groove)
+    4. `bg4.jpg`：深夜爵士鋼琴 (Piano Jazz Bar)
+    5. `bg5.jpg`：純淨療癒鋼琴 (Peaceful Piano)
+    6. `bg6.jpg`：深夜放鬆氛圍 (Nightwave Chill)
+    7. `bg7.jpg`：聽雨夜色 (Rainy Night Alley)
+    8. `bg8.jpg`：星空營火 (Starry Campfire)
+    9. `bg9.jpg`：迷霧森林 (Misty Forest)
+    10. `bg10.jpg`：靜謐海浪 (Moonlit Ocean)
+
+- **電台與背景智慧同步連動 (Station-Synced Background)**：
+  - 新增「隨電台同步切換背景」切換開關（預設為開啟 ON）。
+  - 在本地背景模式下，切換電台頻道時自動切換至與該電台風格完美契合之插畫背景（Cafe → bg1, Lo-Fi → bg2, Chillhop → bg3, Jazz → bg4, Piano → bg5, Nightwave → bg6）。
+  - 設定面板即時呈現當前背景序號與主題名稱（例：`本地背景 (2/10) · 專注 Lo-Fi Beats`）。
+
+- **全域背景狀態中央化與高強韌載入機制 (`bgStore.ts`, `App.svelte`, `TVApp.svelte`)**：
+  - `bgStore.ts` 導出 `bgUrl` 與 `bgTitle`，預設預載優質 Lo-Fi 背景，確保 `App.svelte` 與 `TVApp.svelte` 在設定面板載入前即具備有效背景網址。
+  - 新增 `onImageError` 錯誤監聽與自動回退機制：任何背景若遭遇網路或解析失敗，即刻優雅回退至預設 `/assets/background/bg2.jpg`。
+  - 監聽圖片 `.complete` 屬性與 `tick()`，徹底消除背景透明度停留在 `opacity: 0` 的渲染卡頓問題。
+
+---
+
 ## [1.2.0] - 2026-10-23
 
 ### 🎨 品牌識別升級與全方位 SEO / Open Graph 滿分優化 (Brand Identity & SEO 100/100 Upgrade)

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount, onDestroy } from "svelte";
   import { Eye, X, Sparkles, Keyboard } from "lucide-svelte";
   import ShortCuts from "./ShortCuts.svelte";
   import SocialLinks from "./SocialLinks.svelte";
@@ -11,26 +12,38 @@
     visible = !visible;
   }
 
-  // First time, show info box with features tab
-  if (!localStorage.getItem("shownBefore-info")) {
-    toggleInfoBox();
-    localStorage.setItem("shownBefore-info", "true");
-    activeTab = "features"; // 顯示新功能頁
+  function showNextTime() {
+    try {
+      localStorage.removeItem("shownBefore-info");
+    } catch {
+      // Ignore storage error
+    }
   }
 
-  function showNextTime() {
-    localStorage.removeItem("shownBefore-info");
+  function handleKeyDown(e: KeyboardEvent) {
+    if (e.key === "Escape") {
+      toggleInfoBox();
+    }
   }
-  // Listen to escape key to close info box
-  document.addEventListener(
-    "keydown",
-    function (e) {
-      if (e.key === "Escape") {
+
+  onMount(() => {
+    try {
+      if (!localStorage.getItem("shownBefore-info")) {
         toggleInfoBox();
+        localStorage.setItem("shownBefore-info", "true");
+        activeTab = "features";
       }
-    },
-    false
-  );
+    } catch {
+      // Ignore storage error
+    }
+    document.addEventListener("keydown", handleKeyDown, false);
+  });
+
+  onDestroy(() => {
+    if (typeof document !== "undefined") {
+      document.removeEventListener("keydown", handleKeyDown, false);
+    }
+  });
 </script>
 
 {#if visible}
@@ -53,7 +66,7 @@
           <img id="app-logo" src="LofiEngine.png" alt="888 Music Logo" />
           <div>
             <h2 class="app-title">888 Music - DAVID888</h2>
-            <p id="version">Version 1.2.0</p>
+            <p id="version">Version 1.3.0</p>
             <p id="tagline">
               Create your own atmosphere, Lofi Engine sets the mood.
             </p>

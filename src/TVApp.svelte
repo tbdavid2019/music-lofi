@@ -7,16 +7,38 @@
   import { bgUrl } from "./lib/stores/bgStore";
   import { radioStore, currentStation } from "./lib/stores/radioStore";
   import { Radio, Music2, Info } from "lucide-svelte";
+  import { onMount, tick } from "svelte";
 
   let isLoaded = false;
+  let imgElement: HTMLImageElement | null = null;
 
   const onImageLoad = () => {
     isLoaded = true;
   };
 
+  const onImageError = () => {
+    console.warn("[TVApp] Background image failed to load, falling back to /assets/background/bg2.jpg");
+    if ($bgUrl !== "/assets/background/bg2.jpg") {
+      bgUrl.set("/assets/background/bg2.jpg");
+    } else {
+      isLoaded = true;
+    }
+  };
+
+  function checkImageComplete() {
+    if (imgElement && imgElement.complete && imgElement.naturalWidth > 0) {
+      isLoaded = true;
+    }
+  }
+
   $: if ($bgUrl) {
     isLoaded = false;
+    tick().then(checkImageComplete);
   }
+
+  onMount(() => {
+    checkImageComplete();
+  });
 
   // Marquee text synced with radioStore
   $: marqueeText = `Lo-Fi Radio TV Player • 電台: ${$currentStation.label} (${$currentStation.name}) • 音量: ${Math.round($radioStore.volume * 100)}% • ${$radioStore.isPlaying ? "播放中" : "已暫停"}`;
@@ -25,7 +47,14 @@
 <main id="bg" class="tv-container">
   {#if $bgUrl}
     <div class="bg-container" class:is-loaded={isLoaded}>
-      <img src={$bgUrl} alt="background" on:load={onImageLoad} class="bg-image" />
+      <img
+        bind:this={imgElement}
+        src={$bgUrl}
+        alt="background"
+        on:load={onImageLoad}
+        on:error={onImageError}
+        class="bg-image"
+      />
     </div>
   {/if}
 

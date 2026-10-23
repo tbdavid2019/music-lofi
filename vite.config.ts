@@ -22,6 +22,18 @@ export default defineConfig({
   server: {
     port: 1420,
     strictPort: true,
+    proxy: {
+      "/api/bing-official": {
+        target: "https://www.bing.com",
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/bing-official/, "/HPImageArchive.aspx"),
+      },
+      "/api/beauty-official": {
+        target: "https://api.btstu.cn",
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/beauty-official/, "/sjbz/api.php"),
+      },
+    },
   },
   // to make use of `TAURI_DEBUG` and other env variables
   // https://tauri.studio/v1/api/config#buildconfig.beforedevcommand

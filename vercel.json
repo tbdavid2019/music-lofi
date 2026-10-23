@@ -14,6 +14,14 @@
       "destination": "/index.html"
     },
     {
+      "source": "/api/bing-official",
+      "destination": "https://www.bing.com/HPImageArchive.aspx"
+    },
+    {
+      "source": "/api/beauty-official",
+      "destination": "https://api.btstu.cn/sjbz/api.php"
+    },
+    {
       "source": "/((?!api/).*)",
       "destination": "/index.html"
     }

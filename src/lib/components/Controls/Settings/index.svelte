@@ -35,10 +35,6 @@
   onMount(() => {
     window.addEventListener("keydown", handleKeydown);
     document.addEventListener("click", handleClickOutside);
-    toggle();
-    setTimeout(() => {
-      toggle();
-    }, 10);
   });
 
   onDestroy(() => {
@@ -62,21 +58,22 @@
   >
     <Settings size={22} color={isActive ? "black" : "white"} />
   </button>
-  {#if isActive}
-    <div class="settings-container">
-      <div>
-        <UIConfig />
-        <Background />
-        <Volume />
-        <PresetManager />
-        <Timer />
-        <small class="info-label">按 ESC 鍵可查看更多資訊與說明</small>
-      </div>
+  <div class="settings-container" class:is-hidden={!isActive}>
+    <div>
+      <UIConfig />
+      <Background />
+      <Volume />
+      <PresetManager />
+      <Timer />
+      <small class="info-label">按 ESC 鍵可查看更多資訊與說明</small>
     </div>
-  {/if}
+  </div>
 </div>
 
 <style>
+  .settings-container.is-hidden {
+    display: none !important;
+  }
   .settings-trigger-btn {
     color: white;
     border-radius: 50%;
