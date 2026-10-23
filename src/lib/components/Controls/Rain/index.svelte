@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { IconCloudRain } from "@tabler/icons-svelte";
+  import { CloudRain } from "lucide-svelte";
   import { onDestroy, onMount } from "svelte";
   import * as Tone from "tone";
   import RainAnimation from "./RainAnimation.svelte";
@@ -152,7 +152,9 @@
   }
 
   const handleKeydown = (e: KeyboardEvent) => {
-    if (e.key === "a") {
+    const target = e.target as HTMLElement | null;
+    if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA")) return;
+    if (e.key === "a" || e.key === "A" || e.key === "q" || e.key === "Q") {
       toggleRain();
     }
   };
@@ -178,21 +180,35 @@
 
 <div>
   <button
-    style={`
-      background-color: ${isRaining ? "white" : "transparent"};
-      `}
+    type="button"
+    class="effect-btn"
+    class:active={isRaining}
     on:click={toggleRain}
+    title="雨聲 (Q/A)"
+    aria-label="Rain"
   >
-    <IconCloudRain size={25} color={isRaining ? "black" : "white"} />
+    <CloudRain size={22} color={isRaining ? "black" : "white"} />
   </button>
   <RainAnimation {isRaining} />
 </div>
 
 <style>
-  button {
+  .effect-btn {
     color: white;
     border-radius: 50%;
-    aspect-ratio: 4/4;
+    aspect-ratio: 1/1;
+    width: 38px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .effect-btn.active {
+    background-color: white;
   }
 </style>
 

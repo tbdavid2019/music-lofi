@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { IconCopy, IconMinus, IconSquare, IconX } from "@tabler/icons-svelte";
+  import { Copy, Minus, Square, X } from "lucide-svelte";
   import { onMount } from "svelte";
   
   let isMaximized = false;
@@ -47,17 +47,17 @@
 
 <div class="controls">
   <div class="minimize" id="minimize-wl">
-    <IconMinus size={14} />
+    <Minus size={14} />
   </div>
   <div class="maximize" id="maximaze-wl">
     {#if isMaximized}
-      <IconCopy size={14} />
+      <Copy size={14} />
     {:else}
-      <IconSquare size={12} />
+      <Square size={12} />
     {/if}
   </div>
   <div class="close" id="close-maximaze-wl">
-    <IconX size={14} />
+    <X size={14} />
   </div>
 </div>
 

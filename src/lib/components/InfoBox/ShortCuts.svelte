@@ -1,88 +1,85 @@
 <script lang="ts">
   import {
-    IconArrowDown,
-    IconArrowLeft,
-    IconArrowRight,
-    IconArrowUp,
-  } from "@tabler/icons-svelte";
+    ArrowRight,
+    ArrowLeft,
+    ArrowUp,
+    ArrowDown,
+    Keyboard,
+  } from "lucide-svelte";
+
   let ambientTracks = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 </script>
 
 <div class="shortcuts">
-  <h4>Shortcuts 鍵盤快捷鍵</h4>
+  <div class="shortcuts-header">
+    <Keyboard size={18} class="shortcuts-icon" />
+    <h4>鍵盤快捷鍵 (Keyboard Shortcuts)</h4>
+  </div>
+
   <!-- General Shortcuts -->
-  <h5 style="margin-left: 10px;">General 一般功能</h5>
+  <h5 class="section-heading">一般功能 (General)</h5>
   <div class="shortcut">
-    <div class="shortcut-key">Esc</div>
-    <div class="shortcut-desc">Show/hide This Box 顯示/隱藏此視窗</div>
+    <div class="shortcut-key">ESC</div>
+    <div class="shortcut-desc">顯示/隱藏此視窗 (Toggle Info Box)</div>
   </div>
   <div class="shortcut">
     <div class="shortcut-key">J</div>
-    <div class="shortcut-desc">Open/close Settings 開啟/關閉設定</div>
+    <div class="shortcut-desc">開啟/關閉設定 (Toggle Settings)</div>
   </div>
   <div class="shortcut">
-    <div class="shortcut-key"><IconArrowRight size={15} /></div>
-    <div class="shortcut-desc">Next Background Image 下一張背景圖片</div>
+    <div class="shortcut-key"><ArrowRight size={14} /></div>
+    <div class="shortcut-desc">下一張背景圖片 (Next Background)</div>
   </div>
   <div class="shortcut">
-    <div class="shortcut-key"><IconArrowLeft size={15} /></div>
-    <div class="shortcut-desc">Previous Background Image 上一張背景圖片</div>
-  </div>
-  <div class="shortcut">
-    <div class="shortcut-key">CTRL + R</div>
-    <div class="shortcut-desc">Restart 重新啟動</div>
+    <div class="shortcut-key"><ArrowLeft size={14} /></div>
+    <div class="shortcut-desc">上一張背景圖片 (Previous Background)</div>
   </div>
 
-  <h5 style="margin-left: 10px;">Main Track 主音軌</h5>
+  <!-- Main Radio -->
+  <h5 class="section-heading">線上電台 (Main Radio)</h5>
   <div class="shortcut">
     <div class="shortcut-key">SPACEBAR</div>
-    <div class="shortcut-desc">Play/Pause Main Track 播放/暫停主音軌</div>
+    <div class="shortcut-desc">播放 / 暫停主電台 (Play/Pause Radio)</div>
   </div>
   <div class="shortcut">
-    <div class="shortcut-key">R</div>
-    <div class="shortcut-desc">Regenerate Melody 重新生成旋律</div>
+    <div class="shortcut-key">N</div>
+    <div class="shortcut-desc">切換下一電台 (Next Station)</div>
   </div>
   <div class="shortcut">
-    <div class="shortcut-key">M</div>
-    <div class="shortcut-desc">Toggle Melody On/Off 開關旋律</div>
+    <div class="shortcut-key">P</div>
+    <div class="shortcut-desc">切換上一電台 (Previous Station)</div>
   </div>
+
   <!-- Effects Shortcuts -->
-  <h5 style="margin-left: 10px;">Effects 效果控制</h5>
+  <h5 class="section-heading">環境音效 (Ambient Effects)</h5>
   <div class="shortcut">
-    <div class="shortcut-key">Q</div>
-    <div class="shortcut-desc">Control The Rain 控制雨聲</div>
+    <div class="shortcut-key">Q / A</div>
+    <div class="shortcut-desc">雨聲開關 (Toggle Rain)</div>
   </div>
   <div class="shortcut">
-    <div class="shortcut-key">W</div>
-    <div class="shortcut-desc">Control The Campfire 控制營火聲</div>
+    <div class="shortcut-key">W / F</div>
+    <div class="shortcut-desc">營火聲開關 (Toggle Campfire)</div>
   </div>
   <div class="shortcut">
-    <div class="shortcut-key">E</div>
-    <div class="shortcut-desc">Control The Jungle Sounds 控制叢林聲音</div>
+    <div class="shortcut-key">E / D</div>
+    <div class="shortcut-desc">叢林鳥鳴開關 (Toggle Jungle)</div>
   </div>
   <div class="shortcut">
-    <div class="shortcut-key">T</div>
-    <div class="shortcut-desc">Control The Thunder Storm 控制雷雨聲</div>
+    <div class="shortcut-key">T / S</div>
+    <div class="shortcut-desc">雷雨聲開關 (Toggle Thunder)</div>
   </div>
+
   <!-- Ambient Tracks Shortcuts -->
-  <h5 style="margin-left: 10px;">Ambient Tracks 環境音軌</h5>
-  <div class="shortcut">
-    <div class="shortcut-key"><IconArrowUp size={15} /></div>
-    <div class="shortcut-desc">Navigate To Next Track 切換到下一個音軌</div>
-  </div>
-  <div class="shortcut">
-    <div class="shortcut-key"><IconArrowDown size={15} /></div>
-    <div class="shortcut-desc">Navigate To Previous Track 切換到上一個音軌</div>
-  </div>
+  <h5 class="section-heading">背景音軌 (Ambient Tracks)</h5>
   <div class="shortcut">
     <div class="shortcut-key">K</div>
-    <div class="shortcut-desc">Stop All Ambient Sounds 停止所有環境音效</div>
+    <div class="shortcut-desc">停止所有背景音軌 (Stop All Tracks)</div>
   </div>
   {#each ambientTracks as track}
     <div class="shortcut">
       <div class="shortcut-key">{track}</div>
       <div class="shortcut-desc">
-        Play/Pause Ambient Track {track} 播放/暫停環境音軌 {track}
+        播放/暫停音軌 {track} (Toggle Track {track})
       </div>
     </div>
   {/each}
@@ -92,30 +89,62 @@
   .shortcuts {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
-    padding: 0 10px;
+    gap: 0.6rem;
+    padding: 0 4px;
   }
-  h4,
-  h5 {
+
+  .shortcuts-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+
+  :global(.shortcuts-icon) {
+    color: #a855f7;
+  }
+
+  h4 {
     margin: 0;
+    font-size: 15px;
+    font-weight: 600;
   }
+
+  .section-heading {
+    margin: 8px 0 2px 0;
+    font-size: 12px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.7);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
   .shortcut {
     display: flex;
-    gap: 1rem;
-    font-size: small;
-    margin-left: 20px;
+    align-items: center;
+    gap: 12px;
+    background: rgba(255, 255, 255, 0.04);
+    padding: 6px 10px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
   }
 
   .shortcut-key {
-    min-width: 30px;
-    background-color: #fff;
-    color: #000;
-    padding: 5px 10px;
-    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    min-width: 28px;
     text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .shortcut-desc {
-    color: #fff;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.75);
   }
 </style>

@@ -1,25 +1,10 @@
 <script lang="ts">
-  import {
-    IconBrandGithub,
-    // IconBrandInstagram,
-    // IconBrandPatreon,
-    // IconBrandTwitter,
-    // IconLink,
-  } from "@tabler/icons-svelte";
+  import { Github } from "lucide-svelte";
 </script>
 
 <div class="social-links">
-  <!-- <a href="https://twitter.com" target="_blank">
-    <IconBrandTwitter size={25} />
-  </a>
-  <a href="https://patreon.com" target="_blank">
-    <IconBrandPatreon size={25} />
-  </a>
-  <a href="https://LofiEngine.com" target="_blank">
-    <IconLink size={25} />
-  </a> -->
-  <a href="https://github.com/tbdavid2019/music-lofi" target="_blank">
-    <IconBrandGithub size={25} />
+  <a href="https://github.com/tbdavid2019/music-lofi" target="_blank" rel="noreferrer" aria-label="GitHub Repository">
+    <Github size={22} />
   </a>
 </div>
 

@@ -1,147 +1,194 @@
 <script lang="ts">
-  // 環境音效狀態
-  let effects = {
-    rain: { active: false, audio: null as HTMLAudioElement | null, volume: 0.5 },
-    thunder: { active: false, audio: null as HTMLAudioElement | null, volume: 0.4 },
-    campfire: { active: false, audio: null as HTMLAudioElement | null, volume: 0.6 },
-    jungle: { active: false, audio: null as HTMLAudioElement | null, volume: 0.5 }
-  };
-  
-  // 音效檔案路徑
-  const effectFiles = {
-    rain: "assets/engine/effects/rain.mp3",
-    thunder: "assets/engine/effects/thunder.mp3", 
-    campfire: "assets/engine/effects/campfire.mp3",
-    jungle: "assets/engine/effects/jungle.mp3"
-  };
-  
-  // 音效名稱 (中英文)
-  const effectNames = {
-    rain: { icon: "🌧️", name: "雨聲", en: "Rain" },
-    thunder: { icon: "⛈️", name: "雷聲", en: "Thunder" },
-    campfire: { icon: "🔥", name: "營火", en: "Campfire" },
-    jungle: { icon: "🌿", name: "叢林", en: "Jungle" }
-  };
-  
-  function toggleEffect(effectName: keyof typeof effects) {
-    const effect = effects[effectName];
-    
-    if (effect.active) {
-      // 停止音效
-      if (effect.audio) {
-        effect.audio.pause();
-        effect.audio.currentTime = 0;
+  import {
+    CloudRain,
+    CloudLightning,
+    Flame,
+    Trees,
+    Plus,
+    Minus,
+  } from "lucide-svelte";
+  import { onMount, onDestroy } from "svelte";
+
+  type EffectKey = "rain" | "thunder" | "campfire" | "jungle";
+
+  interface EffectItem {
+    key: EffectKey;
+    icon: typeof CloudRain;
+    name: string;
+    en: string;
+    file: string;
+    active: boolean;
+    volume: number;
+    audio: HTMLAudioElement | null;
+  }
+
+  let effectList: EffectItem[] = [
+    {
+      key: "rain",
+      icon: CloudRain,
+      name: "雨聲",
+      en: "Rain",
+      file: "assets/engine/effects/rain.mp3",
+      active: false,
+      volume: 0.5,
+      audio: null,
+    },
+    {
+      key: "thunder",
+      icon: CloudLightning,
+      name: "雷聲",
+      en: "Thunder",
+      file: "assets/engine/effects/thunder.mp3",
+      active: false,
+      volume: 0.4,
+      audio: null,
+    },
+    {
+      key: "campfire",
+      icon: Flame,
+      name: "營火",
+      en: "Campfire",
+      file: "assets/engine/effects/fire.mp3",
+      active: false,
+      volume: 0.6,
+      audio: null,
+    },
+    {
+      key: "jungle",
+      icon: Trees,
+      name: "叢林",
+      en: "Jungle",
+      file: "assets/engine/effects/jungle.mp3",
+      active: false,
+      volume: 0.5,
+      audio: null,
+    },
+  ];
+
+  function toggleEffect(item: EffectItem) {
+    if (item.active) {
+      if (item.audio) {
+        item.audio.pause();
+        item.audio.currentTime = 0;
       }
-      effect.active = false;
+      item.active = false;
     } else {
-      // 開始音效
-      if (!effect.audio) {
-        effect.audio = new Audio(effectFiles[effectName]);
-        effect.audio.loop = true;
-        effect.audio.volume = effect.volume;
+      if (!item.audio) {
+        item.audio = new Audio(item.file);
+        item.audio.loop = true;
+        item.audio.volume = item.volume;
       }
-      
-      effect.audio.play().catch(e => {
-        console.warn(`${effectName} 音效播放失敗:`, e);
+      item.audio.play().catch((e) => {
+        console.warn(`${item.name} 音效播放失敗:`, e);
       });
-      effect.active = true;
+      item.active = true;
     }
-    
-    // 觸發響應式更新
-    effects = { ...effects };
+    effectList = [...effectList];
   }
-  
-  function adjustEffectVolume(effectName: keyof typeof effects, delta: number) {
-    const effect = effects[effectName];
-    effect.volume = Math.max(0, Math.min(1, effect.volume + delta));
-    
-    if (effect.audio) {
-      effect.audio.volume = effect.volume;
+
+  function adjustEffectVolume(item: EffectItem, delta: number) {
+    item.volume = Math.max(0, Math.min(1, item.volume + delta));
+    if (item.audio) {
+      item.audio.volume = item.volume;
     }
-    
-    effects = { ...effects };
+    effectList = [...effectList];
   }
-  
-  // 停止所有音效
+
   function stopAllEffects() {
-    Object.keys(effects).forEach(effectName => {
-      const effect = effects[effectName as keyof typeof effects];
-      if (effect.active && effect.audio) {
-        effect.audio.pause();
-        effect.audio.currentTime = 0;
-        effect.active = false;
+    effectList.forEach((item) => {
+      if (item.active && item.audio) {
+        item.audio.pause();
+        item.audio.currentTime = 0;
+        item.active = false;
       }
     });
-    effects = { ...effects };
+    effectList = [...effectList];
   }
-  
-  // 鍵盤快捷鍵 (TV 遙控器)
+
   function handleKeydown(e: KeyboardEvent) {
-    switch(e.code) {
-      case 'Digit1':
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    const target = e.target as HTMLElement | null;
+    if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) return;
+
+    switch (e.code) {
+      case "KeyQ":
+      case "KeyA":
         e.preventDefault();
-        toggleEffect('rain');
+        toggleEffect(effectList[0]);
         break;
-      case 'Digit2':
+      case "KeyE":
+      case "KeyS":
         e.preventDefault();
-        toggleEffect('thunder');
+        toggleEffect(effectList[1]);
         break;
-      case 'Digit3':
+      case "KeyW":
+      case "KeyF":
         e.preventDefault();
-        toggleEffect('campfire');
+        toggleEffect(effectList[2]);
         break;
-      case 'Digit4':
+      case "KeyR":
+      case "KeyD":
         e.preventDefault();
-        toggleEffect('jungle');
+        toggleEffect(effectList[3]);
         break;
-      case 'KeyK':
+      case "KeyK":
         e.preventDefault();
         stopAllEffects();
         break;
     }
   }
-  
-  if (typeof window !== 'undefined') {
-    window.addEventListener('keydown', handleKeydown);
-  }
+
+  onMount(() => {
+    window.addEventListener("keydown", handleKeydown);
+  });
+
+  onDestroy(() => {
+    if (typeof window !== "undefined") {
+      window.removeEventListener("keydown", handleKeydown);
+    }
+    stopAllEffects();
+  });
 </script>
 
 <div class="tv-controls">
-  <!-- 音效按鈕網格 -->
   <div class="effects-grid">
-    {#each Object.entries(effectNames) as [key, info]}
-      {@const effect = effects[key]}
+    {#each effectList as item (item.key)}
       <div class="effect-item">
-        <!-- 主控制按鈕 -->
-        <button 
-          class="effect-button" 
-          class:active={effect.active}
-          on:click={() => toggleEffect(key)}
+        <button
+          type="button"
+          class="effect-button"
+          class:active={item.active}
+          on:click={() => toggleEffect(item)}
         >
-          <div class="effect-icon">{info.icon}</div>
-          <div class="effect-name">{info.name}</div>
+          <div class="effect-icon">
+            <svelte:component this={item.icon} size={24} />
+          </div>
+          <div class="effect-name">{item.name}</div>
           <div class="effect-status">
-            {effect.active ? 'ON' : 'OFF'}
+            {item.active ? "ON" : "OFF"}
           </div>
         </button>
-        
-        <!-- 音量控制 -->
+
         <div class="volume-controls">
-          <span class="volume-label">音量: {Math.round(effect.volume * 100)}%</span>
+          <span class="volume-label">音量: {Math.round(item.volume * 100)}%</span>
           <div class="volume-buttons">
-            <button 
+            <button
+              type="button"
               class="volume-adjust-btn"
-              on:click={() => adjustEffectVolume(key, -0.1)}
-              disabled={!effect.active}
+              on:click={() => adjustEffectVolume(item, -0.1)}
+              disabled={!item.active}
+              aria-label="降低音量"
             >
-              ➖
+              <Minus size={14} />
             </button>
-            <button 
+            <button
+              type="button"
               class="volume-adjust-btn"
-              on:click={() => adjustEffectVolume(key, 0.1)}
-              disabled={!effect.active}
+              on:click={() => adjustEffectVolume(item, 0.1)}
+              disabled={!item.active}
+              aria-label="提高音量"
             >
-              ➕
+              <Plus size={14} />
             </button>
           </div>
         </div>
@@ -157,17 +204,9 @@
     gap: 1rem;
     width: 100%;
     height: 100%;
-    overflow: hidden; /* 確保不產生捲軸 */
+    overflow: hidden;
   }
-  
-  .controls-title {
-    font-size: 1.5rem;
-    margin: 0 0 0.5rem 0;
-    color: #f0f8ff;
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
-    text-align: center;
-  }
-  
+
   .effects-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -175,61 +214,67 @@
     flex: 1;
     min-height: 0;
   }
-  
+
   .effect-item {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 0.5rem;
   }
-  
+
   .effect-button {
     width: 100%;
-    height: 70px;
-    background: rgba(255, 255, 255, 0.1);
+    height: 72px;
+    background: rgba(255, 255, 255, 0.08);
     color: white;
-    border: 2px solid rgba(255, 255, 255, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 12px;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.25s ease;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 0.2rem;
+    gap: 0.25rem;
     backdrop-filter: blur(5px);
-    padding: 0.2rem;
+    padding: 0.3rem;
     box-sizing: border-box;
   }
-  
+
   .effect-button:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.16);
     transform: translateY(-2px);
   }
-  
+
   .effect-button.active {
-    background: rgba(72, 187, 120, 0.3);
-    border-color: rgba(72, 187, 120, 0.6);
-    box-shadow: 0 0 20px rgba(72, 187, 120, 0.3);
+    background: rgba(74, 222, 128, 0.25);
+    border-color: rgba(74, 222, 128, 0.6);
+    box-shadow: 0 0 18px rgba(74, 222, 128, 0.3);
   }
-  
+
   .effect-icon {
-    font-size: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
-  
+
+  .effect-button.active .effect-icon {
+    color: #4ade80;
+  }
+
   .effect-name {
     font-size: 0.85rem;
     font-weight: 500;
     line-height: 1.1;
   }
-  
+
   .effect-status {
     font-size: 0.7rem;
     opacity: 0.8;
     font-weight: bold;
     line-height: 1;
   }
-  
+
   .volume-controls {
     display: flex;
     flex-direction: column;
@@ -237,17 +282,17 @@
     gap: 0.3rem;
     width: 100%;
   }
-  
+
   .volume-label {
     font-size: 0.75rem;
     opacity: 0.8;
   }
-  
+
   .volume-buttons {
     display: flex;
     gap: 0.5rem;
   }
-  
+
   .volume-adjust-btn {
     width: 28px;
     height: 28px;
@@ -256,34 +301,30 @@
     border: 1px solid rgba(255, 255, 255, 0.3);
     border-radius: 50%;
     cursor: pointer;
-    font-size: 0.8rem;
-    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
   }
-  
+
   .volume-adjust-btn:hover:not(:disabled) {
     background: rgba(255, 255, 255, 0.2);
     transform: scale(1.1);
   }
-  
+
   .volume-adjust-btn:disabled {
     opacity: 0.3;
     cursor: not-allowed;
   }
-  
-  /* 響應式設計 */
+
   @media (max-width: 768px) {
     .effects-grid {
-      grid-template-columns: 1fr;
-      gap: 1.5rem;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.75rem;
     }
-    
     .effect-button {
-      width: 160px;
-      height: 100px;
-    }
-    
-    .controls-title {
-      font-size: 1.8rem;
+      width: 100%;
+      height: 76px;
     }
   }
 </style>

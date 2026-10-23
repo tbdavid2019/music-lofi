@@ -1,51 +1,87 @@
 <script lang="ts">
-  import { IconTrees } from "@tabler/icons-svelte";
-  import { onMount } from "svelte";
+  import { Trees } from "lucide-svelte";
+  import { onDestroy } from "svelte";
 
   export let volume: number;
 
-  let jungle = new Audio("assets/engine/effects/jungle.mp3");
+  let jungle: HTMLAudioElement | null = null;
   let isActive = false;
 
-  function toggleSound() {
-    if (isActive) {
-      jungle.pause();
-    } else {
-      jungle.play();
+  function getJungleAudio() {
+    if (!jungle && typeof window !== "undefined") {
+      jungle = new Audio("assets/engine/effects/jungle.mp3");
       jungle.loop = true;
-      jungle.volume = volume;
     }
+    return jungle;
+  }
 
+  $: if (jungle) {
+    jungle.volume = volume;
+  }
+
+  function toggleSound() {
+    const a = getJungleAudio();
+    if (isActive) {
+      a?.pause();
+    } else {
+      if (a) {
+        a.volume = volume;
+        a.play().catch((e) => console.warn("Jungle audio play error:", e));
+      }
+    }
     isActive = !isActive;
   }
 
-  // Shortuct to toggle jungle with "D" key
-  window.addEventListener("keydown", (e) => {
-    if (e.key === "d") {
+  function handleKeydown(e: KeyboardEvent) {
+    const target = e.target as HTMLElement | null;
+    if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA")) return;
+    if (e.key === "e" || e.key === "E" || e.key === "d" || e.key === "D") {
       toggleSound();
     }
-  });
-  // Update volume
-  onMount(() => {
-    setInterval(() => {
-      jungle.volume = volume;
-    },100);
+  }
+
+  if (typeof window !== "undefined") {
+    window.addEventListener("keydown", handleKeydown);
+  }
+
+  onDestroy(() => {
+    if (typeof window !== "undefined") {
+      window.removeEventListener("keydown", handleKeydown);
+    }
+    if (jungle) {
+      jungle.pause();
+      jungle = null;
+    }
   });
 </script>
 
 <button
-  style={`
-        background-color: ${isActive ? "white" : "transparent"};
-        `}
+  type="button"
+  class="effect-btn"
+  class:active={isActive}
   on:click={toggleSound}
+  title="叢林鳥鳴 (E/D)"
+  aria-label="Jungle"
 >
-  <IconTrees size={25} color={isActive ? "black" : "white"} />
+  <Trees size={22} color={isActive ? "black" : "white"} />
 </button>
 
 <style>
-  button {
+  .effect-btn {
     color: white;
     border-radius: 50%;
-    aspect-ratio: 4/4;
+    aspect-ratio: 1/1;
+    width: 38px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .effect-btn.active {
+    background-color: white;
   }
 </style>

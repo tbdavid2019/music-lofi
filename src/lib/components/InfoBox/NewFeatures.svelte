@@ -1,87 +1,111 @@
 <script lang="ts">
   import PresetManager from "../Controls/Settings/PresetManager.svelte";
-  import InstrumentControls from "../Controls/Settings/InstrumentControls.svelte";
-  import Recorder from "../Recorder/Recorder.svelte";
   import Timer from "../Timer/Timer.svelte";
-  import BPMControl from "./BPMControl.svelte";
+  import { Sparkles, Radio, Sliders, Clock, ChevronDown, ChevronRight } from "lucide-svelte";
+  import { STATIONS, radioStore, playStation } from "../../stores/radioStore";
 
-  let activeSection: "bpm" | "presets" | "instruments" | "recorder" | "timer" | null = "bpm"; // 默認展開 BPM
+  let activeSection: "stations" | "presets" | "timer" | null = "stations";
 </script>
 
 <div class="features-guide">
-  <h2>🎉 新功能中心</h2>
-  <p class="subtitle">直接在這裡操作所有新功能，無需跳轉！</p>
-  
-  <!-- BPM 控制器 - 最核心功能 -->
-  <BPMControl />
-  
+  <div class="title-row">
+    <Sparkles size={22} class="header-sparkle" />
+    <h2>功能中心</h2>
+  </div>
+  <p class="subtitle">精選 24/7 Lo-Fi & Chill 線上電台與環境氛圍混音器</p>
+
   <!-- 功能卡片選單 -->
   <div class="feature-cards">
-    <button 
+    <button
+      type="button"
+      class="feature-card"
+      class:active={activeSection === "stations"}
+      on:click={() => (activeSection = activeSection === "stations" ? null : "stations")}
+    >
+      <div class="card-icon">
+        <Radio size={20} />
+      </div>
+      <div class="card-content">
+        <h3>精選電台</h3>
+        <p>6 大 24/7 高音質線上頻道</p>
+      </div>
+      <div class="card-arrow">
+        {#if activeSection === "stations"}
+          <ChevronDown size={16} />
+        {:else}
+          <ChevronRight size={16} />
+        {/if}
+      </div>
+    </button>
+
+    <button
+      type="button"
       class="feature-card"
       class:active={activeSection === "presets"}
-      on:click={() => activeSection = activeSection === "presets" ? null : "presets"}
+      on:click={() => (activeSection = activeSection === "presets" ? null : "presets")}
     >
-      <div class="card-icon">🎵</div>
+      <div class="card-icon">
+        <Sliders size={20} />
+      </div>
       <div class="card-content">
         <h3>預設管理</h3>
-        <p>保存和載入您的配置</p>
+        <p>保存和載入您的自訂設定</p>
       </div>
-      <div class="card-arrow">{activeSection === "presets" ? "▼" : "▶"}</div>
+      <div class="card-arrow">
+        {#if activeSection === "presets"}
+          <ChevronDown size={16} />
+        {:else}
+          <ChevronRight size={16} />
+        {/if}
+      </div>
     </button>
 
-    <button 
-      class="feature-card"
-      class:active={activeSection === "instruments"}
-      on:click={() => activeSection = activeSection === "instruments" ? null : "instruments"}
-    >
-      <div class="card-icon">�️</div>
-      <div class="card-content">
-        <h3>樂器控制</h3>
-        <p>調整各樂器音量（移除鼓聲）</p>
-      </div>
-      <div class="card-arrow">{activeSection === "instruments" ? "▼" : "▶"}</div>
-    </button>
-
-    <button 
-      class="feature-card"
-      class:active={activeSection === "recorder"}
-      on:click={() => activeSection = activeSection === "recorder" ? null : "recorder"}
-    >
-      <div class="card-icon">🎙️</div>
-      <div class="card-content">
-        <h3>錄音功能</h3>
-        <p>錄製您的 Lo-Fi 音樂</p>
-      </div>
-      <div class="card-arrow">{activeSection === "recorder" ? "▼" : "▶"}</div>
-    </button>
-
-    <button 
+    <button
+      type="button"
       class="feature-card"
       class:active={activeSection === "timer"}
-      on:click={() => activeSection = activeSection === "timer" ? null : "timer"}
+      on:click={() => (activeSection = activeSection === "timer" ? null : "timer")}
     >
-      <div class="card-icon">⏰</div>
+      <div class="card-icon">
+        <Clock size={20} />
+      </div>
       <div class="card-content">
-        <h3>定時器</h3>
+        <h3>專注定時器</h3>
         <p>番茄鐘、睡眠定時器</p>
       </div>
-      <div class="card-arrow">{activeSection === "timer" ? "▼" : "▶"}</div>
+      <div class="card-arrow">
+        {#if activeSection === "timer"}
+          <ChevronDown size={16} />
+        {:else}
+          <ChevronRight size={16} />
+        {/if}
+      </div>
     </button>
   </div>
 
   <!-- 功能內容區域 -->
-  {#if activeSection === "presets"}
+  {#if activeSection === "stations"}
+    <div class="feature-content stations-quick-list">
+      {#each STATIONS as s (s.id)}
+        <button
+          type="button"
+          class="station-quick-item"
+          class:current={$radioStore.currentStationId === s.id}
+          on:click={() => playStation(s.id, true)}
+        >
+          <div class="sq-info">
+            <span class="sq-name">{s.label} ({s.name})</span>
+            <span class="sq-desc">{s.description}</span>
+          </div>
+          <span class="sq-status">
+            {$radioStore.currentStationId === s.id && $radioStore.isPlaying ? "播放中" : "切換"}
+          </span>
+        </button>
+      {/each}
+    </div>
+  {:else if activeSection === "presets"}
     <div class="feature-content">
       <PresetManager />
-    </div>
-  {:else if activeSection === "instruments"}
-    <div class="feature-content">
-      <InstrumentControls />
-    </div>
-  {:else if activeSection === "recorder"}
-    <div class="feature-content">
-      <Recorder />
     </div>
   {:else if activeSection === "timer"}
     <div class="feature-content">
@@ -90,17 +114,15 @@
   {/if}
 
   <!-- 快速提示 -->
-  {#if !activeSection}
-    <div class="quick-tips">
-      <h3>💡 使用提示</h3>
-      <ul>
-        <li>點擊上方卡片展開功能，直接操作</li>
-        <li>所有設定自動儲存在瀏覽器中</li>
-        <li>也可以按 <kbd>J</kbd> 鍵開啟設定面板</li>
-        <li>按 <kbd>ESC</kbd> 關閉此面板</li>
-      </ul>
-    </div>
-  {/if}
+  <div class="quick-tips">
+    <h3>快捷提示</h3>
+    <ul>
+      <li>按 <kbd>空白鍵</kbd> 播放或暫停電台</li>
+      <li>按 <kbd>N</kbd> / <kbd>P</kbd> 切換下一台 / 上一台</li>
+      <li>按 <kbd>J</kbd> 開啟設定面板，按 <kbd>ESC</kbd> 關閉說明</li>
+      <li>數字鍵 <kbd>1</kbd> - <kbd>9</kbd> 可啟動背景環境音軌，按 <kbd>K</kbd> 停止所有音軌</li>
+    </ul>
+  </div>
 </div>
 
 <style>
@@ -108,141 +130,178 @@
     padding: 10px 0;
   }
 
+  .title-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+
+  :global(.header-sparkle) {
+    color: #a855f7;
+  }
+
   h2 {
-    margin: 0 0 10px 0;
-    font-size: 20px;
+    margin: 0;
+    font-size: 18px;
     text-align: center;
     color: white;
   }
 
   .subtitle {
     text-align: center;
-    margin-bottom: 20px;
-    color: rgba(255, 255, 255, 0.7);
-    font-size: 13px;
+    margin: 0 0 16px 0;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.65);
   }
 
-  /* 功能卡片選單 */
   .feature-cards {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    margin-bottom: 15px;
+    gap: 8px;
+    margin-bottom: 16px;
   }
 
   .feature-card {
-    width: 100%;
-    background: rgba(0, 0, 0, 0.3);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    padding: 12px 15px;
     display: flex;
     align-items: center;
     gap: 12px;
+    padding: 10px 14px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 10px;
+    color: white;
     cursor: pointer;
-    transition: all 0.3s ease;
     text-align: left;
+    transition: all 0.2s ease;
   }
 
   .feature-card:hover {
-    background: rgba(0, 0, 0, 0.4);
-    border-color: rgba(255, 255, 255, 0.2);
-    transform: translateX(4px);
+    background: rgba(255, 255, 255, 0.12);
   }
 
   .feature-card.active {
-    background: rgba(74, 144, 226, 0.25);
-    border-color: rgba(74, 144, 226, 0.5);
+    background: rgba(168, 85, 247, 0.2);
+    border-color: rgba(168, 85, 247, 0.5);
   }
 
   .card-icon {
-    font-size: 28px;
-    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #a855f7;
   }
 
   .card-content {
     flex: 1;
-    min-width: 0;
   }
 
   .card-content h3 {
-    margin: 0 0 3px 0;
-    color: #fff;
-    font-size: 15px;
+    margin: 0 0 2px 0;
+    font-size: 14px;
+    font-weight: 600;
   }
 
   .card-content p {
     margin: 0;
-    color: rgba(255, 255, 255, 0.7);
-    font-size: 12px;
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.6);
   }
 
   .card-arrow {
-    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     color: rgba(255, 255, 255, 0.5);
-    flex-shrink: 0;
-    transition: transform 0.3s ease;
   }
 
-  .feature-card.active .card-arrow {
-    transform: rotate(0deg);
-  }
-
-  /* 功能內容區域 */
   .feature-content {
-    background: rgba(0, 0, 0, 0.35);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 12px;
-    padding: 15px;
-    margin-bottom: 15px;
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 16px;
   }
 
-  /* 快速提示 */
+  .stations-quick-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .station-quick-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+    color: white;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.2s ease;
+  }
+
+  .station-quick-item:hover {
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  .station-quick-item.current {
+    background: rgba(99, 102, 241, 0.25);
+    border-color: rgba(99, 102, 241, 0.6);
+  }
+
+  .sq-info {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .sq-name {
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .sq-desc {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.55);
+  }
+
+  .sq-status {
+    font-size: 11px;
+    color: #a855f7;
+    font-weight: 500;
+  }
+
   .quick-tips {
-    background: rgba(255, 193, 7, 0.1);
-    border: 1px solid rgba(255, 193, 7, 0.3);
-    border-radius: 12px;
-    padding: 15px;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 8px;
+    padding: 10px 14px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
   }
 
   .quick-tips h3 {
-    margin: 0 0 10px 0;
-    color: #ffc107;
-    font-size: 15px;
+    margin: 0 0 6px 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.85);
   }
 
   .quick-tips ul {
     margin: 0;
-    padding-left: 20px;
-    color: rgba(255, 255, 255, 0.85);
-    font-size: 13px;
+    padding-left: 18px;
+    color: rgba(255, 255, 255, 0.65);
+    font-size: 11px;
+    line-height: 1.6;
   }
 
-  .quick-tips li {
-    margin: 6px 0;
-    line-height: 1.5;
-  }
-
-  .quick-tips kbd {
-    display: inline-block;
-    padding: 2px 6px;
-    background: rgba(0, 0, 0, 0.4);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 3px;
-    font-family: monospace;
-    font-size: 12px;
-    color: #fff;
-  }
-
-  @media only screen and (max-width: 600px) {
-    .feature-card {
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
-    }
-
-    .card-icon {
-      font-size: 35px;
-    }
+  kbd {
+    background: rgba(255, 255, 255, 0.15);
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 10px;
+    color: white;
   }
 </style>

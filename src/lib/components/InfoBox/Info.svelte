@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { IconEye, IconX, IconSparkles, IconKeyboard } from "@tabler/icons-svelte";
+  import { Eye, X, Sparkles, Keyboard } from "lucide-svelte";
   import ShortCuts from "./ShortCuts.svelte";
   import SocialLinks from "./SocialLinks.svelte";
   import NewFeatures from "./NewFeatures.svelte";
@@ -38,14 +38,14 @@
     <div id="info-box">
       <div id="top-section">
         <button id="close-btn" on:click={toggleInfoBox}>
-          <IconX color="white" size={17} />
+          <X color="white" size={17} />
         </button>
         <button
           id="show-btn"
           title="Show on start next time"
           on:click={showNextTime}
         >
-          <IconEye color="white" size={17} />
+          <Eye color="white" size={17} />
         </button>
         <div id="app-info">
           <img id="app-logo" src="LofiEngine.png" alt="" />
@@ -67,15 +67,15 @@
           class:active={activeTab === "features"}
           on:click={() => activeTab = "features"}
         >
-          <IconSparkles size={18} />
-          新功能
+          <Sparkles size={18} />
+          功能中心
         </button>
         <button 
           class="tab"
           class:active={activeTab === "shortcuts"}
           on:click={() => activeTab = "shortcuts"}
         >
-          <IconKeyboard size={18} />
+          <Keyboard size={18} />
           快捷鍵
         </button>
       </div>

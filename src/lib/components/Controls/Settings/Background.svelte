@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { IconArrowLeft, IconArrowRight, IconRefresh, IconPhoto, IconHeart } from "@tabler/icons-svelte";
+  import { ArrowLeft, ArrowRight, RotateCcw, Image as ImageIcon, Heart } from "lucide-svelte";
   import { bgUrl } from "../../../stores/bgStore";
   type BgSource = 'bing' | 'beauty' | 'local';
   
@@ -304,7 +304,7 @@
         title={useBingRandom ? "獲取隨機 Bing 高清桌布" : "使用 Bing 每日高清桌布（自動偵測手機/桌面版本）"}
         disabled={isLoadingBing}
       >
-        <IconPhoto size={18} />
+        <ImageIcon size={18} />
         <span>{isLoadingBing ? '載入中...' : useBingApi ? `✓ Bing ${useBingRandom ? '隨機' : '每日'}桌布` : `Bing ${useBingRandom ? '隨機' : '每日'}桌布`}</span>
       </button>
 
@@ -325,19 +325,19 @@
       title="隨機美女真人桌布（高清圖片）"
       disabled={isLoadingBeauty}
     >
-      <IconHeart size={18} />
+      <Heart size={18} />
       <span>{isLoadingBeauty ? '載入中...' : useBeautyApi ? '✓ 美女桌布' : '美女桌布'}</span>
     </button>
     
     <!-- API 狀態提示 -->
     {#if useBingApi}
       <div class="api-hint bing-hint">
-        🌐 Bing 背景 ({isMobileDevice() ? '📱 手機版' : '💻 桌面版'})
+        Bing 背景 ({isMobileDevice() ? '手機版' : '桌面版'})
       </div>
     {/if}
     {#if useBeautyApi}
       <div class="api-hint beauty-hint">
-        👩 隨機美女桌布
+        隨機美女桌布
       </div>
     {/if}
   </div>
@@ -347,16 +347,16 @@
     <h5>本地背景 (1-10)</h5>
     <div class="container">
       <button on:click={prevBg} title="上一張背景">
-        <IconArrowLeft size={20} />
+        <ArrowLeft size={20} />
       </button>
       <img id="bg-preview" src="assets/background/bg{id}.jpg" alt="" />
       <button on:click={nextBg} title="下一張背景">
-        <IconArrowRight size={20} />
+        <ArrowRight size={20} />
       </button>
     </div>
     <div class="random-btn-container">
       <button class="random-btn" on:click={randomBg} title="隨機本地背景">
-        <IconRefresh size={18} />
+        <RotateCcw size={18} />
         <span>隨機本地背景</span>
       </button>
     </div>
@@ -371,15 +371,7 @@
     text-align: center;
   }
 
-  .bing-btn-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 20px;
-    padding-bottom: 20px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  }
+
 
   .bing-btn {
     width: auto;

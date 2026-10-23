@@ -1,1865 +1,470 @@
 <script lang="ts">
   import {
-      IconLoader,
-      IconPlayerPauseFilled,
-      IconPlayerPlayFilled,
-      IconRefresh,
-  } from "@tabler/icons-svelte";
-  import { onDestroy, onMount } from "svelte";
-// @ts-ignore
-  import * as Tone from "tone";
-  import Visualizer from "../lib/components/Visualizer/index.svelte";
-  import ChordProgression from "../lib/engine/Chords/ChordProgression";
-  import intervalWeights from "../lib/engine/Chords/IntervalWeights";
-  import Keys from "../lib/engine/Chords/Keys";
-  import { fiveToFive } from "../lib/engine/Chords/MajorScale";
+    Play,
+    Pause,
+    Loader2,
+    SkipBack,
+    SkipForward,
+    Coffee,
+    Headphones,
+    Disc,
+    Music2,
+    Music,
+    Moon,
+    AlertCircle,
+  } from "lucide-svelte";
   import {
-    createCanonMelodyPattern,
-    generateCanonState,
-    type CanonMelodyStep,
-    type CanonState,
-  } from "../lib/engine/Canon/style";
-  import Hat from "../lib/engine/Drums/Hat";
-  import Kick from "../lib/engine/Drums/Kick";
-  import Snare from "../lib/engine/Drums/Snare";
-  import Piano from "../lib/engine/Piano/Piano";
+    radioStore,
+    currentStation,
+    STATIONS,
+    togglePlay,
+    playStation,
+    nextStation,
+    prevStation,
+  } from "./stores/radioStore";
+  import { onMount, onDestroy } from "svelte";
 
-  const STORAGE_KEY = "Volumes";
-  const CURRENT_STATE_KEY = "LofiEngine_CurrentState";
-  const DEFFAULT_VOLUMES = {
-    rain: 1,
-    thunder: 1,
-    campfire: 1,
-    jungle: 1,
-    main_track: 1,
-  };
-  // Load previous vols or defualt
-  let volumes =
-    JSON.parse(localStorage.getItem(STORAGE_KEY)) || DEFFAULT_VOLUMES;
-  // Convert linear volume (0 to 1) to dB
-  const linearToDb = (value) =>
-    value === 0 ? -Infinity : 20 * Math.log10(value);
-
-  // Setup audio chain - 溫暖明亮的咖啡廳 LoFi 品質
-  const cmp = new Tone.Compressor({
-    threshold: -8,
-    ratio: 2.5,
-    attack: 0.8,
-    release: 0.2,
-  });
-  const lpf = new Tone.Filter(1800, "lowpass");
-  const reverb = new Tone.Reverb({
-    decay: 3.8,
-    preDelay: 0.025,
-    wet: 0.32,
-  });
-  // 柔和殘響，非同步預先生成即可
-  // @ts-ignore Tone 型別未必包含 generate
-  reverb.generate?.().catch?.(() => {});
-  const MASTER_GAIN_DB = 12;
-  const INSTRUMENT_GAIN_DB = 6;
-
-  const vol = new Tone.Volume(linearToDb(volumes.main_track) + MASTER_GAIN_DB);
-  Tone.Master.chain(cmp, lpf, reverb, vol);
-
-  const GROOVE_STYLE_KEY = "LofiEngine_GrooveStyle";
-
-  type GrooveStyle = "cafe" | "jazz" | "relaxing" | "canon";
-
-  type StrumPattern = {
-    offsets: number[];
-    release: string;
-    velocityRange: [number, number];
-    invertChance?: number;
-    tailSpacing?: number;
-  };
-
-  type MelodyDurationOption = {
-    duration: string;
-    weight: number;
-  };
-
-  type GrooveStyleConfig = {
-    displayName: string;
-    defaultBpm: number;
-    swing: number;
-    swingSubdivision: string;
-    strumPatterns: StrumPattern[];
-    chordTriadChance: number;
-    melodyDensityRange: [number, number];
-    melodyOffChance: number;
-    melodyVelocityRange: [number, number];
-    melodyDurationOptions: MelodyDurationOption[];
-    muteChances: {
-      kick: number;
-      snare: number;
-      hat: number;
-    };
-    kickProbabilities: {
-      main: number;
-      ghost: number;
-    };
-    snareHitProbability: number;
-    hatHitProbability: number;
-    rotation: {
-      loopsRange?: [number, number];
-      poolSize: number;
-      reuseProbability: number;
-      durationRangeSeconds: [number, number];
-    };
-  };
-
-  const KEY_RING = [
-    "C",
-    "G",
-    "D",
-    "A",
-    "E",
-    "B",
-    "Gb",
-    "Db",
-    "Ab",
-    "Eb",
-    "Bb",
-    "F",
-  ];
-
-  const grooveStyles: Record<GrooveStyle, GrooveStyleConfig> = {
-    cafe: {
-      displayName: "Cafe",
-      defaultBpm: 80,
-      swing: 0,
-      swingSubdivision: "4n",
-      strumPatterns: [
-        {
-          offsets: [0],
-          release: "2n",
-          velocityRange: [0.28, 0.38],
-          invertChance: 0.1,
-          tailSpacing: 0.3,
-        },
-        {
-          offsets: [0, 0.4],
-          release: "1n",
-          velocityRange: [0.25, 0.35],
-          invertChance: 0.05,
-          tailSpacing: 0.25,
-        },
-        {
-          offsets: [0, 0.25],
-          release: "1n",
-          velocityRange: [0.22, 0.32],
-          invertChance: 0.1,
-          tailSpacing: 0.2,
-        },
-      ],
-      chordTriadChance: 0.8, // Match relaxing's simplicity
-      melodyDensityRange: [0.12, 0.22],
-      melodyOffChance: 0.4,
-      melodyVelocityRange: [0.2, 0.35],
-      melodyDurationOptions: [
-        { duration: "2n", weight: 3 },
-        { duration: "1n", weight: 1.5 },
-        { duration: "4n", weight: 1 },
-      ],
-      muteChances: {
-        kick: 0.92,
-        snare: 0.96,
-        hat: 0.88,
-      },
-      kickProbabilities: {
-        main: 0.2,
-        ghost: 0,
-      },
-      snareHitProbability: 0.1,
-      hatHitProbability: 0.15,
-      rotation: {
-        loopsRange: [4, 8],
-        poolSize: 3,
-        reuseProbability: 0.6,
-        durationRangeSeconds: [350, 450],
-      },
-    },
-    jazz: {
-      displayName: "Jazz",
-      defaultBpm: 112,
-      swing: 0.58,
-      swingSubdivision: "8n",
-      strumPatterns: [
-        {
-          offsets: [0, 0.18, 0.34, 0.58, 0.82],
-          release: "1n",
-          velocityRange: [0.34, 0.52],
-          invertChance: 0.45,
-          tailSpacing: 0.18,
-        },
-        {
-          offsets: [0, 0.22, 0.41, 0.63],
-          release: "1n",
-          velocityRange: [0.36, 0.54],
-          invertChance: 0.6,
-          tailSpacing: 0.18,
-        },
-        {
-          offsets: [0, 0.27, 0.5],
-          release: "2n",
-          velocityRange: [0.3, 0.48],
-          invertChance: 0.4,
-          tailSpacing: 0.24,
-        },
-        {
-          offsets: [0, 0.15, 0.44, 0.74],
-          release: "1n",
-          velocityRange: [0.35, 0.5],
-          invertChance: 0.5,
-          tailSpacing: 0.2,
-        },
-      ],
-      chordTriadChance: 0.35,
-      melodyDensityRange: [0.28, 0.48],
-      melodyOffChance: 0.18,
-      melodyVelocityRange: [0.28, 0.48],
-      melodyDurationOptions: [
-        { duration: "4n", weight: 3.5 },
-        { duration: "2n", weight: 2 },
-        { duration: "1n", weight: 0.8 },
-      ],
-      muteChances: {
-        kick: 0.05,
-        snare: 0.1,
-        hat: 0.12,
-      },
-      kickProbabilities: {
-        main: 0.45,
-        ghost: 0.18,
-      },
-      snareHitProbability: 0.4,
-      hatHitProbability: 0.7,
-      rotation: {
-        loopsRange: [3, 4],
-        poolSize: 4,
-        reuseProbability: 0.45,
-        durationRangeSeconds: [260, 310],
-      },
-    },
-    relaxing: {
-      displayName: "Relaxing",
-      defaultBpm: 160,
-      swing: 0,
-      swingSubdivision: "4n",
-      strumPatterns: [
-        {
-          offsets: [0],
-          release: "2n",
-          velocityRange: [0.26, 0.34],
-          invertChance: 0.2,
-          tailSpacing: 0.4,
-        },
-        {
-          offsets: [0, 0.5],
-          release: "1n",
-          velocityRange: [0.24, 0.32],
-          invertChance: 0.1,
-          tailSpacing: 0.35,
-        },
-        {
-          offsets: [0, 0.65],
-          release: "1n",
-          velocityRange: [0.22, 0.3],
-          invertChance: 0.05,
-          tailSpacing: 0.4,
-        },
-      ],
-      chordTriadChance: 0.85,
-      melodyDensityRange: [0.1, 0.2],
-      melodyOffChance: 0.45,
-      melodyVelocityRange: [0.18, 0.32],
-      melodyDurationOptions: [
-        { duration: "2n", weight: 2.5 },
-        { duration: "1n", weight: 1.2 },
-        { duration: "4n", weight: 1.8 },
-      ],
-      muteChances: {
-        kick: 0.95,
-        snare: 0.98,
-        hat: 0.92,
-      },
-      kickProbabilities: {
-        main: 0.1,
-        ghost: 0,
-      },
-      snareHitProbability: 0.05,
-      hatHitProbability: 0.08,
-      rotation: {
-        durationRangeSeconds: [340, 420],
-        poolSize: 2,
-        reuseProbability: 0.6,
-      },
-    },
-    canon: {
-      displayName: "🎼 Canon",
-      defaultBpm: 72,
-      swing: 0.12,
-      swingSubdivision: "8n",
-      strumPatterns: [
-        {
-          offsets: [0, 0.48, 0.92, 1.36],
-          release: "1n",
-          velocityRange: [0.24, 0.34],
-          invertChance: 0.2,
-          tailSpacing: 0.26,
-        },
-        {
-          offsets: [0, 0.32, 0.64, 1.12],
-          release: "1n",
-          velocityRange: [0.22, 0.3],
-          invertChance: 0.1,
-          tailSpacing: 0.24,
-        },
-        {
-          offsets: [0, 0.5, 1],
-          release: "2n",
-          velocityRange: [0.28, 0.36],
-          invertChance: 0.25,
-          tailSpacing: 0.32,
-        },
-      ],
-      chordTriadChance: 0.94,
-      melodyDensityRange: [0.24, 0.28],
-      melodyOffChance: 0.02,
-      melodyVelocityRange: [0.2, 0.34],
-      melodyDurationOptions: [
-        { duration: "4n", weight: 4.2 },
-        { duration: "2n", weight: 1.8 },
-        { duration: "1n", weight: 0.6 },
-      ],
-      muteChances: {
-        kick: 0.995,
-        snare: 0.995,
-        hat: 0.98,
-      },
-      kickProbabilities: {
-        main: 0.05,
-        ghost: 0,
-      },
-      snareHitProbability: 0.04,
-      hatHitProbability: 0.06,
-      rotation: {
-        durationRangeSeconds: [420, 560],
-        poolSize: 2,
-        reuseProbability: 0.7,
-      },
-    },
-  };
-
-  type CanonMeta = {
-    melodyPattern: CanonMelodyStep[];
-    baseScaleIndex: number;
-    voice: CanonState["voiceSettings"];
-    variationName: string;
-    anchorTrend: number[];
-    degrees: number[];
-    scaleLength: number;
-  };
-
-  type ProgressionState = {
-    key: string;
-    progression: ReturnType<typeof ChordProgression.generate>;
-    scale: string[];
-    scalePos: number;
-    style: GrooveStyle;
-    meta?: {
-      canon?: CanonMeta;
-    };
-  };
-
-  let grooveStyle: GrooveStyle = "relaxing";
-
-  let progressionPool: ProgressionState[] = [];
-  let progressionPoolIndex = -1;
-  let loopsRemainingForProgression = 0;
-  let loopsCompletedForProgression = 0;
-  let canonMeta: CanonMeta | null = null;
-  let canonMelodyIndex = 0;
-
-  function randomIntInRange([min, max]: [number, number]) {
-    if (max <= min) return min;
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-  }
-
-  function randomInRange([min, max]: [number, number]) {
-    if (max <= min) return min;
-    return Math.random() * (max - min) + min;
-  }
-
-  function cloneVoiceSettings(settings: CanonState["voiceSettings"]): CanonState["voiceSettings"] {
-    return {
-      entryInterval: settings.entryInterval,
-      velocityProfile: [...settings.velocityProfile],
-      transpose: [...settings.transpose],
-      voices: settings.voices,
-    };
-  }
-
-  function pickKeyForStyle(
-    style: GrooveStyle,
-    previous?: ProgressionState,
-  ): string {
-    const defaultKey = Keys[Math.floor(Math.random() * Keys.length)];
-
-    if (!previous) {
-      return defaultKey;
-    }
-
-    if (style === "jazz") {
-      const keepSameProbability = 0.6;
-      const neighborProbability = 0.8;
-
-      if (Math.random() < keepSameProbability) {
-        return previous.key;
-      }
-
-      const ringIndex = KEY_RING.indexOf(previous.key);
-      if (ringIndex !== -1 && Math.random() < neighborProbability) {
-        const left = KEY_RING[(ringIndex + KEY_RING.length - 1) % KEY_RING.length];
-        const right = KEY_RING[(ringIndex + 1) % KEY_RING.length];
-        return Math.random() < 0.5 ? left : right;
-      }
-
-      return defaultKey;
-    }
-
-    if (style === "canon") {
-      const stayProbability = 0.78;
-      if (Math.random() < stayProbability) {
-        return previous.key;
-      }
-
-      const ringIndex = KEY_RING.indexOf(previous.key);
-      if (ringIndex !== -1) {
-        const candidates = [
-          KEY_RING[(ringIndex + KEY_RING.length - 1) % KEY_RING.length],
-          KEY_RING[(ringIndex + 1) % KEY_RING.length],
-        ];
-        return candidates[Math.floor(Math.random() * candidates.length)];
-      }
-
-      return defaultKey;
-    }
-
-    // Cafe: bias to staying close but allow more randomness
-    const stayChance = 0.45;
-    if (Math.random() < stayChance) {
-      return previous.key;
-    }
-
-    const idx = Keys.indexOf(previous.key);
-    if (idx !== -1 && Keys.length > 2) {
-      const neighborOffsets = [-2, -1, 1, 2];
-      const offset = neighborOffsets[Math.floor(Math.random() * neighborOffsets.length)];
-      const nextIdx = (idx + Keys.length + offset) % Keys.length;
-      return Keys[nextIdx];
-    }
-
-    return defaultKey;
-  }
-
-  function clamp(value: number, min: number, max: number) {
-    return Math.min(max, Math.max(min, value));
-  }
-
-  function createProgressionState(
-    style: GrooveStyle = grooveStyle,
-    previous?: ProgressionState,
-  ): ProgressionState {
-    const _scale = fiveToFive;
-    const newKey = pickKeyForStyle(style, previous);
-    const newScale = Tone.Frequency(newKey + "5")
-      .harmonize(_scale)
-      .map((f) => Tone.Frequency(f).toNote());
-    let newProgression = ChordProgression.generate(8);
-    let newScalePos = Math.floor(Math.random() * _scale.length);
-    let canonMetadata: CanonMeta | undefined;
-
-    if (style === "canon") {
-      const canonState = generateCanonState();
-      newProgression = canonState.chords;
-      const baseIndexFromTop = clamp(canonState.baseScaleOffset, 0, _scale.length - 1);
-      const baseIndex = clamp(_scale.length - 1 - baseIndexFromTop, 0, _scale.length - 1);
-      const melodyPattern = createCanonMelodyPattern({
-        variationName: canonState.variationName,
-        anchorTrend: canonState.anchorTrend,
-        baseScaleIndex: baseIndex,
-        scaleLength: _scale.length,
-        degrees: canonState.degrees,
-      });
-      newScalePos = baseIndex;
-      canonMetadata = {
-        melodyPattern,
-        baseScaleIndex: baseIndex,
-        voice: cloneVoiceSettings(canonState.voiceSettings),
-        variationName: canonState.variationName,
-        anchorTrend: [...canonState.anchorTrend],
-        degrees: [...canonState.degrees],
-        scaleLength: _scale.length,
-      };
-    } else {
-      if (previous && previous.key === newKey) {
-        const deltaOptions = [-2, -1, 0, 1, 2];
-        const delta = deltaOptions[Math.floor(Math.random() * deltaOptions.length)];
-        newScalePos = clamp(previous.scalePos + delta, 0, _scale.length - 1);
-      }
-    }
-
-    return {
-      key: newKey,
-      progression: newProgression,
-      scale: newScale,
-      scalePos: newScalePos,
-      style,
-      meta: canonMetadata ? { canon: canonMetadata } : undefined,
-    };
-  }
-
-  function applyProgressionState(
-    state: ProgressionState,
-    options: { persist?: boolean } = {},
-  ) {
-    key = state.key;
-    progress = 0;
-    progression = state.progression;
-    scale = state.scale;
-    scalePos = state.scalePos;
-    genChordsOnce = true;
-    canonPadHoldCounter = 0;
-    const incomingCanon = state.meta?.canon;
-    canonMeta = incomingCanon
-      ? {
-          melodyPattern: incomingCanon.melodyPattern.map((step) => ({ ...step })),
-          baseScaleIndex: clamp(incomingCanon.baseScaleIndex, 0, scale.length - 1),
-          voice: cloneVoiceSettings(incomingCanon.voice),
-          variationName: incomingCanon.variationName,
-          anchorTrend: [...incomingCanon.anchorTrend],
-          degrees: [...incomingCanon.degrees],
-          scaleLength: scale.length,
-        }
-      : null;
-    canonMelodyIndex = 0;
-
-    if (canonMeta && grooveStyle === "canon") {
-      scalePos = canonMeta.baseScaleIndex;
-      console.log(
-        `🎼 Canon variation set: ${canonMeta.variationName} (voices: ${canonMeta.voice.voices})`,
-      );
-    }
-
-    if (options.persist) {
-      saveCurrentState();
-    }
-  }
-
-  function updateCanonPadDynamics(style: GrooveStyle) {
-    if (!canonPadGain) {
+  function handleKeydown(e: KeyboardEvent) {
+    if (e.ctrlKey || e.metaKey || e.altKey) {
       return;
     }
-    if (style === "canon") {
-      const targetVolume = -18 + Math.random() * 4;
-      canonPadGain.volume.rampTo(targetVolume, 0.6);
-      canonPadHoldCounter = 0;
-    } else {
-      canonPadGain.volume.rampTo(-Infinity, 0.4);
-      canonPad?.releaseAll();
-      canonPadHoldCounter = 0;
-    }
-  }
-
-  function regenerateCanonMelodyPattern() {
-    if (!canonMeta || !canonMeta.anchorTrend.length) {
+    const target = e.target as HTMLElement | null;
+    if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) {
       return;
     }
 
-    const scaleLength = scale.length;
-    if (scaleLength <= 0) {
-      return;
-    }
-
-    if (Math.random() < 0.35) {
-      const delta = Math.random() < 0.5 ? -1 : 1;
-      canonMeta.baseScaleIndex = clamp(
-        canonMeta.baseScaleIndex + delta,
-        1,
-        Math.max(1, scaleLength - 2),
-      );
-    }
-
-    if (Math.random() < 0.25) {
-      const trendDelta = Math.random() < 0.5 ? -1 : 1;
-      canonMeta.anchorTrend = canonMeta.anchorTrend.map((value) =>
-        clamp(value + trendDelta, 0, scaleLength - 2),
-      );
-    }
-
-    const refreshedPattern = createCanonMelodyPattern({
-      variationName: canonMeta.variationName,
-      anchorTrend: canonMeta.anchorTrend,
-      baseScaleIndex: canonMeta.baseScaleIndex,
-      scaleLength,
-      degrees: canonMeta.degrees,
-    });
-
-    canonMeta = {
-      ...canonMeta,
-      melodyPattern: refreshedPattern,
-      scaleLength,
-    };
-  }
-
-  function ensureLoopsTarget(style: GrooveStyle = grooveStyle) {
-    const config = grooveStyles[style];
-    loopsCompletedForProgression = 0;
-    const { rotation } = config;
-
-    if (rotation.durationRangeSeconds) {
-      const targetSeconds = randomInRange(rotation.durationRangeSeconds);
-      const barsPerLoop = Math.max(1, progression?.length ?? 8);
-      const barDuration = (60 / Tone.Transport.bpm.value) * 4;
-      const loopDurationSeconds = barDuration * barsPerLoop;
-      loopsRemainingForProgression = Math.max(
-        1,
-        Math.round(targetSeconds / loopDurationSeconds),
-      );
-    } else if (rotation.loopsRange) {
-      loopsRemainingForProgression = Math.max(
-        1,
-        randomIntInRange(rotation.loopsRange),
-      );
-    } else {
-      loopsRemainingForProgression = 4;
-    }
-  }
-
-  function registerStateInPool(state: ProgressionState, style: GrooveStyle = grooveStyle) {
-    const config = grooveStyles[style];
-    progressionPool.push(state);
-    while (progressionPool.length > config.rotation.poolSize) {
-      progressionPool.shift();
-      if (progressionPoolIndex >= 0) {
-        progressionPoolIndex = Math.max(0, progressionPoolIndex - 1);
+    if (e.code === "Space") {
+      if (target?.closest("button, a, [role='button'], select")) {
+        return;
       }
-    }
-    progressionPoolIndex = progressionPool.length - 1;
-  }
-
-  function rotateProgression(
-    options: { forceNew?: boolean; persist?: boolean; mode?: "auto" | "manual" } = {},
-  ): ProgressionState {
-    const { forceNew = false, persist = true } = options;
-    const config = grooveStyles[grooveStyle];
-
-    const hasCurrentProgression = progression.length > 0 && scale.length > 0;
-    const previousSnapshot = hasCurrentProgression
-      ? captureCurrentProgression()
-      : undefined;
-
-    let nextState: ProgressionState | undefined;
-
-    const reusableIndices = progressionPool
-      .map((state, index) => ({ state, index }))
-      .filter(({ state, index }) => index !== progressionPoolIndex && state.style === grooveStyle);
-
-    const shouldReuse =
-      !forceNew &&
-      reusableIndices.length > 0 &&
-      Math.random() < config.rotation.reuseProbability;
-
-    if (shouldReuse) {
-      const choice = reusableIndices[Math.floor(Math.random() * reusableIndices.length)];
-      nextState = choice.state;
-      progressionPoolIndex = choice.index;
-    }
-
-    if (!nextState) {
-      nextState = createProgressionState(grooveStyle, previousSnapshot);
-      registerStateInPool(nextState);
-    }
-
-    applyProgressionState(nextState, { persist });
-    if (grooveStyle === "canon") {
-      regenerateCanonMelodyPattern();
-    }
-    ensureLoopsTarget(grooveStyle);
-
-    return nextState;
-  }
-
-  function captureCurrentProgression(): ProgressionState {
-    return {
-      key,
-      progression,
-      scale,
-      scalePos,
-      style: grooveStyle,
-      meta: canonMeta
-        ? {
-            canon: {
-              melodyPattern: canonMeta.melodyPattern.map((step) => ({ ...step })),
-              baseScaleIndex: canonMeta.baseScaleIndex,
-              voice: cloneVoiceSettings(canonMeta.voice),
-              variationName: canonMeta.variationName,
-              anchorTrend: [...canonMeta.anchorTrend],
-              degrees: [...canonMeta.degrees],
-              scaleLength: canonMeta.scaleLength,
-            },
-          }
-        : undefined,
-    };
-  }
-
-  function handleProgressionLoopComplete() {
-    loopsCompletedForProgression += 1;
-    if (loopsRemainingForProgression > 0) {
-      loopsRemainingForProgression -= 1;
-    }
-
-    if (loopsRemainingForProgression <= 0) {
-      const nextState = rotateProgression({ persist: true });
-      previewNextSegment(nextState);
+      e.preventDefault();
+      togglePlay();
+    } else if (e.key === "n" || e.key === "N") {
+      e.preventDefault();
+      nextStation();
+    } else if (e.key === "p" || e.key === "P") {
+      e.preventDefault();
+      prevStation();
     }
   }
-  if (typeof window !== "undefined") {
-    const savedStyle = localStorage.getItem(GROOVE_STYLE_KEY) as GrooveStyle | null;
-    const supportedStyles: GrooveStyle[] = ["cafe", "relaxing", "jazz", "canon"];
-    if (savedStyle && supportedStyles.includes(savedStyle)) {
-      grooveStyle = savedStyle;
-    }
-  }
-
-  
-  // 初始化 BPM (從 localStorage 讀取或使用默認值)
-  let currentBPM = grooveStyles[grooveStyle].defaultBpm;
-  if (typeof window !== 'undefined') {
-    const savedBPM = localStorage.getItem('LofiEngine_BPM');
-    if (savedBPM) {
-      currentBPM = parseInt(savedBPM);
-    }
-  }
-
-  type BpmUpdateOptions = {
-    persist?: boolean;
-  };
-
-  function updateTransportBpm(newBpm: number, options: BpmUpdateOptions = {}) {
-    if (typeof newBpm !== "number" || Number.isNaN(newBpm)) {
-      return;
-    }
-
-    const { persist = false } = options;
-
-    currentBPM = newBpm;
-    // rampTo with a very short time ensures the transport clock reacts immediately
-    Tone.Transport.bpm.rampTo(newBpm, 0.01);
-
-    if (persist && typeof window !== "undefined") {
-      localStorage.setItem('LofiEngine_BPM', newBpm.toString());
-      saveCurrentState();
-    }
-  }
-
-  updateTransportBpm(currentBPM);
-  Tone.Transport.swing = grooveStyles[grooveStyle].swing;
-  Tone.Transport.swingSubdivision = grooveStyles[grooveStyle].swingSubdivision as any;
-
-  // State variables
-  let key = "C";
-  let progression = [];
-  let scale = [];
-  let progress = 0;
-  let scalePos = 0;
-
-  let pianoLoaded = false;
-  let kickLoaded = false;
-  let snareLoaded = false;
-  let hatLoaded = false;
-  let canonPad: Tone.PolySynth | null = null;
-  let canonPadGain: Tone.Volume | null = null;
-  let canonPadFilter: Tone.Filter | null = null;
-  let canonPadLfo: Tone.LFO | null = null;
-  let canonPadHoldCounter = 0;
-
-  let contextStarted = false;
-  let genChordsOnce = false;
-
-  // Load instrument volumes first
-  const INSTRUMENTS_STORAGE_KEY = "LofiEngine_InstrumentVolumes";
-  const loadInstrumentVolumes = () => {
-    try {
-      const saved = localStorage.getItem(INSTRUMENTS_STORAGE_KEY);
-      // 預設純鋼琴模式 - 只有鋼琴有音量，其他樂器靜音
-      return saved ? JSON.parse(saved) : { piano: 1, kick: 0, snare: 0, hat: 0 };
-    } catch (e) {
-      return { piano: 1, kick: 0, snare: 0, hat: 0 };
-    }
-  };
-  let instrumentVolumes = loadInstrumentVolumes();
-
-  const kickPatterns = [
-    ["C4", "", "", "", "", "", "", "C4", "C4", "", ".", "", "", "", "", ""],
-    ["C4", "", "", "C4", "", "", "", "", "C4", "", ".", "", "C4", "", "", ""],
-    ["C4", "", "", "", "C4", "", "", "C4", "C4", "", ".", "", "", "C4", "", ""],
-  ];
-
-  const hatPatterns = [
-    ["C4", "", "C4", "", "C4", "", "C4", ""],
-    ["C4", "C4", "", "C4", "", "C4", "C4", ""],
-    ["C4", "", "C4", "C4", "", "C4", "", "C4"],
-  ];
-
-  // Initialize instrument on/off states based on volumes
-  let kickOff = instrumentVolumes.kick === 0;
-  let snareOff = instrumentVolumes.snare === 0;  // ← 預設靜音時設為 true
-  let hatOff = instrumentVolumes.hat === 0;
-  let melodyDensity = grooveStyles[grooveStyle].melodyDensityRange[0];
-  let melodyOff = false;
-  let melodyDirectionPreference: -1 | 0 | 1 = 0;
-  let melodyLeapPreference = 0;
-  let melodyUpStreak = 0;
-
-  setGrooveStyle(grooveStyle, { persist: false });
-
-  let isPlaying = false;
-
-  // Initialize instruments with callbacks that apply volumes after loading
-  const pn = new Piano(() => {
-    pianoLoaded = true;
-    applyInstrumentVolume('piano');
-  }).sampler;
-  const kick = new Kick(() => {
-    kickLoaded = true;
-    applyInstrumentVolume('kick');
-  }).sampler;
-  const snare = new Snare(() => {
-    snareLoaded = true;
-    applyInstrumentVolume('snare');
-  }).sampler;
-  
-  const hat = new Hat(() => {
-    hatLoaded = true;
-    applyInstrumentVolume('hat');
-  }).sampler;
-
-  const padChorus = new Tone.Chorus(0.35, 1.8, 0.35).start();
-  padChorus.wet.value = 0.45;
-  canonPadFilter = new Tone.Filter(1600, "lowpass");
-  const padReverb = new Tone.Reverb({ decay: 7.5, wet: 0.55 });
-  // @ts-ignore
-  padReverb.generate?.().catch?.(() => {});
-  canonPadGain = new Tone.Volume(-Infinity);
-  canonPad = new Tone.PolySynth(Tone.Synth, {
-    oscillator: { type: "triangle" },
-    envelope: { attack: 0.9, decay: 0.3, sustain: 0.62, release: 5.4 },
-  });
-  canonPad.chain(padChorus, canonPadFilter, padReverb, canonPadGain, vol);
-  canonPadLfo = new Tone.LFO({ frequency: 0.05, min: 950, max: 1850 }).start();
-  canonPadLfo.connect(canonPadFilter.frequency);
-
-  // Sequences
-  let chords, melody, kickLoop, snareLoop, hatLoop;
-  let currentKickPatternIdx = 0;
-  let currentHatPatternIdx = 0;
 
   onMount(() => {
-    // Setup sequences
-    chords = new Tone.Sequence(
-      (time) => {
-        playChord(time);
-      },
-      [""],
-      "1n",
-    );
-
-    melody = new Tone.Sequence(
-      (time) => {
-        playMelody(time);
-      },
-      [""],
-      "8n",
-    );
-
-    kickLoop = new Tone.Sequence(
-      (time, note) => {
-        if (!kickOff) {
-          const config = grooveStyles[grooveStyle];
-          if (note === "C4" && Math.random() < config.kickProbabilities.main) {
-            // @ts-ignore
-            kick.triggerAttack(note);
-          } else if (note === "." && Math.random() < config.kickProbabilities.ghost) {
-            // @ts-ignore
-            kick.triggerAttack("C4");
-          }
-        }
-      },
-      kickPatterns[currentKickPatternIdx],
-      "8n",
-    );
-
-    snareLoop = new Tone.Sequence(
-      (time, note) => {
-        if (!snareOff) {
-          const config = grooveStyles[grooveStyle];
-          if (note !== "" && Math.random() < config.snareHitProbability) {
-            // @ts-ignore
-            snare.triggerAttack(note);
-          }
-        }
-      },
-      ["", "C4"],
-      "2n",
-    );
-
-    hatLoop = new Tone.Sequence(
-      (time, note) => {
-        if (!hatOff) {
-          const config = grooveStyles[grooveStyle];
-          // @ts-ignore
-          if (note !== "" && Math.random() < config.hatHitProbability) {
-            // @ts-ignore
-            hat.triggerAttack(note);
-          }
-        }
-      },
-      hatPatterns[currentHatPatternIdx],
-      "4n",
-    );
-
-    chords.humanize = true;
-    melody.humanize = true;
-    kickLoop.humanize = true;
-    snareLoop.humanize = true;
-    hatLoop.humanize = true;
-
-    currentKickPatternIdx = Math.floor(Math.random() * kickPatterns.length);
-    currentHatPatternIdx = Math.floor(Math.random() * hatPatterns.length);
-    kickLoop.events = kickPatterns[currentKickPatternIdx];
-    hatLoop.events = hatPatterns[currentHatPatternIdx];
-
-    // Listen for spacebar press
-    const handleKeydown = (e) => {
-      if (e.code === "Space") {
-        e.preventDefault();
-        toggle();
-      }
-    };
-
     window.addEventListener("keydown", handleKeydown);
-
-    // Listen for preset load event
-    const handleLoadPreset = (e: CustomEvent) => {
-      loadPresetState(e.detail);
-    };
-    window.addEventListener("loadPreset", handleLoadPreset as EventListener);
-
-    // Listen for fade out music event (from timer)
-    const handleFadeOut = () => {
-      fadeOutAndStop();
-    };
-    window.addEventListener("fadeOutMusic", handleFadeOut);
-
-    // Listen for instrument volume changes
-    const handleInstrumentVolumes = (e: CustomEvent) => {
-      instrumentVolumes = e.detail;
-      
-      // Sync on/off states with volumes
-      kickOff = instrumentVolumes.kick === 0;
-      snareOff = instrumentVolumes.snare === 0;
-      hatOff = instrumentVolumes.hat === 0;
-      
-      updateInstrumentVolumes();
-      console.log(`🎛️ 樂器狀態更新: kick=${!kickOff}, snare=${!snareOff}, hat=${!hatOff}`);
-    };
-    window.addEventListener("updateInstrumentVolumes", handleInstrumentVolumes as EventListener);
-
-    // BPM 變更監聽器
-    const handleBPMChange = (e: CustomEvent) => {
-      const newBPM = e.detail;
-      currentBPM = newBPM;
-      updateTransportBpm(newBPM, { persist: true });
-      console.log(`🎵 BPM 已變更: ${newBPM}`);
-    };
-    window.addEventListener("bpmChange", handleBPMChange as EventListener);
-
-    // Apply initial instrument volumes
-    updateInstrumentVolumes();
-
-    return () => {
-      window.removeEventListener("keydown", handleKeydown);
-      window.removeEventListener("loadPreset", handleLoadPreset as EventListener);
-      window.removeEventListener("fadeOutMusic", handleFadeOut);
-      window.removeEventListener("updateInstrumentVolumes", handleInstrumentVolumes as EventListener);
-      window.removeEventListener("bpmChange", handleBPMChange as EventListener);
-    };
   });
 
   onDestroy(() => {
-    if (Tone.Transport.state === "started") {
-      Tone.Transport.stop();
+    if (typeof window !== "undefined") {
+      window.removeEventListener("keydown", handleKeydown);
     }
   });
-
-  function nextChord() {
-    const nextProgress = progress === progression.length - 1 ? 0 : progress + 1;
-    const wrapsAround = nextProgress === 0;
-    
-    const config = grooveStyles[grooveStyle];
-    const nextKickOff = Math.random() < config.muteChances.kick;
-    const nextSnareOff = Math.random() < config.muteChances.snare;
-    const nextHatOff = Math.random() < config.muteChances.hat;
-    const [densityMin, densityMax] = config.melodyDensityRange;
-    const nextMelodyDensity = densityMin + Math.random() * (densityMax - densityMin);
-    const nextMelodyOff = Math.random() < config.melodyOffChance;
-
-    if (progress === 4) {
-      progress = nextProgress;
-      kickOff = nextKickOff;
-      snareOff = nextSnareOff;
-      hatOff = nextHatOff;
-    } else if (progress === 0) {
-      progress = nextProgress;
-      kickOff = nextKickOff;
-      snareOff = nextSnareOff;
-      hatOff = nextHatOff;
-      melodyDensity = nextMelodyDensity;
-      melodyOff = nextMelodyOff;
-      currentKickPatternIdx = Math.floor(Math.random() * kickPatterns.length);
-      currentHatPatternIdx = Math.floor(Math.random() * hatPatterns.length);
-      if (kickLoop) {
-        kickLoop.events = kickPatterns[currentKickPatternIdx];
-      }
-      if (hatLoop) {
-        hatLoop.events = hatPatterns[currentHatPatternIdx];
-      }
-
-      const directionChoices: Array<-1 | 0 | 1> =
-        grooveStyle === "jazz" ? [-1, 0, 1, 1, 1, 1]
-        : grooveStyle === "cafe" ? [0, 1, 1, 1, 1, 1]
-        : [-1, 0, 1, 1, 1];
-      melodyDirectionPreference =
-        directionChoices[Math.floor(Math.random() * directionChoices.length)];
-      const leapBias = grooveStyle === "jazz" ? 0.55
-        : grooveStyle === "cafe" ? 0.3
-        : 0.4;
-      melodyLeapPreference = Math.random() < leapBias ? 1 : 0;
-      melodyUpStreak = 0;
-    } else {
-      progress = nextProgress;
-    }
-
-    // 調試訊息
-    console.log(`🎵 和弦進行: ${progress+1}/${progression.length}, 樂器狀態: kick=${!kickOff}, snare=${!snareOff}, hat=${!hatOff} (用戶音量: kick=${instrumentVolumes.kick}, snare=${instrumentVolumes.snare}, hat=${instrumentVolumes.hat})`);
-
-    if (wrapsAround) {
-      if (grooveStyle === "canon") {
-        regenerateCanonMelodyPattern();
-        canonMelodyIndex = 0;
-      }
-      handleProgressionLoopComplete();
-    }
-  }
-
-
-
-  function strumChord(
-    chord: any,
-    options: {
-      time?: number;
-      velocityScale?: number;
-      patternOverride?: StrumPattern;
-      releaseOverride?: string;
-      jitterRange?: number;
-    } = {},
-  ) {
-    if (!pn || !chord) {
-      return;
-    }
-
-    const {
-      time = Tone.now(),
-      velocityScale = 1,
-      patternOverride,
-      releaseOverride,
-      jitterRange = 0.05,
-    } = options;
-
-    const config = grooveStyles[grooveStyle];
-    const pattern = patternOverride ??
-      config.strumPatterns[Math.floor(Math.random() * config.strumPatterns.length)];
-
-    const root = Tone.Frequency(key + "3").transpose(chord.semitoneDist);
-    const chordSize = grooveStyle === "canon"
-      ? 3
-      : Math.random() < config.chordTriadChance
-        ? 3
-        : 4;
-    const voicing = chord.generateVoicing(chordSize);
-    const notes = Tone.Frequency(root)
-      .harmonize(voicing)
-      .map((f) => Tone.Frequency(f).toNote());
-
-    const localJitterRange = grooveStyle === "canon" ? Math.min(jitterRange, 0.03) : jitterRange;
-    const styleVelocityScale = grooveStyle === "canon" ? velocityScale * 0.92 : velocityScale;
-
-    const strumNotes = Math.random() < (pattern.invertChance ?? 0) ? [...notes].reverse() : [...notes];
-    strumNotes.forEach((note, idx) => {
-      const baseOffset =
-        pattern.offsets[idx] !== undefined
-          ? pattern.offsets[idx]
-          : pattern.offsets[pattern.offsets.length - 1] +
-            (idx - pattern.offsets.length + 1) * (pattern.tailSpacing ?? 0.22);
-      const jitter = idx === 0 ? 0 : (Math.random() * localJitterRange) - localJitterRange / 2;
-      const velocityMin = pattern.velocityRange?.[0] ?? 0.32;
-      const velocityMax = pattern.velocityRange?.[1] ?? 0.46;
-      const baseVelocity = velocityMin + Math.random() * (velocityMax - velocityMin);
-      const velocity = Math.min(1, baseVelocity * styleVelocityScale);
-      const release = releaseOverride ?? pattern.release;
-      // @ts-ignore Tone typings
-      pn.triggerAttackRelease(
-        note,
-        release,
-        Math.max(0, time + Math.max(0, baseOffset + jitter)),
-        velocity,
-      );
-    });
-  }
-
-  const PREVIEW_OFFSET_SECONDS = 0.45;
-
-  function triggerCanonPad(chord: any, suggestedTime: number) {
-    if (!canonPad || grooveStyle !== "canon") {
-      return;
-    }
-
-    if (canonPadHoldCounter > 0) {
-      canonPadHoldCounter -= 1;
-      return;
-    }
-
-    const padRoot = Tone.Frequency(key + "2").transpose(chord.semitoneDist - 12);
-    const padNotes = Tone.Frequency(padRoot)
-      .harmonize([0, 7, 12, 19])
-      .map((f) => Tone.Frequency(f).toNote());
-
-    const padTime = Math.max(suggestedTime, Tone.now());
-    const velocity = 0.16 + Math.random() * 0.05;
-    canonPadFilter?.frequency.rampTo(1100 + Math.random() * 700, 1.5);
-    canonPad.triggerAttackRelease(padNotes, "2m", padTime, velocity);
-    canonPadHoldCounter = 1;
-  }
-
-  function playChord(time?: number) {
-    const chord = progression[progress];
-    const baseTime = typeof time === "number" ? time : Tone.now();
-
-    strumChord(chord, { time: baseTime });
-    if (grooveStyle === "canon") {
-      triggerCanonPad(chord, baseTime);
-    }
-
-    nextChord();
-  }
-
-  function previewNextSegment(nextState: ProgressionState | undefined) {
-    if (!nextState || !nextState.progression?.length || !pn) {
-      return;
-    }
-
-    const barDuration = (60 / Tone.Transport.bpm.value) * 4;
-    const previewTime = Tone.now() + Math.max(0.05, barDuration - PREVIEW_OFFSET_SECONDS);
-    const previewChord = nextState.progression[0];
-    strumChord(previewChord, {
-      time: previewTime,
-      velocityScale: 0.65,
-      releaseOverride: "2n",
-      jitterRange: 0.03,
-    });
-  }
-
-  function scheduleCanonFollowers(params: {
-    note: string;
-    duration: string;
-    velocity: number;
-    baseTime: number;
-  }) {
-    if (!pn || !canonMeta) {
-      return;
-    }
-
-    const settings = canonMeta.voice;
-    const voices = Math.max(1, Math.min(3, settings.voices));
-    if (voices <= 1) {
-      return;
-    }
-
-    const intervalSeconds = Tone.Time(settings.entryInterval ?? "1m").toSeconds();
-    const velocityProfile = settings.velocityProfile ?? [1, 0.78, 0.65];
-    const transpose = settings.transpose ?? [0, -7, -12];
-
-    for (let voiceIndex = 1; voiceIndex < voices; voiceIndex++) {
-      const delaySeconds = intervalSeconds * voiceIndex;
-      const jitter = (Math.random() - 0.5) * 0.07;
-      const scheduledTime = params.baseTime + delaySeconds + jitter;
-      const semitoneShift = transpose[voiceIndex] ?? 0;
-      const followerNote = Tone.Frequency(params.note)
-        .transpose(semitoneShift)
-        .toNote();
-      const followerVelocityScale = velocityProfile[voiceIndex] ?? 0.7;
-      const humanizeVelocity = 0.85 + Math.random() * 0.25;
-      const followerVelocity = Math.min(
-        1,
-        params.velocity * followerVelocityScale * humanizeVelocity,
-      );
-      pn.triggerAttackRelease(
-        followerNote,
-        params.duration,
-        Math.max(scheduledTime, Tone.now()),
-        followerVelocity,
-      );
-    }
-  }
-
-  function playCanonMelody(time?: number) {
-    if (!pn || !canonMeta || !scale.length) {
-      return;
-    }
-
-    if (!canonMeta.melodyPattern.length) {
-      regenerateCanonMelodyPattern();
-    }
-
-    const pattern = canonMeta.melodyPattern;
-    if (!pattern.length) {
-      return;
-    }
-
-    const step = pattern[canonMelodyIndex] ?? pattern[0];
-    const scaleLength = scale.length;
-    const referenceLength = canonMeta.scaleLength || scaleLength;
-
-    let targetIndex: number;
-    if (typeof step.scaleIndex === "number" && referenceLength > 0) {
-      const normalizedIndex = clamp(step.scaleIndex, 0, referenceLength - 1);
-      if (referenceLength !== scaleLength && referenceLength > 1) {
-        const ratio = (scaleLength - 1) / (referenceLength - 1);
-        targetIndex = clamp(Math.round(normalizedIndex * ratio), 0, scaleLength - 1);
-      } else {
-        targetIndex = clamp(normalizedIndex, 0, scaleLength - 1);
-      }
-    } else {
-      targetIndex = clamp(
-        canonMeta.baseScaleIndex + (step.offset ?? 0),
-        0,
-        scaleLength - 1,
-      );
-    }
-
-    canonMeta.scaleLength = scaleLength;
-    scalePos = targetIndex;
-
-    const config = grooveStyles[grooveStyle];
-    const [velocityMin, velocityMax] = config.melodyVelocityRange;
-    const humanize = 0.92 + Math.random() * 0.12;
-    const baseVelocity = velocityMin + Math.random() * (velocityMax - velocityMin);
-    const velocity = Math.min(1, baseVelocity * (step.accent ?? 1) * humanize);
-    const duration = step.duration;
-    const note = scale[targetIndex];
-    const timeBase = typeof time === "number" ? time : Tone.now();
-    const timingJitter = (Math.random() - 0.5) * 0.03;
-    const triggerTime = Math.max(timeBase + timingJitter, Tone.now());
-
-    pn.triggerAttackRelease(note, duration, triggerTime, velocity);
-    scheduleCanonFollowers({
-      note,
-      duration,
-      velocity,
-      baseTime: triggerTime,
-    });
-
-    canonMelodyIndex = (canonMelodyIndex + 1) % pattern.length;
-  }
-
-  function playMelody(time?: number) {
-    if (grooveStyle === "canon") {
-      playCanonMelody(time);
-      return;
-    }
-
-    if (melodyOff || !(Math.random() < melodyDensity)) {
-      return;
-    }
-
-    const descendRange = Math.min(scalePos, 7) + 1;
-    const ascendRange = Math.min(scale.length - scalePos, 7);
-
-    let descend = descendRange > 1;
-    let ascend = ascendRange > 1;
-
-    if (descend && ascend) {
-      let ascendBias = grooveStyle === "cafe" ? 0.92 // Extremely high upward bias
-        : grooveStyle === "jazz" ? 0.72
-        : 0.65;
-      if (melodyDirectionPreference === 1) {
-        ascendBias = grooveStyle === "cafe" ? 0.98 : 0.9;
-      } else if (melodyDirectionPreference === -1) {
-        ascendBias = grooveStyle === "cafe" ? 0.85 // Even if preferred down, still stay up mostly
-          : grooveStyle === "jazz" ? 0.4
-          : 0.45;
-      }
-      if (melodyUpStreak >= 2) {
-        ascendBias = grooveStyle === "cafe" ? 0.75 : 0.95; // Keep cafe up longer
-      }
-      if (Math.random() < ascendBias) {
-        descend = false;
-      } else {
-        ascend = false;
-      }
-    }
-
-    if (!ascend && !descend) {
-      if (ascendRange > 1) {
-        ascend = true;
-      } else if (descendRange > 1) {
-        descend = true;
-      } else {
-        return;
-      }
-    }
-
-    let weights = descend
-      ? intervalWeights.slice(0, descendRange)
-      : intervalWeights.slice(0, ascendRange);
-
-    if (melodyLeapPreference === 1 && ascend) {
-      weights = weights.map((w, idx) => (idx >= 2 ? w * 1.45 : w * 0.75));
-    } else {
-      weights = weights.map((w, idx) => (idx <= 1 ? w * 1.3 : w * 0.8));
-    }
-
-    const sum = weights.reduce((prev, curr) => prev + curr, 0);
-    weights = weights.map((w) => w / sum);
-    for (let i = 1; i < weights.length; i++) {
-      weights[i] += weights[i - 1];
-    }
-
-    const randomWeight = Math.random();
-    let scaleDist = 0;
-    let found = false;
-    while (!found) {
-      if (randomWeight <= weights[scaleDist]) {
-        found = true;
-      } else {
-        scaleDist++;
-      }
-    }
-
-    if (scaleDist === 0 && weights.length > 1) {
-      scaleDist = 1;
-    }
-
-    const scalePosChange = descend ? -scaleDist : scaleDist;
-    const newScalePos = scalePos + scalePosChange;
-
-    scalePos = clamp(newScalePos, 0, scale.length - 1);
-
-    const config = grooveStyles[grooveStyle];
-    const [velocityMin, velocityMax] = config.melodyVelocityRange;
-    const melodyVelocityBase = velocityMin + Math.random() * (velocityMax - velocityMin);
-    const melodyVelocity = Math.min(1, melodyVelocityBase * (descend ? 0.92 : 1.05));
-    const durationTotal = config.melodyDurationOptions.reduce(
-      (sum, option) => sum + option.weight,
-      0,
-    );
-    let durationRoll = Math.random() * durationTotal;
-    let melodyDuration = config.melodyDurationOptions[config.melodyDurationOptions.length - 1].duration;
-    for (const option of config.melodyDurationOptions) {
-      durationRoll -= option.weight;
-      if (durationRoll <= 0) {
-        melodyDuration = option.duration;
-        break;
-      }
-    }
-    const triggerTime = typeof time === "number" ? time : undefined;
-    // @ts-ignore
-    pn.triggerAttackRelease(
-      scale[newScalePos],
-      melodyDuration,
-      triggerTime,
-      melodyVelocity,
-    );
-
-    if (ascend) {
-      melodyUpStreak += 1;
-    } else {
-      melodyUpStreak = Math.max(0, melodyUpStreak - 1);
-    }
-  }
-
-  function generateProgression() {
-    rotateProgression({ forceNew: true, persist: true, mode: "manual" });
-  }
-
-  function saveCurrentState() {
-    const currentState = {
-      key,
-      bpm: Tone.Transport.bpm.value,
-      volumes,
-      kickOff,
-      snareOff,
-      hatOff,
-      melodyDensity,
-      melodyOff,
-      grooveStyle,
-      background: parseInt(localStorage.getItem("bg-id") || "1"),
-    };
-    localStorage.setItem(CURRENT_STATE_KEY, JSON.stringify(currentState));
-  }
-
-  function loadPresetState(state: any) {
-    if (!state) return;
-
-    // Load key and regenerate progression
-    if (state.key) {
-      key = state.key;
-      const _scale = fiveToFive;
-      const newScale = Tone.Frequency(key + "5")
-        .harmonize(_scale)
-        .map((f) => Tone.Frequency(f).toNote());
-      const newProgression = ChordProgression.generate(8);
-      const newScalePos = Math.floor(Math.random() * _scale.length);
-
-      progress = 0;
-      progression = newProgression;
-      scale = newScale;
-      scalePos = newScalePos;
-      genChordsOnce = true;
-    }
-
-    // Load BPM
-    if (state.bpm) {
-      updateTransportBpm(state.bpm);
-    }
-
-    // Load drum states
-    if (state.kickOff !== undefined) kickOff = state.kickOff;
-    if (state.snareOff !== undefined) snareOff = state.snareOff;
-    if (state.hatOff !== undefined) hatOff = state.hatOff;
-    
-    // Load melody states
-    if (state.melodyDensity !== undefined) melodyDensity = state.melodyDensity;
-    if (state.melodyOff !== undefined) melodyOff = state.melodyOff;
-
-    const presetStyle: GrooveStyle | undefined = state.grooveStyle;
-    if (presetStyle && ["cafe", "relaxing", "jazz", "canon"].includes(presetStyle)) {
-      setGrooveStyle(presetStyle, { persist: false, preserveDynamics: true });
-    }
-
-    // Load volumes
-    if (state.volumes) {
-      volumes = state.volumes;
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(volumes));
-      vol.volume.value = linearToDb(volumes.main_track);
-    }
-
-    // Load background
-    if (state.background) {
-      localStorage.setItem("bg-id", state.background.toString());
-      window.dispatchEvent(new CustomEvent("changeBg", { detail: state.background }));
-    }
-
-    const presetState = captureCurrentProgression();
-    progressionPool = [presetState];
-    progressionPoolIndex = 0;
-    ensureLoopsTarget(grooveStyle);
-  }
-
-  function setGrooveStyle(
-    style: GrooveStyle,
-    options: { resetBpm?: boolean; persist?: boolean; preserveDynamics?: boolean } = {},
-  ) {
-    const { resetBpm = false, persist = true, preserveDynamics = false } = options;
-
-    const previousStyle = grooveStyle;
-    grooveStyle = style;
-    const config = grooveStyles[style];
-
-    if (style !== "canon") {
-      canonMeta = null;
-      canonMelodyIndex = 0;
-    }
-
-    updateCanonPadDynamics(style);
-
-    Tone.Transport.swing = config.swing;
-    Tone.Transport.swingSubdivision = config.swingSubdivision as any;
-
-    if (resetBpm) {
-      updateTransportBpm(config.defaultBpm, { persist: true });
-    }
-
-    if (!preserveDynamics) {
-      const [densityMin, densityMax] = config.melodyDensityRange;
-      melodyDensity = densityMin + (densityMax - densityMin) * 0.5;
-      melodyOff = false;
-    }
-
-    melodyUpStreak = 0;
-
-    const poolNeedsReset = previousStyle !== style || progressionPool.length === 0;
-
-    if (poolNeedsReset) {
-      progressionPool = [];
-      progressionPoolIndex = -1;
-      loopsRemainingForProgression = 0;
-      loopsCompletedForProgression = 0;
-      rotateProgression({ forceNew: true, persist: false, mode: "manual" });
-    } else {
-      ensureLoopsTarget(style);
-    }
-
-    if (typeof window !== "undefined" && persist) {
-      localStorage.setItem(GROOVE_STYLE_KEY, style);
-    }
-
-    if (persist) {
-      saveCurrentState();
-    }
-
-    if (grooveStyle === "canon" && canonMeta) {
-      regenerateCanonMelodyPattern();
-    }
-
-    console.log(`🎼 Groove style set to ${config.displayName}`);
-  }
-
-  function toggleGrooveStyle() {
-    const order: GrooveStyle[] = ["cafe", "relaxing", "jazz", "canon"];
-    const currentIdx = order.indexOf(grooveStyle);
-    const nextStyle = order[(currentIdx + 1) % order.length];
-    setGrooveStyle(nextStyle, { resetBpm: true });
-  }
-
-  function toggle() {
-    progress = 0;
-    if (Tone.Transport.state === "started") {
-      Tone.Transport.stop();
-      isPlaying = false;
-      canonPad?.releaseAll();
-      if (grooveStyle === "canon") {
-        updateCanonPadDynamics(grooveStyle);
-      }
-    } else {
-      Tone.start();
-      Tone.Transport.start();
-      chords.start(0);
-      melody.start(0);
-      kickLoop.start(0);
-      snareLoop.start(0);
-      hatLoop.start(0);
-      isPlaying = true;
-      if (grooveStyle === "canon") {
-        updateCanonPadDynamics(grooveStyle);
-      }
-    }
-  }
-
-  function fadeOutAndStop() {
-    if (Tone.Transport.state !== "started") return;
-
-    // 淡出音量
-    const fadeTime = 3; // 3 秒淡出
-    vol.volume.rampTo(-Infinity, fadeTime);
-    canonPad?.releaseAll();
-
-    // 淡出後停止播放
-    setTimeout(() => {
-      Tone.Transport.stop();
-      isPlaying = false;
-      
-      // 恢復音量
-      vol.volume.value = linearToDb(volumes.main_track);
-    }, fadeTime * 1000);
-  }
-
-  function updateInstrumentVolumes() {
-    // 轉換線性音量 (0-1) 到 dB
-    const linearToDbSimple = (value) =>
-      value === 0 ? -Infinity : 20 * Math.log10(value) + INSTRUMENT_GAIN_DB;
-
-    // 更新各樂器音量
-    if (pn && pn.volume) {
-      pn.volume.value = linearToDbSimple(instrumentVolumes.piano);
-    }
-    if (kick && kick.volume) {
-      kick.volume.value = linearToDbSimple(instrumentVolumes.kick);
-    }
-    if (snare && snare.volume) {
-      snare.volume.value = linearToDbSimple(instrumentVolumes.snare);
-    }
-    if (hat && hat.volume) {
-      hat.volume.value = linearToDbSimple(instrumentVolumes.hat);
-    }
-  }
-
-  // Apply volume for a specific instrument (called after loading)
-  function applyInstrumentVolume(instrument: 'piano' | 'kick' | 'snare' | 'hat') {
-    const linearToDbSimple = (value) =>
-      value === 0 ? -Infinity : 20 * Math.log10(value) + INSTRUMENT_GAIN_DB;
-    
-    switch(instrument) {
-      case 'piano':
-        if (pn && pn.volume) {
-          pn.volume.value = linearToDbSimple(instrumentVolumes.piano);
-          console.log(`🎹 Piano volume set: ${instrumentVolumes.piano}`);
-        }
-        break;
-      case 'kick':
-        if (kick && kick.volume) {
-          kick.volume.value = linearToDbSimple(instrumentVolumes.kick);
-          console.log(`🥁 Kick volume set: ${instrumentVolumes.kick}`);
-        }
-        break;
-      case 'snare':
-        if (snare && snare.volume) {
-          snare.volume.value = linearToDbSimple(instrumentVolumes.snare);
-          console.log(`🥁 Snare volume set: ${instrumentVolumes.snare} (${snare.volume.value} dB)`);
-        }
-        break;
-      case 'hat':
-        if (hat && hat.volume) {
-          hat.volume.value = linearToDbSimple(instrumentVolumes.hat);
-          console.log(`🎩 Hi-Hat volume set: ${instrumentVolumes.hat}`);
-        }
-        break;
-    }
-  }
-
-  function startAudioContext() {
-    Tone.start();
-    contextStarted = true;
-  }
-
-  $: allSamplesLoaded = pianoLoaded && kickLoaded && snareLoaded && hatLoaded;
-  $: activeProgressionIndex = (progress + 7) % 8;
-  // Update volume
-  onMount(() => {
-    setInterval(() => {
-      let updatedVol =
-        JSON.parse(localStorage.getItem(STORAGE_KEY)) || DEFFAULT_VOLUMES;
-      vol.volume.value = linearToDb(updatedVol.main_track) + MASTER_GAIN_DB;
-    }, 100);
-  });
-  // automically start audio context after samples are loaded
-  $: if (allSamplesLoaded && !contextStarted) {
-    startAudioContext();
-    generateProgression();
-  }
-
-  function handleButtonAction() {
-    if (!allSamplesLoaded) {
-      // Do nothing, button is disabled
-      return;
-    } else if (!contextStarted) {
-      // Initialize audio context
-      startAudioContext();
-    } else if (!genChordsOnce) {
-      // Chords not generated yet, can't play
-      return;
-    } else {
-      // Normal play/pause functionality
-      toggle();
-    }
-  }
 </script>
 
-<div>
-  <div class="controls">
-    <button
-      class="play-button"
-      on:click={handleButtonAction}
-      disabled={!allSamplesLoaded}
-    >
-      {#if !allSamplesLoaded}
-        <IconLoader size={30} class="spinning" />
-      {:else if !contextStarted}
-        <span class="context-text">Initialize Audio</span>
-      {:else if !genChordsOnce}
-        <IconPlayerPlayFilled size={30} class="disabled" />
-      {:else if isPlaying}
-        <IconPlayerPauseFilled size={30} />
-      {:else}
-        <IconPlayerPlayFilled size={30} />
-      {/if}
-    </button>
-    <button
-      class="styleBtn"
-      on:click={toggleGrooveStyle}
-      disabled={!allSamplesLoaded}
-      title={`切換風格（目前 ${grooveStyles[grooveStyle].displayName}）`}
-      aria-label={`切換風格（目前 ${grooveStyles[grooveStyle].displayName}）`}
-    >
-      {#if grooveStyle === 'cafe'}
-        ☕ Cafe
-      {:else if grooveStyle === 'relaxing'}
-        🌙 Relax
-      {:else if grooveStyle === 'jazz'}
-        🎷 Jazz
-      {:else}
-        🎼 Canon
-      {/if}
-    </button>
-    <button class="generateBtn" on:click={generateProgression}>
-      <IconRefresh size={16} />
-    </button>
+<div class="radio-player-container">
+  <!-- Station Selector Pill Bar -->
+  <div class="station-pills" role="tablist" aria-label="電台頻道選擇">
+    {#each STATIONS as station (station.id)}
+      <button
+        type="button"
+        class="station-pill"
+        class:active={$radioStore.currentStationId === station.id}
+        on:click={() => playStation(station.id, true)}
+        title={station.description}
+      >
+        <span class="pill-icon">
+          {#if station.icon === 'coffee'}
+            <Coffee size={15} />
+          {:else if station.icon === 'headphones'}
+            <Headphones size={15} />
+          {:else if station.icon === 'disc'}
+            <Disc size={15} />
+          {:else if station.icon === 'music2'}
+            <Music2 size={15} />
+          {:else if station.icon === 'music'}
+            <Music size={15} />
+          {:else if station.icon === 'moon'}
+            <Moon size={15} />
+          {/if}
+        </span>
+        <span class="pill-name">{station.label}</span>
+      </button>
+    {/each}
   </div>
 
-  {#if allSamplesLoaded && contextStarted}
-    {#if genChordsOnce}
-      <ol class="progressionList">
-        <li class="key" id="blurred">{key}</li>
-        {#each progression as chord, idx}
-          <li id="blurred" class={idx === activeProgressionIndex ? "live" : ""}>
-            {chord.degree}
-          </li>
-        {/each}
-      </ol>
-    {/if}
-  {/if}
-  {#if Tone.Transport.state === "started"}
-    <div class="visualizer-container">
-      <Visualizer audio={Tone.Master} />
+  <!-- Player Main Body -->
+  <div class="player-body">
+    <!-- Station Info & Equalizer -->
+    <div class="station-info">
+      <div class="station-icon-badge" class:playing={$radioStore.isPlaying}>
+        {#if $currentStation.icon === 'coffee'}
+          <Coffee size={22} />
+        {:else if $currentStation.icon === 'headphones'}
+          <Headphones size={22} />
+        {:else if $currentStation.icon === 'disc'}
+          <Disc size={22} />
+        {:else if $currentStation.icon === 'music2'}
+          <Music2 size={22} />
+        {:else if $currentStation.icon === 'music'}
+          <Music size={22} />
+        {:else if $currentStation.icon === 'moon'}
+          <Moon size={22} />
+        {/if}
+      </div>
+
+      <div class="station-text">
+        <div class="station-title-row">
+          <span class="station-title">{$currentStation.name}</span>
+          <span class="station-sublabel">{$currentStation.label}</span>
+        </div>
+        <p class="station-desc">{$currentStation.description}</p>
+      </div>
+
+      <!-- Animated Equalizer Bars -->
+      <div
+        class="equalizer"
+        class:active={$radioStore.isPlaying && !$radioStore.isBuffering}
+        class:buffering={$radioStore.isBuffering}
+        title={$radioStore.isBuffering ? '緩衝中...' : $radioStore.isPlaying ? '播放中' : '已暫停'}
+      >
+        <span class="bar bar-1"></span>
+        <span class="bar bar-2"></span>
+        <span class="bar bar-3"></span>
+        <span class="bar bar-4"></span>
+      </div>
+    </div>
+
+    <!-- Playback Controls -->
+    <div class="controls-row">
+      <button
+        type="button"
+        class="btn-nav"
+        on:click={prevStation}
+        title="上一頻道 (P)"
+        aria-label="Previous station"
+      >
+        <SkipBack size={19} />
+      </button>
+
+      <button
+        type="button"
+        class="btn-play-pause"
+        class:playing={$radioStore.isPlaying}
+        on:click={togglePlay}
+        title={$radioStore.isPlaying ? "暫停 (空白鍵)" : "播放 (空白鍵)"}
+        aria-label={$radioStore.isPlaying ? "Pause" : "Play"}
+      >
+        {#if $radioStore.isBuffering}
+          <span class="spin">
+            <Loader2 size={24} />
+          </span>
+        {:else if $radioStore.isPlaying}
+          <Pause size={24} />
+        {:else}
+          <Play size={24} style="margin-left: 2px;" />
+        {/if}
+      </button>
+
+      <button
+        type="button"
+        class="btn-nav"
+        on:click={nextStation}
+        title="下一頻道 (N)"
+        aria-label="Next station"
+      >
+        <SkipForward size={19} />
+      </button>
+    </div>
+  </div>
+
+  <!-- Error feedback message -->
+  {#if $radioStore.error}
+    <div class="error-notice">
+      <AlertCircle size={15} />
+      <span>{$radioStore.error}</span>
     </div>
   {/if}
 </div>
 
 <style>
-  .controls {
-    position: fixed;
-    bottom: 70px;
+  .radio-player-container {
+    position: absolute;
+    bottom: 24px;
     left: 50%;
     transform: translateX(-50%);
+    width: min(640px, 92vw);
+    background: rgba(18, 20, 28, 0.78);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 20px;
+    padding: 14px 18px;
     display: flex;
-    flex-direction: column-reverse;
-    justify-content: center;
-    align-items: center;
-    gap: 5px;
+    flex-direction: column;
+    gap: 12px;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    z-index: 40;
+    pointer-events: auto;
+    transition: all 0.25s ease;
   }
 
-  .play-button {
-    width: 70px;
-    height: 70px;
-    border-radius: 50%;
-    background-color: white;
-    color: black;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 10;
-    border: none;
-    cursor: pointer;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-  }
-
-  .play-button:hover {
-    box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.5);
-  }
-
-  .generateBtn {
-    background-color: #00000010;
-    backdrop-filter: blur(10px);
-    color: white;
-    border: none;
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin-top: 10px;
-    outline: none;
-  }
-
-  .styleBtn {
-    background-color: #00000018;
-    backdrop-filter: blur(10px);
-    color: white;
-    border: none;
-    border-radius: 9999px;
-    padding: 6px 16px;
-    font-size: 0.85rem;
+  /* Station Pills */
+  .station-pills {
     display: flex;
     align-items: center;
     gap: 6px;
-    cursor: pointer;
-    transition: background-color 0.2s ease, transform 0.2s ease;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    padding-bottom: 2px;
+  }
+  .station-pills::-webkit-scrollbar {
+    display: none;
   }
 
-  .styleBtn:hover:enabled {
-    background-color: #00000033;
+  .station-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.75);
+    font-size: 0.82rem;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+  }
+
+  .station-pill:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
     transform: translateY(-1px);
   }
 
-  .styleBtn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
+  .station-pill.active {
+    background: rgba(255, 255, 255, 0.95);
+    color: #12141c;
+    border-color: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 4px 14px rgba(255, 255, 255, 0.2);
   }
 
-  .progressionList {
-    position: fixed;
-    bottom: 0;
-    left: 50%;
-    transform: translateX(-50%);
+  .pill-icon {
     display: flex;
-    gap: 10px;
-    list-style: none;
-    padding: 0;
+    align-items: center;
     justify-content: center;
-    flex-wrap: wrap;
-    gap: 20px;
-    z-index: 1;
   }
 
-  .progressionList li {
-    padding: 5px 10px;
-    border: 2px transparent;
-    border-radius: 4px;
+  /* Player Body */
+  .player-body {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
   }
 
-  .progressionList li.live {
-    border: 2px solid #ffffff66;
+  .station-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+    flex: 1;
   }
 
-  .visualizer-container {
-    position: absolute;
-    left: 30px;
-    bottom: 30px;
-    height: 180px;
+  .station-icon-badge {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255, 255, 255, 0.9);
+    flex-shrink: 0;
+    transition: all 0.3s ease;
+  }
+
+  .station-icon-badge.playing {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.3), rgba(168, 85, 247, 0.3));
+    border-color: rgba(168, 85, 247, 0.4);
+    color: #ffffff;
+    box-shadow: 0 0 16px rgba(168, 85, 247, 0.3);
+  }
+
+  .station-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    gap: 2px;
+  }
+
+  .station-title-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .station-title {
+    color: #ffffff;
+    font-size: 0.95rem;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+  }
+
+  .station-sublabel {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.78rem;
+  }
+
+  .station-desc {
+    color: rgba(255, 255, 255, 0.65);
+    font-size: 0.75rem;
+    margin: 0;
+    white-space: nowrap;
     overflow: hidden;
-    margin-top: 10px;
+    text-overflow: ellipsis;
   }
 
-  @media only screen and (max-width: 600px) {
-    .play-button {
-      margin-bottom: 40px;
+  /* Animated Equalizer */
+  .equalizer {
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    height: 20px;
+    padding: 0 4px;
+    flex-shrink: 0;
+  }
+
+  .bar {
+    width: 3px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 2px;
+    transition: height 0.2s ease, background-color 0.2s ease;
+  }
+
+  .equalizer.active .bar {
+    background: #a855f7;
+    animation: bounce 1.1s ease-in-out infinite alternate;
+  }
+
+  .equalizer.buffering .bar {
+    background: #f59e0b;
+    animation: pulse 0.8s ease-in-out infinite alternate;
+  }
+
+  .bar-1 { animation-delay: 0.1s !important; }
+  .bar-2 { animation-delay: 0.35s !important; }
+  .bar-3 { animation-delay: 0.2s !important; }
+  .bar-4 { animation-delay: 0.45s !important; }
+
+  @keyframes bounce {
+    0% { height: 4px; }
+    50% { height: 18px; }
+    100% { height: 9px; }
+  }
+
+  @keyframes pulse {
+    0% { height: 4px; opacity: 0.4; }
+    100% { height: 14px; opacity: 1; }
+  }
+
+  /* Controls Row */
+  .controls-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+
+  .btn-nav {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .btn-nav:hover {
+    background: rgba(255, 255, 255, 0.16);
+    color: #ffffff;
+    transform: scale(1.05);
+  }
+
+  .btn-play-pause {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: #ffffff;
+    border: none;
+    color: #0f1117;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 4px 18px rgba(255, 255, 255, 0.3);
+    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .btn-play-pause:hover {
+    transform: scale(1.08);
+    box-shadow: 0 6px 24px rgba(255, 255, 255, 0.45);
+  }
+
+  .btn-play-pause.playing {
+    background: linear-gradient(135deg, #a855f7, #6366f1);
+    color: #ffffff;
+    box-shadow: 0 4px 20px rgba(168, 85, 247, 0.45);
+  }
+
+  .spin {
+    display: inline-flex;
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  /* Error notice */
+  .error-notice {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 8px;
+    color: #fca5a5;
+    font-size: 0.78rem;
+  }
+
+  @media (max-width: 640px) {
+    .radio-player-container {
+      bottom: 16px;
+      padding: 12px 14px;
     }
-    .styleBtn {
-      font-size: 0.75rem;
-      padding: 5px 12px;
-    }
-    .progressionList {
-      bottom: 0;
-      left: 0;
-      width: 100vw;
-      transform: scale(0.8);
-    }
-    .visualizer-container {
+    .station-desc {
       display: none;
+    }
+    .equalizer {
+      display: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .equalizer.active .bar,
+    .equalizer.buffering .bar {
+      animation: none;
+      height: 12px;
     }
   }
 </style>

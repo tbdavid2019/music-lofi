@@ -1,5 +1,33 @@
 # 更新日誌 (Changelog)
 
+## [1.1.0] - 2026-10-23
+
+### 🚀 重大重構：Route A 24/7 線上 Lo-Fi 電台 + 本地環境音效混音架構
+
+- **全新線上電台引擎 (`src/lib/stores/radioStore.ts`)**：
+  - 徹底移除過去不可靠且音質混亂的本機隨機演算法音符/和弦生成邏輯與殘留程式碼（完全移除 `TankDrum`、Canon、Chords、Drums、Piano 舊模組）。
+  - 導入單例 `HTMLAudioElement` 管理與 Svelte store，提供 6 大精選 24/7 高音質電台（Cafe Lounge, Lo-Fi Study, Chillhop Groove, Piano Jazz Bar, Peaceful Piano, Nightwave Chill）。
+  - 內建一級備援串流切換機制（Fallback URL Auto-Recovery）與平滑淡出休眠定時（Fade out & Stop）。
+- **桌面播放器全新改版 (`src/lib/PlayButton.svelte`)**：
+  - 採用半透明毛玻璃現代質感（Glassmorphism）響應式卡片設計。
+  - 頂部支援 6 大電台膠囊快速切換標籤。
+  - 播放中動態等化器（Equalizer）跳動動畫與即時狀態回饋。
+  - 快捷鍵支援：空白鍵播放/暫停、N/P 切換下一台/上一台。
+- **電視端 TV 介面全適配 (`src/TVApp.svelte`, `src/lib/TVPlayButton.svelte`, `src/lib/components/TVBPMControl.svelte`)**：
+  - TV 介面全面適配大螢幕與遙控器快捷鍵（OK 播放/暫停、左右切換電台、上下音量調整）。
+  - 將原本的 BPM 控制面板重構成電視專用電台頻道選單網格。
+  - 頂部跑馬燈即時連動電台頻道名稱與播放狀態。
+  - 修復 TV 端音效與音軌檔名路徑錯誤（`campfire.mp3` → `fire.mp3` 以及 4 個 ambient tracks 檔名修正）。
+- **圖標系統升級（全面導入 `lucide-svelte`）**：
+  - 遵循使用者規範，全面汰換 Emoji 符號與舊版 `@tabler/icons-svelte` 套件，全站改採簡約俐落的 Lucide 向量 SVG 圖標，打包轉換模組數由 7,100 降至 2,135（建置速度提升 4 倍）。
+- **效能優化與 Dual-Code-Review 品質強化**：
+  - 移除環境音效中每 100~200ms 的 `setInterval` 音量輪詢機制，改為響應式音量綁定與 `volumesUpdated` 事件驅動，徹底杜絕無謂的 CPU 負載。
+  - 移除 `HTMLAudioElement` 的 `crossOrigin = "anonymous"` 強制限制，確保所有經由 302 轉址的 Icecast 電台串流皆能無縫播放不被 CORS 阻擋。
+  - 加入 `requestSeq` 請求序號保護與 `AbortError` / `NotAllowedError` 過濾，解決快速切換頻道時的非同步競爭問題。
+  - 修正全域鍵盤快捷鍵（空白鍵、`Enter`、`N`、`P`）在按鈕聚焦或搭配 `Cmd/Ctrl/Alt` 組合鍵時的誤觸問題，並補齊所有組件的 `onDestroy` 事件監聽清理與 `prefers-reduced-motion` 無障礙支援。
+
+---
+
 ## 📝 已加入 README.md
 
 所有新功能和音軌對照表已整合到 ### 🐛 Bug 修復

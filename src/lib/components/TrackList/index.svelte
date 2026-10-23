@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { IconChevronDown, IconChevronUp } from "@tabler/icons-svelte";
+  import { ChevronDown, ChevronUp } from "lucide-svelte";
   import TrackListItem from "./TrackListItem.svelte";
 
   // Mobile visibility toggle
@@ -149,10 +149,10 @@
   <!-- Mobile toggle button -->
   <button class="mobile-toggle" on:click={toggleMobileVisibility}>
     {#if isMobileVisible}
-      <IconChevronDown size={20} />
+      <ChevronDown size={20} />
       <span>隱藏音軌</span>
     {:else}
-      <IconChevronUp size={20} />
+      <ChevronUp size={20} />
       <span>顯示音軌 ({tracks.filter(t => t.isPlaying).length}/{tracks.length})</span>
     {/if}
   </button>
@@ -170,8 +170,8 @@
     </div>
   </div>
   <div id="btn-view">
-    <button id="navigate-btn" on:click={prevTrack}>
-      <IconChevronDown />
+    <button id="navigate-btn" on:click={prevTrack} aria-label="Previous track">
+      <ChevronDown size={20} />
     </button>
   </div>
 </div>

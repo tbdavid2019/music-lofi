@@ -1,52 +1,87 @@
 <script lang="ts">
-  import { IconCampfire } from "@tabler/icons-svelte";
-  import { onMount } from "svelte";
+  import { Flame } from "lucide-svelte";
+  import { onDestroy } from "svelte";
 
   export let volume: number;
 
-  let fire = new Audio("assets/engine/effects/fire.mp3");
+  let fire: HTMLAudioElement | null = null;
   let isFire = false;
 
-  function toggleStorm() {
-    if (isFire) {
-      fire.pause();
-    } else {
-      fire.play();
+  function getFireAudio() {
+    if (!fire && typeof window !== "undefined") {
+      fire = new Audio("assets/engine/effects/fire.mp3");
       fire.loop = true;
-      fire.volume = volume;
     }
+    return fire;
+  }
 
+  $: if (fire) {
+    fire.volume = volume;
+  }
+
+  function toggleFire() {
+    const a = getFireAudio();
+    if (isFire) {
+      a?.pause();
+    } else {
+      if (a) {
+        a.volume = volume;
+        a.play().catch((e) => console.warn("Fire audio play error:", e));
+      }
+    }
     isFire = !isFire;
   }
 
-  // Shortuct to toggle fire with "F" key
-  window.addEventListener("keydown", (e) => {
-    if (e.key === "f") {
-      toggleStorm();
+  function handleKeydown(e: KeyboardEvent) {
+    const target = e.target as HTMLElement | null;
+    if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA")) return;
+    if (e.key === "w" || e.key === "W" || e.key === "f" || e.key === "F") {
+      toggleFire();
     }
-  });
+  }
 
-  // Update volume
-  onMount(() => {
-    setInterval(() => {
-      fire.volume = volume;
-    },100);
+  if (typeof window !== "undefined") {
+    window.addEventListener("keydown", handleKeydown);
+  }
+
+  onDestroy(() => {
+    if (typeof window !== "undefined") {
+      window.removeEventListener("keydown", handleKeydown);
+    }
+    if (fire) {
+      fire.pause();
+      fire = null;
+    }
   });
 </script>
 
 <button
-  style={`
-        background-color: ${isFire ? "white" : "transparent"};
-        `}
-  on:click={toggleStorm}
+  type="button"
+  class="effect-btn"
+  class:active={isFire}
+  on:click={toggleFire}
+  title="營火聲 (W/F)"
+  aria-label="Campfire"
 >
-  <IconCampfire size={25} color={isFire ? "black" : "white"} />
+  <Flame size={22} color={isFire ? "black" : "white"} />
 </button>
 
 <style>
-  button {
+  .effect-btn {
     color: white;
     border-radius: 50%;
-    aspect-ratio: 4/4;
+    aspect-ratio: 1/1;
+    width: 38px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .effect-btn.active {
+    background-color: white;
   }
 </style>

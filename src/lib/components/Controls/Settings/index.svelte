@@ -1,14 +1,11 @@
 <script lang="ts">
-  import { IconSettings } from "@tabler/icons-svelte";
-  import { onMount } from "svelte";
+  import { Settings } from "lucide-svelte";
+  import { onMount, onDestroy } from "svelte";
   import UIConfig from "./UIConfig.svelte";
   import Background from "./Background.svelte";
   import Volume from "./Volume.svelte";
-  import InstrumentControls from "./InstrumentControls.svelte";
   import PresetManager from "./PresetManager.svelte";
-  import Recorder from "../../Recorder/Recorder.svelte";
   import Timer from "../../Timer/Timer.svelte";
-  import BPMControl from "./BPMControl.svelte";
 
   let isActive = false;
 
@@ -16,28 +13,14 @@
     isActive = !isActive;
   }
 
-  // 處理 BPM 變更
-  function handleBPMChange(event) {
-    const newBPM = event.detail;
-    // 發送 BPM 變更事件到父組件
-    window.dispatchEvent(new CustomEvent('bpmChange', { detail: newBPM }));
-  }
-
-  // Shortuct to toggle settings with "J" key
-  window.addEventListener("keydown", (e) => {
-    if (e.key === "j") {
+  function handleKeydown(e: KeyboardEvent) {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.key === "j" || e.key === "J") {
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) return;
       toggle();
     }
-  });
-
-  // when mounted toggle settings
-  // to excute settings of children (old saved)
-  onMount(() => {
-    toggle();
-    setTimeout(() => {
-      toggle();
-    }, 10);
-  });
+  }
 
   const handleClickOutside = (event: MouseEvent) => {
     if (
@@ -48,40 +31,68 @@
       isActive = false;
     }
   };
-  document.addEventListener("click", handleClickOutside);
+
+  onMount(() => {
+    window.addEventListener("keydown", handleKeydown);
+    document.addEventListener("click", handleClickOutside);
+    toggle();
+    setTimeout(() => {
+      toggle();
+    }, 10);
+  });
+
+  onDestroy(() => {
+    if (typeof window !== "undefined") {
+      window.removeEventListener("keydown", handleKeydown);
+    }
+    if (typeof document !== "undefined") {
+      document.removeEventListener("click", handleClickOutside);
+    }
+  });
 </script>
 
 <div id="settings-box">
   <button
-    style={`
-          background-color: ${isActive ? "white" : "transparent"};
-          `}
+    type="button"
+    class="settings-trigger-btn"
+    class:active={isActive}
     on:click={toggle}
+    title="設定 (J)"
+    aria-label="Settings"
   >
-    <IconSettings size={25} color={isActive ? "black" : "white"} />
+    <Settings size={22} color={isActive ? "black" : "white"} />
   </button>
   {#if isActive}
     <div class="settings-container">
       <div>
-        <BPMControl on:bpmChange={handleBPMChange} />
         <UIConfig />
         <Background />
         <Volume />
-        <InstrumentControls />
         <PresetManager />
-        <Recorder />
         <Timer />
-        <small class="info-label">For more information press ESC key</small>
+        <small class="info-label">按 ESC 鍵可查看更多資訊與說明</small>
       </div>
     </div>
   {/if}
 </div>
 
 <style>
-  button {
+  .settings-trigger-btn {
     color: white;
     border-radius: 50%;
-    aspect-ratio: 4/4;
+    aspect-ratio: 1/1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+    width: 38px;
+    height: 38px;
+    transition: all 0.2s ease;
+  }
+  .settings-trigger-btn.active {
+    background-color: white;
   }
   #settings-box {
     position: relative;
@@ -91,41 +102,24 @@
     right: 0;
     top: 70px;
     height: 58vh;
-    padding: 5px 20px;
-    width: 340px; /* Like controls width */
+    padding: 10px 20px;
+    width: 340px;
     color: white;
     border-radius: 20px;
-    backdrop-filter: blur(10px);
-    background-color: rgb(0 0 0 / var(--menu-opacity, 0.4));
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    background-color: rgb(0 0 0 / var(--menu-opacity, 0.6));
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
     overflow-y: auto;
-    animation: show 0.4s ease-in-out;
     z-index: 60;
-  }
-  @keyframes show {
-    from {
-      transform: translateY(-10%);
-      opacity: 0;
-    }
-    to {
-      transform: translateY(0);
-      opacity: 1;
-    }
   }
   .info-label {
     display: block;
-    font-size: 13px;
-    margin-top: 30px;
-    color: azure;
-  }
-
-  @media only screen and (max-width: 600px) {
-    .settings-container {
-      width: 80vw;
-      right: -3vw;
-      background-color: rgb(0 0 0 / calc(var(--menu-opacity, 0.4) + 0.1));
-    }
-    .info-label {
-      opacity: 0;
-    }
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+    opacity: 0.6;
+    text-align: center;
+    font-size: 0.75rem;
   }
 </style>

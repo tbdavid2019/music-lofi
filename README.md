@@ -40,10 +40,11 @@ Generate LoFi music on the go. You create your own atmosphere; LoFi Engine sets 
 
 ## Roadmap
 
-- [x] Procedural LoFi track generation using Tone.js
+- [x] **24/7 Curated Lo-Fi & Chill Streaming Radio Engine** (6 high-fidelity channels with auto-fallback)
+- [x] **Modern Lucide SVG Icons** (replaces emojis across Desktop and TV interfaces)
 - [x] Customizable ambient tracks
-- [x] Customizable effects
-- [x] Customizable look and feel
+- [x] Customizable effects (Rain, Thunder, Campfire, Jungle)
+- [x] Glassmorphic responsive Desktop & Android TV interfaces
 - [x] Keyboard shortcuts for all actions
 - [x] Offline support
 - [x] Cross-platform support (Linux, Mac, Windows)

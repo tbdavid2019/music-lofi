@@ -86,7 +86,7 @@
     pointer-events: none;
   }
   
-  .content > * {
+  :global(.content > *) {
     pointer-events: auto;
   }
 </style>

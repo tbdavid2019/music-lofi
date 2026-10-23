@@ -1,209 +1,191 @@
 <script lang="ts">
-  import { createEventDispatcher } from 'svelte';
-  
-  const dispatch = createEventDispatcher();
-  
-  let currentBPM = 156; // 默認 BPM
-  
-  const bpmOptions = [
-    { value: 120, label: '120', description: '輕鬆' },
-    { value: 140, label: '140', description: '標準' },
-    { value: 156, label: '156', description: '中快' },
-    { value: 170, label: '170', description: '活力' }
-  ];
-  
-  // 從 localStorage 讀取保存的 BPM
-  function loadBPM() {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('LofiEngine_BPM');
-      if (saved) {
-        currentBPM = parseInt(saved);
-        dispatch('bpmChange', currentBPM);
-      }
-    }
+  import {
+    Radio,
+    Coffee,
+    Headphones,
+    Disc,
+    Music2,
+    Music,
+    Moon,
+  } from "lucide-svelte";
+  import {
+    radioStore,
+    STATIONS,
+    playStation,
+    type Station,
+  } from "../stores/radioStore";
+
+  function selectStation(station: Station) {
+    playStation(station.id, true);
   }
-  
-  // 保存 BPM 到 localStorage
-  function saveBPM(bpm: number) {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('LofiEngine_BPM', bpm.toString());
-    }
-  }
-  
-  // 切換 BPM
-  function changeBPM(newBPM: number) {
-    currentBPM = newBPM;
-    saveBPM(newBPM);
-    dispatch('bpmChange', newBPM);
-    // 發送全局事件給 TVPlayButton
-    window.dispatchEvent(new CustomEvent('bpmChange', { detail: newBPM }));
-  }
-  
-  // 組件掛載時讀取保存的 BPM
-  import { onMount } from 'svelte';
-  onMount(() => {
-    loadBPM();
-  });
 </script>
 
-<div class="tv-bpm-control">
-  <div class="bpm-header">
-    <h3 class="bpm-title">🎵 節拍速度</h3>
-    <div class="current-bpm">
-      <span class="bpm-value">{currentBPM}</span>
-      <span class="bpm-unit">BPM</span>
+<div class="tv-station-selector">
+  <div class="selector-header">
+    <div class="title-with-icon">
+      <Radio size={20} class="header-icon" />
+      <h3 class="selector-title">音樂電台頻道</h3>
     </div>
+    <span class="active-label">
+      {STATIONS.find((s) => s.id === $radioStore.currentStationId)?.label || ""}
+    </span>
   </div>
-  
-  <div class="bpm-options">
-    {#each bpmOptions as option}
-      <button 
-        class="bpm-btn" 
-        class:active={currentBPM === option.value}
-        on:click={() => changeBPM(option.value)}
+
+  <div class="stations-grid">
+    {#each STATIONS as station (station.id)}
+      <button
+        type="button"
+        class="station-card"
+        class:active={$radioStore.currentStationId === station.id}
+        on:click={() => selectStation(station)}
+        title={station.description}
       >
-        <div class="bpm-number">{option.label}</div>
-        <div class="bpm-desc">{option.description}</div>
+        <div class="card-icon">
+          {#if station.icon === 'coffee'}
+            <Coffee size={24} />
+          {:else if station.icon === 'headphones'}
+            <Headphones size={24} />
+          {:else if station.icon === 'disc'}
+            <Disc size={24} />
+          {:else if station.icon === 'music2'}
+            <Music2 size={24} />
+          {:else if station.icon === 'music'}
+            <Music size={24} />
+          {:else if station.icon === 'moon'}
+            <Moon size={24} />
+          {/if}
+        </div>
+        <div class="card-info">
+          <div class="card-name">{station.label}</div>
+          <div class="card-sub">{station.name}</div>
+        </div>
+        {#if $radioStore.currentStationId === station.id}
+          <div class="active-indicator"></div>
+        {/if}
       </button>
     {/each}
   </div>
 </div>
 
 <style>
-  .tv-bpm-control {
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 12px;
+  .tv-station-selector {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 18px;
     padding: 1.2rem;
-    margin: 0.8rem 0;
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(12px);
+    width: 100%;
+    box-sizing: border-box;
   }
-  
-  .bpm-header {
+
+  .selector-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 1rem;
+    padding-bottom: 0.6rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   }
-  
-  .bpm-title {
-    font-size: 1.1rem;
+
+  .title-with-icon {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  :global(.header-icon) {
+    color: #a855f7;
+  }
+
+  .selector-title {
+    font-size: 1.15rem;
     font-weight: 600;
     margin: 0;
-    color: white;
+    color: #ffffff;
   }
-  
-  .current-bpm {
-    display: flex;
-    align-items: baseline;
-    gap: 0.2rem;
-    background: rgba(102, 187, 106, 0.2);
-    border: 1px solid rgba(102, 187, 106, 0.3);
-    border-radius: 8px;
-    padding: 0.3rem 0.8rem;
-  }
-  
-  .bpm-value {
-    font-size: 1.3rem;
-    font-weight: 700;
-    color: #66bb6a;
-  }
-  
-  .bpm-unit {
+
+  .active-label {
     font-size: 0.9rem;
-    color: #66bb6a;
-    opacity: 0.8;
+    color: #a855f7;
+    font-weight: 500;
+    background: rgba(168, 85, 247, 0.15);
+    padding: 2px 10px;
+    border-radius: 9999px;
   }
-  
-  .bpm-options {
+
+  .stations-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 0.6rem;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
   }
-  
-  .bpm-btn {
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 8px;
-    padding: 0.8rem 0.4rem;
-    color: white;
+
+  .station-card {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 0.75rem 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    color: #ffffff;
     cursor: pointer;
-    transition: all 0.3s ease;
-    text-align: center;
+    text-align: left;
+    position: relative;
+    transition: all 0.2s ease;
   }
-  
-  .bpm-btn:hover {
-    background: rgba(255, 255, 255, 0.15);
-    border-color: rgba(255, 255, 255, 0.3);
+
+  .station-card:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.25);
     transform: translateY(-2px);
   }
-  
-  .bpm-btn.active {
-    background: rgba(102, 187, 106, 0.25);
-    border-color: rgba(102, 187, 106, 0.5);
-    color: #66bb6a;
-    transform: scale(1.05);
+
+  .station-card.active {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.3), rgba(168, 85, 247, 0.3));
+    border-color: rgba(168, 85, 247, 0.6);
+    box-shadow: 0 4px 16px rgba(168, 85, 247, 0.25);
   }
-  
-  .bpm-number {
-    font-size: 1.1rem;
+
+  .card-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255, 255, 255, 0.85);
+  }
+
+  .station-card.active .card-icon {
+    color: #a855f7;
+  }
+
+  .card-info {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .card-name {
+    font-size: 0.95rem;
     font-weight: 600;
-    margin-bottom: 0.1rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
-  
-  .bpm-desc {
+
+  .card-sub {
     font-size: 0.75rem;
-    opacity: 0.8;
+    color: rgba(255, 255, 255, 0.55);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
-  
-  /* 小型 TV 優化 */
-  @media screen and (max-width: 1366px) and (max-height: 768px) {
-    .tv-bpm-control {
-      padding: 1rem;
-    }
-    
-    .bpm-title {
-      font-size: 1rem;
-    }
-    
-    .bpm-value {
-      font-size: 1.2rem;
-    }
-    
-    .bpm-btn {
-      padding: 0.6rem 0.3rem;
-    }
-    
-    .bpm-number {
-      font-size: 1rem;
-    }
-    
-    .bpm-desc {
-      font-size: 0.7rem;
-    }
-  }
-  
-  /* 極小 TV 優化 */
-  @media screen and (max-width: 1024px) and (max-height: 600px) {
-    .tv-bpm-control {
-      padding: 0.8rem;
-      margin: 0.5rem 0;
-    }
-    
-    .bpm-options {
-      gap: 0.4rem;
-    }
-    
-    .bpm-btn {
-      padding: 0.5rem 0.2rem;
-    }
-    
-    .bpm-number {
-      font-size: 0.9rem;
-    }
-    
-    .bpm-desc {
-      font-size: 0.65rem;
-    }
+
+  .active-indicator {
+    position: absolute;
+    right: 10px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #a855f7;
+    box-shadow: 0 0 8px #a855f7;
   }
 </style>
