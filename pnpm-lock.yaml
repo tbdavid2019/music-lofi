@@ -4,6 +4,9 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+overrides:
+  deepmerge: file:vendor/deepmerge
+
 importers:
 
   .:
@@ -507,8 +510,8 @@ packages:
       supports-color:
         optional: true
 
-  deepmerge@4.3.1:
-    resolution: {integrity: sha512-3sUqbMEc77XqpdNO7FRyRog+eW3ph+GYCbj+rK+uYyRMuwsVy0rMiVtPn+QJlKFvWP/1PYpapqYn0Me2knFn+A==}
+  deepmerge@file:vendor/deepmerge:
+    resolution: {directory: vendor/deepmerge, type: directory}
     engines: {node: '>=0.10.0'}
 
   devalue@5.9.4:
@@ -883,7 +886,7 @@ snapshots:
     dependencies:
       '@sveltejs/vite-plugin-svelte-inspector': 4.0.1(@sveltejs/vite-plugin-svelte@5.1.1(svelte@5.57.3)(vite@6.4.5(@types/node@26.6.5)))(svelte@5.57.3)(vite@6.4.5(@types/node@26.6.5))
       debug: 4.4.3
-      deepmerge: 4.3.1
+      deepmerge: file:vendor/deepmerge
       kleur: 4.1.5
       magic-string: 0.30.21
       svelte: 5.57.3
@@ -974,7 +977,7 @@ snapshots:
     dependencies:
       ms: 2.1.3
 
-  deepmerge@4.3.1: {}
+  deepmerge@file:vendor/deepmerge: {}
 
   devalue@5.9.4: {}
 
