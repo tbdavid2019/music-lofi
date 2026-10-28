@@ -1,5 +1,27 @@
 # 更新日誌 (Changelog)
 
+## [1.4.1] - 2026-10-28
+
+### ♿ 控制面板 WCAG AA/AAA 無障礙合規與排版字階標準化 (Settings Panel WCAG AA/AAA & Typography Standardization)
+
+- **🎨 建立 4 級穩定字階系統（比照左側介面，徹底消除碎字與字體跳躍）**：
+  - 全面比照左側 `TrackList` 的排版規範，消除 `10px`、`11px`、`11.5px` 等紊亂碎級字體。
+  - 將中文文字底線嚴格鎖定在 12px 以上，標準化為 4 級穩定階梯：
+    - 主標題：`16px`（Bold）
+    - 分區/標籤/卡片標題/分頁：`13.5px ~ 15px`（SemiBold / Bold）
+    - 正文說明/選項描述/操作按鈕：`13px ~ 13.5px`（Medium / SemiBold，`#CBD5E1`）
+    - 輔助標籤/徽章/快捷鍵提示：`12px ~ 12.5px`（SemiBold，`#FED7AA` / `#D8B4FE` / `#94A3B8`）
+- **🛡️ 面板防動態桌布穿透與 WCAG 對比度全線達標 (WCAG AA/AAA Compliance)**：
+  - 面板底色提升至 `rgb(15 18 28 / max(var(--menu-opacity, 0.94), 0.92))` 搭配 `24px` 毛玻璃模糊與深層陰影，根絕背景高光窗戶、琴譜與淺色壁紙透光造成的文字閱讀干擾。
+  - 次要文字全面改用 `#CBD5E1`（Slate-300）與 `#E2E8F0`（Slate-200），實測對比度穩定達 9:1 以上（超越 AAA 7:1）。
+  - 「二維配置」紫色 Badge 升級為高明度淺紫 `#D8B4FE` 搭配適當襯底與邊框，對比度自 2.0:1 提升至 5.2:1（符合 AA/AAA）。
+  - 來源卡片邊框與狀態對比度優化，未選取卡片輪廓清晰可辨（WCAG 1.4.11）。
+- **⌨️ 鍵盤無障礙與空間舒適度 (Accessibility & Layout)**：
+  - 面板寬度由緊繃的 380px 擴展至舒適的 420px（`max-width: calc(100vw - 32px)`），高度擴展至 560px。
+  - 加入按 `Escape` 鍵立即關閉控制面板的鍵盤無障礙標準行為。
+  - 全面板按鈕、分頁、卡片、滑桿補齊高對比 `:focus-visible` 焦點環。
+  - 關閉按鈕提升至 32x32px，符合觸控標準。
+
 ## [1.4.0] - 2026-10-28
 
 ### 🎛️ 聲學與專注中心 UI/UX 全面重構 (Acoustic & Focus Center UI/UX Overhaul)

@@ -164,36 +164,54 @@
 
 <style>
   .volume-settings {
-    margin: 1rem 0;
+    margin: 4px 0;
   }
   h4 {
-    margin: 0 0 0.8rem 0;
-    font-size: 1rem;
-    font-weight: 600;
+    margin: 0 0 12px 0;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    color: #ffffff;
   }
   section {
-    margin-bottom: 0.8rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 12px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
   }
   .vol-label-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0 4px;
-    margin-bottom: 4px;
+    margin-bottom: 8px;
   }
   h5 {
     margin: 0;
-    font-size: 0.85rem;
-    font-weight: 500;
-    opacity: 0.85;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #ffffff;
   }
   .vol-num {
-    font-size: 0.8rem;
-    opacity: 0.7;
+    font-size: 12.5px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: #fed7aa;
+    background: rgba(251, 146, 60, 0.16);
+    border: 1px solid rgba(251, 146, 60, 0.35);
+    padding: 1px 7px;
+    border-radius: 999px;
   }
   .volume-slider {
     width: 100%;
-    accent-color: #a855f7;
+    height: 6px;
+    border-radius: 3px;
+    background: rgba(255, 255, 255, 0.25);
+    accent-color: #fb923c;
     cursor: pointer;
+  }
+  .volume-slider:focus-visible {
+    outline: 2px solid #38bdf8;
+    outline-offset: 2px;
   }
 </style>

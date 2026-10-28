@@ -28,6 +28,12 @@
     ) {
       return;
     }
+    // ESC key closes settings
+    if (e.key === "Escape" && isActive) {
+      e.preventDefault();
+      isActive = false;
+      return;
+    }
     // 'o', 'O', or ',' opens settings
     if (e.key === "o" || e.key === "O" || e.key === ",") {
       toggle();
@@ -78,7 +84,7 @@
       <!-- Header -->
       <div class="settings-header">
         <div class="header-left">
-          <Settings size={16} class="settings-header-icon" />
+          <Settings size={18} class="settings-header-icon" />
           <h3 class="settings-title">控制面板</h3>
         </div>
         <button
@@ -86,9 +92,9 @@
           class="close-btn"
           on:click={() => (isActive = false)}
           aria-label="關閉設定"
-          title="關閉"
+          title="關閉 (ESC)"
         >
-          <X size={16} />
+          <X size={18} />
         </button>
       </div>
 
@@ -102,7 +108,7 @@
           aria-selected={activeTab === "appearance"}
           on:click={() => (activeTab = "appearance")}
         >
-          <Palette size={14} />
+          <Palette size={15} />
           <span>外觀桌布</span>
         </button>
         <button
@@ -113,7 +119,7 @@
           aria-selected={activeTab === "volume"}
           on:click={() => (activeTab = "volume")}
         >
-          <Volume2 size={14} />
+          <Volume2 size={15} />
           <span>混音音量</span>
         </button>
         <button
@@ -124,7 +130,7 @@
           aria-selected={activeTab === "presets"}
           on:click={() => (activeTab = "presets")}
         >
-          <Bookmark size={14} />
+          <Bookmark size={15} />
           <span>情境預設</span>
         </button>
       </div>
@@ -186,23 +192,28 @@
     background-color: #ffffff;
   }
 
+  .settings-trigger-btn:focus-visible {
+    outline: 2px solid #38bdf8;
+    outline-offset: 2px;
+  }
+
   .settings-container {
     position: absolute;
     right: 0;
     top: 50px;
-    width: 380px;
-    max-width: 90vw;
-    height: 520px;
-    max-height: 80vh;
+    width: 420px;
+    max-width: calc(100vw - 32px);
+    height: 560px;
+    max-height: 84vh;
     display: flex;
     flex-direction: column;
-    padding: 16px;
+    padding: 18px;
     border-radius: 20px;
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    background-color: rgb(15 18 28 / var(--menu-opacity, 0.94));
-    border: 1px solid rgba(255, 255, 255, 0.16);
-    box-shadow: 0 20px 48px rgba(0, 0, 0, 0.65), 0 0 1px rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    background-color: rgb(15 18 28 / max(var(--menu-opacity, 0.94), 0.92));
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 24px 50px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.15);
     z-index: 60;
     color: #ffffff;
     user-select: none;
@@ -225,8 +236,8 @@
     align-items: center;
     justify-content: space-between;
     margin-bottom: 12px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.14);
   }
 
   .header-left {
@@ -236,45 +247,51 @@
   }
 
   :global(.settings-header-icon) {
-    color: #a855f7;
+    color: #c084fc;
   }
 
   .settings-title {
     margin: 0;
-    font-size: 15px;
-    font-weight: 600;
+    font-size: 16px;
+    font-weight: 700;
     letter-spacing: 0.3px;
     color: #ffffff;
   }
 
   .close-btn {
     background: transparent;
-    border: none;
-    color: rgba(255, 255, 255, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    color: #cbd5e1;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 26px;
-    height: 26px;
-    border-radius: 50%;
-    transition: all 0.2s;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .close-btn:hover {
     color: #ffffff;
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.16);
+    border-color: rgba(255, 255, 255, 0.35);
+  }
+
+  .close-btn:focus-visible {
+    outline: 2px solid #38bdf8;
+    outline-offset: 2px;
   }
 
   /* Segmented Tabs */
   .segmented-tabs {
     display: flex;
-    background: rgba(0, 0, 0, 0.35);
+    background: rgba(0, 0, 0, 0.45);
     border-radius: 12px;
-    padding: 3px;
-    gap: 3px;
+    padding: 4px;
+    gap: 4px;
     margin-bottom: 14px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.16);
   }
 
   .tab-btn {
@@ -283,28 +300,33 @@
     align-items: center;
     justify-content: center;
     gap: 6px;
-    padding: 7px 10px;
+    padding: 8px 12px;
     border-radius: 9px;
     border: 1px solid transparent;
     background: transparent;
-    color: rgba(255, 255, 255, 0.7);
-    font-size: 12.5px;
-    font-weight: 500;
+    color: #cbd5e1;
+    font-size: 13.5px;
+    font-weight: 600;
     cursor: pointer;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .tab-btn:hover {
     color: #ffffff;
-    background: rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.1);
   }
 
   .tab-btn.selected {
-    background: rgba(255, 255, 255, 0.16);
-    border-color: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.22);
+    border-color: rgba(255, 255, 255, 0.32);
     color: #ffffff;
-    font-weight: 600;
+    font-weight: 700;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+
+  .tab-btn:focus-visible {
+    outline: 2px solid #38bdf8;
+    outline-offset: 2px;
   }
 
   /* Tab Content Area */
@@ -325,12 +347,12 @@
   }
 
   .tab-content-area::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.25);
     border-radius: 10px;
   }
 
   .tab-content-area::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.35);
+    background: rgba(255, 255, 255, 0.4);
   }
 
   .tab-panel {
@@ -341,25 +363,27 @@
 
   /* Footer */
   .settings-footer {
-    padding-top: 10px;
+    padding-top: 12px;
     margin-top: auto;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
   }
 
   .info-label {
     display: block;
-    color: rgba(255, 255, 255, 0.55);
+    color: #cbd5e1;
     text-align: center;
-    font-size: 11px;
+    font-size: 12px;
+    font-weight: 500;
   }
 
   kbd {
-    background: rgba(255, 255, 255, 0.12);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.18);
+    border: 1px solid rgba(255, 255, 255, 0.3);
     border-radius: 4px;
-    padding: 1px 5px;
+    padding: 2px 7px;
     font-family: inherit;
-    font-size: 10px;
+    font-size: 12px;
+    font-weight: 600;
     color: #ffffff;
   }
 </style>

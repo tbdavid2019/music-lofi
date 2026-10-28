@@ -320,14 +320,14 @@
 
   .btn-primary {
     width: 100%;
-    padding: 9px;
+    padding: 10px 14px;
     background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
     color: white;
     border: none;
     border-radius: 8px;
     cursor: pointer;
-    font-size: 13px;
-    font-weight: 500;
+    font-size: 13.5px;
+    font-weight: 600;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -337,6 +337,11 @@
 
   .btn-primary:hover {
     transform: translateY(-1px);
+  }
+
+  .btn-primary:focus-visible {
+    outline: 2px solid #38bdf8;
+    outline-offset: 2px;
   }
 
   .save-dialog {
@@ -351,12 +356,12 @@
     border-radius: 6px;
     background: rgba(255, 255, 255, 0.08);
     color: white;
-    font-size: 13px;
+    font-size: 13.5px;
   }
 
-  .save-dialog input:focus {
-    outline: none;
-    border-color: #a855f7;
+  .save-dialog input:focus-visible {
+    outline: 2px solid #38bdf8;
+    outline-offset: 2px;
   }
 
   .btn-save,
@@ -365,7 +370,14 @@
     border: none;
     border-radius: 6px;
     cursor: pointer;
-    font-size: 12px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .btn-save:focus-visible,
+  .btn-cancel:focus-visible {
+    outline: 2px solid #38bdf8;
+    outline-offset: 2px;
   }
 
   .btn-save {
@@ -387,16 +399,17 @@
 
   .empty-message {
     text-align: center;
-    color: rgba(255, 255, 255, 0.5);
+    color: #cbd5e1;
     padding: 16px;
     font-size: 13px;
+    font-weight: 500;
   }
 
   .preset-item {
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 8px;
-    padding: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 12px;
+    padding: 11px 12px;
     margin-bottom: 8px;
     display: flex;
     justify-content: space-between;
@@ -410,52 +423,58 @@
 
   .preset-name {
     font-weight: 600;
-    font-size: 13px;
-    margin-bottom: 2px;
+    font-size: 14px;
+    color: #ffffff;
+    margin-bottom: 3px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
 
   .preset-details {
-    font-size: 11px;
-    color: rgba(255, 255, 255, 0.65);
+    font-size: 12.5px;
+    color: #cbd5e1;
     margin-bottom: 2px;
   }
 
   .preset-date {
-    font-size: 10px;
-    color: rgba(255, 255, 255, 0.4);
+    font-size: 12px;
+    color: #94a3b8;
   }
 
   .preset-actions {
     display: flex;
-    gap: 5px;
+    gap: 6px;
     align-items: center;
     flex-shrink: 0;
   }
 
   .btn-load {
-    padding: 5px 10px;
+    padding: 6px 12px;
     background: #6366f1;
     color: white;
     border: none;
-    border-radius: 5px;
+    border-radius: 6px;
     cursor: pointer;
-    font-size: 11px;
-    font-weight: 500;
+    font-size: 12.5px;
+    font-weight: 600;
   }
 
   .btn-load:hover {
     background: #4f46e5;
   }
 
+  .btn-load:focus-visible {
+    outline: 2px solid #38bdf8;
+    outline-offset: 2px;
+  }
+
   .btn-delete {
-    padding: 5px;
-    background: rgba(239, 68, 68, 0.3);
+    padding: 6px;
+    background: rgba(239, 68, 68, 0.25);
     color: #fca5a5;
-    border: 1px solid rgba(239, 68, 68, 0.5);
-    border-radius: 5px;
+    border: 1px solid rgba(239, 68, 68, 0.45);
+    border-radius: 6px;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -463,25 +482,31 @@
   }
 
   .btn-delete:hover {
-    background: rgba(239, 68, 68, 0.5);
+    background: rgba(239, 68, 68, 0.45);
+  }
+
+  .btn-delete:focus-visible {
+    outline: 2px solid #38bdf8;
+    outline-offset: 2px;
   }
 
   .import-export {
     display: flex;
     gap: 8px;
     padding-top: 10px;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
   }
 
   .btn-secondary {
     flex: 1;
-    padding: 7px;
+    padding: 8px 12px;
     background: rgba(255, 255, 255, 0.08);
     color: white;
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 8px;
     cursor: pointer;
-    font-size: 12px;
+    font-size: 13px;
+    font-weight: 600;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -489,7 +514,12 @@
   }
 
   .btn-secondary:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.16);
+  }
+
+  .btn-secondary:focus-visible {
+    outline: 2px solid #38bdf8;
+    outline-offset: 2px;
   }
 
   .btn-secondary:disabled {
@@ -504,14 +534,14 @@
 
   .btn-reset-all {
     width: 100%;
-    padding: 8px;
-    background: rgba(239, 68, 68, 0.12);
+    padding: 9px 12px;
+    background: rgba(239, 68, 68, 0.15);
     color: #fca5a5;
-    border: 1px solid rgba(239, 68, 68, 0.3);
-    border-radius: 6px;
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    border-radius: 8px;
     cursor: pointer;
-    font-size: 12px;
-    font-weight: 500;
+    font-size: 13px;
+    font-weight: 600;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -519,6 +549,11 @@
   }
 
   .btn-reset-all:hover {
-    background: rgba(239, 68, 68, 0.25);
+    background: rgba(239, 68, 68, 0.3);
+  }
+
+  .btn-reset-all:focus-visible {
+    outline: 2px solid #38bdf8;
+    outline-offset: 2px;
   }
 </style>

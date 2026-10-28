@@ -48,9 +48,9 @@
 
 <style>
   .ui-config-box {
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 14px;
     padding: 12px 14px;
   }
 
@@ -62,19 +62,19 @@
   }
 
   .opacity-title {
-    font-size: 13px;
-    font-weight: 500;
-    color: rgba(255, 255, 255, 0.9);
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #ffffff;
   }
 
   .opacity-value {
     font-size: 12.5px;
-    font-weight: 600;
+    font-weight: 700;
     font-variant-numeric: tabular-nums;
     color: #38bdf8;
-    background: rgba(56, 189, 248, 0.12);
-    border: 1px solid rgba(56, 189, 248, 0.25);
-    padding: 2px 8px;
+    background: rgba(56, 189, 248, 0.16);
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    padding: 2px 9px;
     border-radius: 999px;
   }
 
@@ -82,9 +82,14 @@
     width: 100%;
     height: 6px;
     border-radius: 3px;
-    background: rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.25);
     outline: none;
     cursor: pointer;
     accent-color: #38bdf8;
+  }
+
+  .opacity-slider:focus-visible {
+    outline: 2px solid #38bdf8;
+    outline-offset: 2px;
   }
 </style>
