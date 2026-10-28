@@ -3,7 +3,7 @@ import { svelte } from "@sveltejs/vite-plugin-svelte";
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  base: "/",  // 改為絕對路徑，確保 Vercel 部署時路由正確
+  base: process.env.VITE_BASE_PATH ?? "/", // GitHub Pages sets its project path; Vercel and desktop builds use root.
   plugins: [
     svelte(),
   ],

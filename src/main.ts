@@ -5,7 +5,7 @@ import TVApp from "./TVApp.svelte";
 // Keep the app shell available when the browser is offline.
 if (import.meta.env.PROD && "serviceWorker" in navigator) {
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/sw.js").catch((error) => {
+    navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).catch((error) => {
       console.error("Service worker registration failed:", error);
     });
   });
