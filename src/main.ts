@@ -1,4 +1,5 @@
 import "./styles.css";
+import { mount } from "svelte";
 import App from "./App.svelte";
 import TVApp from "./TVApp.svelte";
 
@@ -22,7 +23,7 @@ console.log('🚀 Main.ts loaded at:', new Date().toISOString());
 // 根據路徑選擇對應的應用版本
 const AppComponent = isTVMode ? TVApp : App;
 
-const app = new AppComponent({
+const app = mount(AppComponent, {
   target: document.getElementById("app")!,
 });
 
