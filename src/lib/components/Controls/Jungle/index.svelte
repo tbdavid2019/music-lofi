@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Trees } from "@lucide/svelte";
-  import { onDestroy } from "svelte";
+  import { onDestroy, onMount } from "svelte";
 
   export let volume: number;
 
@@ -33,16 +33,32 @@
   }
 
   function handleKeydown(e: KeyboardEvent) {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
     const target = e.target as HTMLElement | null;
-    if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA")) return;
-    if (e.key === "e" || e.key === "E" || e.key === "d" || e.key === "D") {
+    if (
+      target &&
+      (target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.isContentEditable ||
+        target.closest("input, textarea, [contenteditable='true']"))
+    ) {
+      return;
+    }
+    if (
+      e.key === "e" ||
+      e.key === "E" ||
+      e.key === "d" ||
+      e.key === "D" ||
+      e.key === "j" ||
+      e.key === "J"
+    ) {
       toggleSound();
     }
   }
 
-  if (typeof window !== "undefined") {
+  onMount(() => {
     window.addEventListener("keydown", handleKeydown);
-  }
+  });
 
   onDestroy(() => {
     if (typeof window !== "undefined") {
@@ -60,10 +76,10 @@
   class="effect-btn"
   class:active={isActive}
   on:click={toggleSound}
-  title="叢林鳥鳴 (E/D)"
+  title="叢林鳥鳴 (J / E / D)"
   aria-label="Jungle"
 >
-  <Trees size={22} color={isActive ? "black" : "white"} />
+  <Trees size={20} color={isActive ? "black" : "white"} />
 </button>
 
 <style>
@@ -71,8 +87,8 @@
     color: white;
     border-radius: 50%;
     aspect-ratio: 1/1;
-    width: 38px;
-    height: 38px;
+    width: 36px;
+    height: 36px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -81,6 +97,11 @@
     cursor: pointer;
     transition: all 0.2s ease;
   }
+
+  .effect-btn:hover {
+    background-color: rgba(255, 255, 255, 0.12);
+  }
+
   .effect-btn.active {
     background-color: white;
   }

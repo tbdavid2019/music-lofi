@@ -1,6 +1,5 @@
 <script lang="ts">
   import PresetManager from "../Controls/Settings/PresetManager.svelte";
-  import Timer from "../Timer/Timer.svelte";
   import { Sparkles, Radio, Sliders, Clock, ChevronDown, ChevronRight } from "@lucide/svelte";
   import { STATIONS, radioStore, playStation } from "../../stores/radioStore";
 
@@ -108,8 +107,18 @@
       <PresetManager />
     </div>
   {:else if activeSection === "timer"}
-    <div class="feature-content">
-      <Timer />
+    <div class="feature-content timer-guide-box">
+      <div class="timer-guide-badge">
+        <Clock size={15} />
+        <span>右上角獨立控制塢</span>
+      </div>
+      <h4>專注定時器全新升級</h4>
+      <p>專注定時器現已獨立設置於畫面右上角控制列，常駐顯示即時倒數標籤（如 ⏱️ 24:18），隨時掌握專注進度：</p>
+      <ul class="timer-guide-list">
+        <li><strong>☕ 番茄工作法</strong>：經典 25/5 分鐘專注與休息輪換，自動輪次記錄。</li>
+        <li><strong>🌙 睡眠定時器</strong>：時間到達自動平滑淡出音樂，助你好眠。</li>
+        <li><strong>⏱️ 自訂定時</strong>：自由自訂任意專注分鐘數。</li>
+      </ul>
     </div>
   {/if}
 
@@ -119,7 +128,7 @@
     <ul>
       <li>按 <kbd>空白鍵</kbd> 播放或暫停電台</li>
       <li>按 <kbd>N</kbd> / <kbd>P</kbd> 切換下一台 / 上一台</li>
-      <li>按 <kbd>J</kbd> 開啟設定面板，按 <kbd>ESC</kbd> 關閉說明</li>
+      <li>按 <kbd>O</kbd> 開啟設定面板，按 <kbd>ESC</kbd> 關閉說明</li>
       <li>數字鍵 <kbd>1</kbd> - <kbd>9</kbd> 可啟動背景環境音軌，按 <kbd>K</kbd> 停止所有音軌</li>
     </ul>
   </div>

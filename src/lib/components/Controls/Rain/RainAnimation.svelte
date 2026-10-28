@@ -4,18 +4,18 @@
 
 <div>
   {#if isRaining}
-    <div class="rain"></div>
+    <div class="rain" aria-hidden="true"></div>
   {/if}
 </div>
 
 <style>
   .rain {
-    position: absolute;
-    top: -30px;
-    left: -100vw;
-    width: 300vw;
-    height: 110vh;
-    z-index: -1; /* behind the content */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 10;
     background: url("/rain.png");
     animation: rain 0.3s linear infinite;
     pointer-events: none;

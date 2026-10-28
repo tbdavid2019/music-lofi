@@ -5,7 +5,9 @@
   import TopBar from "./lib/components/TopBar/TopBar.svelte";
   import Info from "./lib/components/InfoBox/Info.svelte";
   import Config from "./lib/Config.svelte";
+  import RainAnimation from "./lib/components/Controls/Rain/RainAnimation.svelte";
   import { bgUrl } from "./lib/stores/bgStore";
+  import { isRainingStore, isLightningFlashingStore } from "./lib/stores/ambientVisualStore";
   import { onMount, tick } from "svelte";
 
   let isLoaded = false;
@@ -52,6 +54,12 @@
         class="bg-image"
       />
     </div>
+  {/if}
+
+  <!-- Full-screen Ambient Visual Overlays -->
+  <RainAnimation isRaining={$isRainingStore} />
+  {#if $isLightningFlashingStore}
+    <div class="lightning-flash-overlay" aria-hidden="true"></div>
   {/if}
 
   <Config />
@@ -117,5 +125,35 @@
   
   :global(.content > *) {
     pointer-events: auto;
+  }
+
+  .lightning-flash-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(255, 255, 255, 0.32);
+    pointer-events: none;
+    z-index: 15;
+    animation: lightning-pulse 0.35s ease-out;
+  }
+
+  @keyframes lightning-pulse {
+    0% {
+      opacity: 0;
+    }
+    15% {
+      opacity: 0.95;
+    }
+    30% {
+      opacity: 0.1;
+    }
+    45% {
+      opacity: 0.85;
+    }
+    100% {
+      opacity: 0;
+    }
   }
 </style>

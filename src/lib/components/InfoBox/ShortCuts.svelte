@@ -23,8 +23,8 @@
     <div class="shortcut-desc">顯示/隱藏此視窗 (Toggle Info Box)</div>
   </div>
   <div class="shortcut">
-    <div class="shortcut-key">J</div>
-    <div class="shortcut-desc">開啟/關閉設定 (Toggle Settings)</div>
+    <div class="shortcut-key">O / ,</div>
+    <div class="shortcut-desc">開啟/關閉設定面板 (Toggle Settings)</div>
   </div>
   <div class="shortcut">
     <div class="shortcut-key"><ArrowRight size={14} /></div>
@@ -53,15 +53,15 @@
   <!-- Effects Shortcuts -->
   <h5 class="section-heading">環境音效 (Ambient Effects)</h5>
   <div class="shortcut">
-    <div class="shortcut-key">Q / A</div>
+    <div class="shortcut-key">R / Q / A</div>
     <div class="shortcut-desc">雨聲開關 (Toggle Rain)</div>
   </div>
   <div class="shortcut">
-    <div class="shortcut-key">W / F</div>
+    <div class="shortcut-key">W / F / C</div>
     <div class="shortcut-desc">營火聲開關 (Toggle Campfire)</div>
   </div>
   <div class="shortcut">
-    <div class="shortcut-key">E / D</div>
+    <div class="shortcut-key">J / E / D</div>
     <div class="shortcut-desc">叢林鳥鳴開關 (Toggle Jungle)</div>
   </div>
   <div class="shortcut">

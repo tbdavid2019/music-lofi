@@ -2,7 +2,7 @@
   import { CloudRain } from "@lucide/svelte";
   import { onDestroy, onMount } from "svelte";
   import * as Tone from "tone";
-  import RainAnimation from "./RainAnimation.svelte";
+  import { isRainingStore } from "../../../stores/ambientVisualStore";
 
   export let volume: number;
 
@@ -72,6 +72,7 @@
     }
 
     isRaining = !isRaining;
+    isRainingStore.set(isRaining);
   }
 
   function startRain() {
@@ -152,9 +153,25 @@
   }
 
   const handleKeydown = (e: KeyboardEvent) => {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
     const target = e.target as HTMLElement | null;
-    if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA")) return;
-    if (e.key === "a" || e.key === "A" || e.key === "q" || e.key === "Q") {
+    if (
+      target &&
+      (target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.isContentEditable ||
+        target.closest("input, textarea, [contenteditable='true']"))
+    ) {
+      return;
+    }
+    if (
+      e.key === "a" ||
+      e.key === "A" ||
+      e.key === "q" ||
+      e.key === "Q" ||
+      e.key === "r" ||
+      e.key === "R"
+    ) {
       toggleRain();
     }
   };
@@ -166,6 +183,7 @@
   onDestroy(() => {
     window.removeEventListener("keydown", handleKeydown);
     if (scheduleId !== null) Tone.Transport.clear(scheduleId);
+    isRainingStore.set(false);
     playerA?.dispose();
     playerB?.dispose();
     gainA?.dispose();
@@ -184,12 +202,11 @@
     class="effect-btn"
     class:active={isRaining}
     on:click={toggleRain}
-    title="雨聲 (Q/A)"
+    title="雨聲 (R / Q / A)"
     aria-label="Rain"
   >
     <CloudRain size={22} color={isRaining ? "black" : "white"} />
   </button>
-  <RainAnimation {isRaining} />
 </div>
 
 <style>

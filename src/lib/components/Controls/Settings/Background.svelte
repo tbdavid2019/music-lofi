@@ -1,7 +1,18 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
   import { get } from "svelte/store";
-  import { ArrowLeft, ArrowRight, RotateCcw, Image as ImageIcon, Heart } from "@lucide/svelte";
+  import {
+    Globe,
+    Heart,
+    Coffee,
+    Pin,
+    Dices,
+    ChevronLeft,
+    ChevronRight,
+    RotateCcw,
+    Loader2,
+    Check,
+  } from "@lucide/svelte";
   import {
     bgUrl,
     bgTitle,
@@ -10,6 +21,12 @@
     getLocalBgByStation,
     isLegacyBrokenUrl,
   } from "../../../stores/bgStore";
+
+  type BgSource = "bing" | "beauty" | "local";
+  type BgMode = "fixed" | "random";
+
+  let currentSource: BgSource = "local";
+  let currentMode: BgMode = "fixed";
 
   // State from localStorage
   let id: number = 2;
@@ -99,7 +116,7 @@
     "https://www.bing.com/th?id=OHR.IlesSanguinaires_ZH-CN3149346035_1920x1080.jpg",
   ];
 
-  // Tier 2 Verified High-Res Beauty & Portrait Pool (13 BTSTU + 5 Unsplash)
+  // Tier 2 Verified High-Res Beauty & Portrait Pool
   const BEAUTY_VERIFIED_POOL = [
     "https://img.btstu.cn/api/images/5bc030557e11c.jpg",
     "https://img.btstu.cn/api/images/5b440db8bf666.jpg",
@@ -220,7 +237,7 @@
   async function fetchBeautyWallpaper(): Promise<string | null> {
     const currentUrl = get(bgUrl);
 
-    // Tier 1: Live API api.btstu.cn / /api/beauty-official
+    // Tier 1: Live API
     const endpoints = [
       `/api/beauty-official?lx=meizi&format=json&_t=${Date.now()}`,
       `https://api.btstu.cn/sjbz/api.php?lx=meizi&format=json&_t=${Date.now()}`,
@@ -257,8 +274,8 @@
     return null;
   }
 
-  // Fetch and apply Bing wallpaper (guarded against overlapping requests)
-  async function fetchAndSetBingWallpaper(forceRandom = useBingRandom) {
+  // Fetch and apply Bing wallpaper
+  async function fetchAndSetBingWallpaper(forceRandom = (currentMode === "random")) {
     const currentSeq = ++requestSeq;
     isLoadingBing = true;
     try {
@@ -274,6 +291,7 @@
         localStorage.setItem("use-beauty-api", "false");
         localStorage.setItem("bing-bg-url", url);
         localStorage.setItem("bing-fetch-date", today);
+        localStorage.setItem("use-bing-random", forceRandom.toString());
       } else {
         console.warn("⚠️ Bing 桌布獲取失敗，退回本地背景");
         useLocalBg(id);
@@ -285,7 +303,7 @@
     }
   }
 
-  // Fetch and apply Beauty wallpaper (guarded against overlapping requests)
+  // Fetch and apply Beauty wallpaper
   async function fetchAndSetBeautyWallpaper() {
     const currentSeq = ++requestSeq;
     isLoadingBeauty = true;
@@ -302,6 +320,7 @@
         localStorage.setItem("use-bing-api", "false");
         localStorage.setItem("beauty-bg-url", url);
         localStorage.setItem("beauty-fetch-date", today);
+        bgTitle.set("高解析真人藝術寫真");
       } else {
         console.warn("⚠️ 美女桌布獲取失敗，退回本地背景");
         useLocalBg(id);
@@ -315,6 +334,7 @@
 
   // Switch to local background
   function useLocalBg(bgId: number) {
+    currentSource = "local";
     requestSeq++;
     isLoadingBing = false;
     isLoadingBeauty = false;
@@ -351,18 +371,58 @@
     useLocalBg(prevId);
   }
 
-  function toggleBingRandom() {
-    useBingRandom = !useBingRandom;
-    localStorage.setItem("use-bing-random", useBingRandom.toString());
-    if (useBingApi) {
+  // Matrix Selection Handlers
+  function selectSource(source: BgSource) {
+    currentSource = source;
+    if (source === "bing") {
+      useBingApi = true;
+      useBeautyApi = false;
+      fetchAndSetBingWallpaper(currentMode === "random");
+    } else if (source === "beauty") {
+      useBeautyApi = true;
+      useBingApi = false;
+      if (currentMode === "fixed" && currentBeautyUrl) {
+        bgUrl.set(currentBeautyUrl);
+        localStorage.setItem("use-beauty-api", "true");
+        localStorage.setItem("use-bing-api", "false");
+        bgTitle.set("高解析真人藝術寫真");
+      } else {
+        fetchAndSetBeautyWallpaper();
+      }
+    } else {
+      useBingApi = false;
+      useBeautyApi = false;
+      if (currentMode === "random") {
+        randomBg();
+      } else {
+        useLocalBg(id);
+      }
+    }
+  }
+
+  function selectMode(mode: BgMode) {
+    currentMode = mode;
+    localStorage.setItem("bg-mode", mode);
+
+    if (currentSource === "bing") {
+      useBingRandom = (mode === "random");
+      localStorage.setItem("use-bing-random", useBingRandom.toString());
       fetchAndSetBingWallpaper(useBingRandom);
+    } else if (currentSource === "beauty") {
+      if (mode === "random") {
+        fetchAndSetBeautyWallpaper();
+      }
+    } else {
+      if (mode === "random") {
+        randomBg();
+      }
     }
   }
 
   function toggleSyncStation() {
     syncWithStation = !syncWithStation;
     localStorage.setItem("bg-sync-station", syncWithStation.toString());
-    if (syncWithStation && !useBingApi && !useBeautyApi) {
+    if (syncWithStation && currentSource === "local") {
       const curStation = localStorage.getItem("LofiEngine_Station") || "lofi";
       useLocalBg(getLocalBgByStation(curStation));
     }
@@ -375,19 +435,19 @@
     ) {
       return;
     }
-    if (e.key === "ArrowRight") {
-      nextBg();
-    } else if (e.key === "ArrowLeft") {
-      prevBg();
+    if (currentSource === "local" && currentMode === "fixed") {
+      if (e.key === "ArrowRight") {
+        nextBg();
+      } else if (e.key === "ArrowLeft") {
+        prevBg();
+      }
     }
   }
 
-  // Reactive current local metadata
   $: currentLocalMeta = LOCAL_BACKGROUNDS.find((b) => b.id === Number(id)) || LOCAL_BACKGROUNDS[1];
 
-  // Lifecycle initialization
   onMount(() => {
-    // 1. Purge legacy broken URLs (bing.img.run / liuzhuai.com)
+    // 1. Purge legacy broken URLs
     const rawBing = localStorage.getItem("bing-bg-url");
     if (isLegacyBrokenUrl(rawBing)) {
       localStorage.removeItem("bing-bg-url");
@@ -411,6 +471,18 @@
     lastBingFetchDate = localStorage.getItem("bing-fetch-date") || "";
     lastBeautyFetchDate = localStorage.getItem("beauty-fetch-date") || "";
 
+    // Determine currentSource & currentMode
+    if (useBingApi) {
+      currentSource = "bing";
+      currentMode = useBingRandom ? "random" : "fixed";
+    } else if (useBeautyApi) {
+      currentSource = "beauty";
+      currentMode = localStorage.getItem("bg-mode") === "fixed" ? "fixed" : "random";
+    } else {
+      currentSource = "local";
+      currentMode = localStorage.getItem("bg-mode") === "random" ? "random" : "fixed";
+    }
+
     const curStation = localStorage.getItem("LofiEngine_Station") || "lofi";
     const savedId = parseInt(localStorage.getItem("bg-id") || "", 10);
     if (!isNaN(savedId) && savedId >= 1 && savedId <= 10) {
@@ -426,6 +498,7 @@
 
     if (useBeautyApi && currentBeautyUrl && !shouldRefreshBeauty) {
       bgUrl.set(currentBeautyUrl);
+      bgTitle.set("高解析真人藝術寫真");
     } else if (shouldRefreshBeauty) {
       fetchAndSetBeautyWallpaper();
     } else if (useBingApi && currentBingUrl && !shouldRefreshBing) {
@@ -433,7 +506,6 @@
     } else if (shouldRefreshBing) {
       fetchAndSetBingWallpaper(useBingRandom);
     } else {
-      // Local mode: if syncWithStation is enabled on boot, align with current station
       if (syncWithStation) {
         id = getLocalBgByStation(curStation);
       }
@@ -481,218 +553,700 @@
   });
 </script>
 
-<div>
-  <h4>背景桌布 (Background)</h4>
+<div class="background-matrix-card">
+  <div class="section-title-row">
+    <h4>桌布設定 (Wallpaper)</h4>
+    <span class="matrix-badge">二維配置</span>
+  </div>
 
-  <!-- API 桌布選項 -->
-  <div class="api-wallpaper-section">
-    <!-- Bing 每日/隨機桌布按鈕 -->
-    <button
-      type="button"
-      class="api-btn bing-btn"
-      class:active={useBingApi}
-      on:click={() => fetchAndSetBingWallpaper(useBingRandom)}
-      title={useBingRandom ? "獲取隨機 Bing 官方高清桌布" : "使用 Bing 官方每日高清桌布（自動適配桌面/手機解析度）"}
-      disabled={isLoadingBing}
-    >
-      <ImageIcon size={18} />
-      <span>
-        {isLoadingBing
-          ? "正在獲取 Bing 桌布..."
-          : useBingApi
-          ? `✓ Bing ${useBingRandom ? "隨機" : "每日"}桌布`
-          : `Bing ${useBingRandom ? "隨機" : "每日"}桌布`}
-      </span>
-    </button>
+  <!-- LAYER 1: 來源選擇器 (Source: Bing / 人像 / 插畫) -->
+  <div class="matrix-layer">
+    <div class="layer-header">
+      <span class="layer-step">1</span>
+      <span class="layer-label">桌布來源</span>
+    </div>
+    <div class="source-grid" role="radiogroup" aria-label="桌布來源選擇">
+      <!-- Bing -->
+      <button
+        type="button"
+        role="radio"
+        class="source-card"
+        class:selected={currentSource === "bing"}
+        aria-checked={currentSource === "bing"}
+        on:click={() => selectSource("bing")}
+      >
+        <div class="card-icon-wrap bing">
+          <Globe size={18} />
+        </div>
+        <div class="card-text">
+          <span class="card-title">Bing 官方</span>
+          <span class="card-desc">每日世界風光</span>
+        </div>
+        {#if currentSource === "bing"}
+          <span class="check-indicator"><Check size={14} /></span>
+        {/if}
+      </button>
 
-    <!-- Bing 模式切換 (每日 / 隨機) -->
-    <div class="bing-mode-toggle">
-      <label class="switch-container">
-        <input type="checkbox" checked={useBingRandom} on:change={toggleBingRandom} />
-        <span class="slider"></span>
-        <span class="label-text">Bing 隨機模式 {useBingRandom ? "ON" : "OFF"}</span>
-      </label>
+      <!-- Beauty -->
+      <button
+        type="button"
+        role="radio"
+        class="source-card"
+        class:selected={currentSource === "beauty"}
+        aria-checked={currentSource === "beauty"}
+        on:click={() => selectSource("beauty")}
+      >
+        <div class="card-icon-wrap beauty">
+          <Heart size={18} />
+        </div>
+        <div class="card-text">
+          <span class="card-title">人像寫真</span>
+          <span class="card-desc">高解析藝術人像</span>
+        </div>
+        {#if currentSource === "beauty"}
+          <span class="check-indicator"><Check size={14} /></span>
+        {/if}
+      </button>
+
+      <!-- Local -->
+      <button
+        type="button"
+        role="radio"
+        class="source-card"
+        class:selected={currentSource === "local"}
+        aria-checked={currentSource === "local"}
+        on:click={() => selectSource("local")}
+      >
+        <div class="card-icon-wrap local">
+          <Coffee size={18} />
+        </div>
+        <div class="card-text">
+          <span class="card-title">插畫主題</span>
+          <span class="card-desc">10 款 Lo-Fi 原創</span>
+        </div>
+        {#if currentSource === "local"}
+          <span class="check-indicator"><Check size={14} /></span>
+        {/if}
+      </button>
+    </div>
+  </div>
+
+  <!-- LAYER 2: 模式切換 (Mode: 固定/手動 vs 隨機輪播) -->
+  <div class="matrix-layer">
+    <div class="layer-header">
+      <span class="layer-step">2</span>
+      <span class="layer-label">展示模式</span>
+    </div>
+    <div class="mode-capsule-group" role="radiogroup" aria-label="展示模式切換">
+      <button
+        type="button"
+        role="radio"
+        class="capsule-mode-btn"
+        class:active={currentMode === "fixed"}
+        aria-checked={currentMode === "fixed"}
+        on:click={() => selectMode("fixed")}
+      >
+        <Pin size={14} />
+        <span>固定 / 手動精選</span>
+      </button>
+      <button
+        type="button"
+        role="radio"
+        class="capsule-mode-btn"
+        class:active={currentMode === "random"}
+        aria-checked={currentMode === "random"}
+        on:click={() => selectMode("random")}
+      >
+        <Dices size={15} />
+        <span>隨機輪播</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- LAYER 3: 自適應微調操作區 (Adaptive Details Area) -->
+  <div class="matrix-layer adaptive-container">
+    <div class="layer-header">
+      <span class="layer-step">3</span>
+      <span class="layer-label">微調與控制</span>
     </div>
 
-    <!-- 美女 / 藝術桌布按鈕 -->
-    <button
-      type="button"
-      class="api-btn beauty-btn"
-      class:active={useBeautyApi}
-      on:click={fetchAndSetBeautyWallpaper}
-      title="隨機高畫質美女 / 人像藝術桌布"
-      disabled={isLoadingBeauty}
-    >
-      <Heart size={18} />
-      <span>{isLoadingBeauty ? "正在獲取美女桌布..." : useBeautyApi ? "✓ 美女桌布" : "美女桌布"}</span>
-    </button>
+    {#if currentSource === "bing"}
+      <div class="adaptive-panel bing-panel">
+        <div class="panel-info-row">
+          <div class="panel-badge">
+            {currentMode === "fixed" ? "今日官方精選 1080P" : "Bing 歷年圖庫隨選"}
+          </div>
+          <span class="device-hint">
+            {isMobileDevice() ? "📱 手機版直式" : "🖥️ 桌面高畫質"}
+          </span>
+        </div>
 
-    <!-- API 狀態提示 -->
-    {#if useBingApi}
-      <div class="api-hint bing-hint">
-        <div>Bing 官方桌布 ({isMobileDevice() ? "手機版" : "桌面版 1080P"})</div>
         {#if $bgTitle}
-          <div class="bing-copyright">{$bgTitle}</div>
+          <div class="bing-story-box">
+            <span class="story-tag">地理故事</span>
+            <p class="story-text">{$bgTitle}</p>
+          </div>
+        {/if}
+
+        <div class="actions-row">
+          <button
+            type="button"
+            class="action-button primary"
+            disabled={isLoadingBing}
+            on:click={() => fetchAndSetBingWallpaper(currentMode === "random")}
+          >
+            {#if isLoadingBing}
+              <Loader2 size={15} class="spin" />
+              <span>桌布載入中...</span>
+            {:else if currentMode === "fixed"}
+              <RotateCcw size={15} />
+              <span>重新載入今日精選</span>
+            {:else}
+              <Dices size={16} />
+              <span>換一張 🎲</span>
+            {/if}
+          </button>
+        </div>
+      </div>
+    {:else if currentSource === "beauty"}
+      <div class="adaptive-panel beauty-panel">
+        <div class="panel-info-row">
+          <div class="panel-badge beauty-badge">
+            {currentMode === "fixed" ? "已鎖定當前人像" : "隨機人像藝術寫真"}
+          </div>
+        </div>
+
+        <p class="panel-desc">
+          {currentMode === "fixed"
+            ? "當前壁紙已鎖定，刷新頁面將保持此照片。"
+            : "隨選高解析真人寫真與人像攝影，隨時探索新視角。"}
+        </p>
+
+        <div class="actions-row">
+          <button
+            type="button"
+            class="action-button beauty-action"
+            disabled={isLoadingBeauty}
+            on:click={fetchAndSetBeautyWallpaper}
+          >
+            {#if isLoadingBeauty}
+              <Loader2 size={15} class="spin" />
+              <span>正在載入寫真...</span>
+            {:else if currentMode === "fixed"}
+              <Heart size={15} />
+              <span>換一張並鎖定 🌸</span>
+            {:else}
+              <Dices size={16} />
+              <span>換一張 🎲</span>
+            {/if}
+          </button>
+        </div>
+      </div>
+    {:else}
+      <!-- Local Illustrations (10) -->
+      <div class="adaptive-panel local-panel">
+        {#if currentMode === "fixed"}
+          <div class="local-carousel-wrap">
+            <div class="local-header-info">
+              <span class="local-title">({id}/10) · {currentLocalMeta.label}</span>
+              <span class="local-subtitle">{currentLocalMeta.subtitle}</span>
+            </div>
+
+            <!-- Preview Carousel -->
+            <div class="carousel-preview-row">
+              <button
+                type="button"
+                class="carousel-arrow prev"
+                on:click={prevBg}
+                title="上一張背景 (←)"
+                aria-label="上一張背景"
+              >
+                <ChevronLeft size={18} />
+              </button>
+              <img
+                id="bg-preview"
+                src={getLocalBgPath(id)}
+                alt={currentLocalMeta.label}
+                loading="lazy"
+              />
+              <button
+                type="button"
+                class="carousel-arrow next"
+                on:click={nextBg}
+                title="下一張背景 (→)"
+                aria-label="下一張背景"
+              >
+                <ChevronRight size={18} />
+              </button>
+            </div>
+
+            <!-- Sync with station toggle -->
+            <div class="sync-toggle-box">
+              <label class="switch-container">
+                <input
+                  type="checkbox"
+                  checked={syncWithStation}
+                  on:change={toggleSyncStation}
+                />
+                <span class="slider"></span>
+                <span class="label-text">
+                  隨電台同步切換主題
+                  <strong class="sync-status">{syncWithStation ? "開啟" : "關閉"}</strong>
+                </span>
+              </label>
+            </div>
+          </div>
+        {:else}
+          <!-- Local Random Mode -->
+          <div class="local-random-wrap">
+            <div class="local-header-info">
+              <span class="local-title">目前隨選：{currentLocalMeta.label}</span>
+              <span class="local-subtitle">{currentLocalMeta.subtitle}</span>
+            </div>
+            <div class="random-preview-center">
+              <img
+                id="bg-preview-random"
+                src={getLocalBgPath(id)}
+                alt={currentLocalMeta.label}
+                loading="lazy"
+              />
+            </div>
+            <div class="actions-row">
+              <button
+                type="button"
+                class="action-button local-action"
+                on:click={randomBg}
+                title="隨機切換 10 款插畫"
+              >
+                <Dices size={16} />
+                <span>隨機切換 🎲</span>
+              </button>
+            </div>
+          </div>
         {/if}
       </div>
     {/if}
-    {#if useBeautyApi}
-      <div class="api-hint beauty-hint">
-        高解析真人人像 / 藝術寫真桌布
-      </div>
-    {/if}
-  </div>
-
-  <!-- 本地背景選擇器 -->
-  <div class="local-bg-section">
-    <h5>本地背景 ({id}/10) · {currentLocalMeta.label}</h5>
-    <p class="local-subtitle">{currentLocalMeta.subtitle}</p>
-
-    <!-- 隨電台同步切換背景開關 -->
-    <div class="sync-mode-toggle">
-      <label class="switch-container">
-        <input type="checkbox" checked={syncWithStation} on:change={toggleSyncStation} />
-        <span class="slider"></span>
-        <span class="label-text">隨電台同步切換背景 {syncWithStation ? "ON" : "OFF"}</span>
-      </label>
-    </div>
-
-    <div class="container">
-      <button type="button" on:click={prevBg} title="上一張背景 (←)">
-        <ArrowLeft size={20} />
-      </button>
-      <img id="bg-preview" src={getLocalBgPath(id)} alt={currentLocalMeta.label} />
-      <button type="button" on:click={nextBg} title="下一張背景 (→)">
-        <ArrowRight size={20} />
-      </button>
-    </div>
-
-    <div class="random-btn-container">
-      <button type="button" class="random-btn" on:click={randomBg} title="隨機本地背景">
-        <RotateCcw size={18} />
-        <span>隨機本地背景</span>
-      </button>
-    </div>
   </div>
 </div>
 
 <style>
-  h4 {
-    margin: 0 0 12px 0;
-    font-size: 15px;
-    font-weight: 600;
-    color: white;
+  .background-matrix-card {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+    padding: 14px;
+    color: #ffffff;
   }
 
-  h5 {
-    font-size: 13px;
-    color: rgba(255, 255, 255, 0.9);
-    margin: 0 0 4px 0;
-    text-align: center;
-    font-weight: 600;
-  }
-
-  .local-subtitle {
-    margin: 0 0 10px 0;
-    font-size: 11px;
-    color: rgba(255, 255, 255, 0.6);
-    text-align: center;
-  }
-
-  /* API 桌布選項樣式 */
-  .api-wallpaper-section {
-    margin-bottom: 20px;
-    padding-bottom: 16px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  }
-
-  .api-btn {
-    width: 100%;
-    height: 44px;
-    margin-bottom: 8px;
-    padding: 8px 15px;
-    border-radius: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    background: rgba(255, 255, 255, 0.06);
-    color: white;
+  .section-title-row {
     display: flex;
     align-items: center;
-    gap: 10px;
-    font-size: 14px;
-    font-weight: 500;
-    transition: all 0.25s ease;
-    backdrop-filter: blur(8px);
-    cursor: pointer;
+    justify-content: space-between;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   }
 
-  .api-btn:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.12);
-    border-color: rgba(255, 255, 255, 0.25);
+  .section-title-row h4 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: #ffffff;
+  }
+
+  .matrix-badge {
+    font-size: 11px;
+    font-weight: 600;
+    color: #a855f7;
+    background: rgba(168, 85, 247, 0.12);
+    border: 1px solid rgba(168, 85, 247, 0.28);
+    padding: 1px 7px;
+    border-radius: 999px;
+  }
+
+  .matrix-layer {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .layer-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .layer-step {
+    width: 17px;
+    height: 17px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.14);
+    color: #ffffff;
+    font-size: 10px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .layer-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.85);
+  }
+
+  /* Source Grid */
+  .source-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+
+  .source-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 10px 8px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.05);
+    color: #ffffff;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .source-card:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.24);
     transform: translateY(-1px);
   }
 
-  .api-btn:disabled {
+  .source-card.selected {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: #38bdf8;
+    box-shadow: 0 0 12px rgba(56, 189, 248, 0.25);
+  }
+
+  .card-icon-wrap {
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 6px;
+  }
+
+  .card-icon-wrap.bing {
+    background: rgba(56, 189, 248, 0.2);
+    color: #38bdf8;
+  }
+
+  .card-icon-wrap.beauty {
+    background: rgba(244, 114, 182, 0.2);
+    color: #f472b6;
+  }
+
+  .card-icon-wrap.local {
+    background: rgba(251, 146, 60, 0.2);
+    color: #fb923c;
+  }
+
+  .card-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .card-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: #ffffff;
+  }
+
+  .card-desc {
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.6);
+  }
+
+  .check-indicator {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #38bdf8;
+    color: #0f172a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Mode Capsule Group */
+  .mode-capsule-group {
+    display: flex;
+    background: rgba(0, 0, 0, 0.35);
+    border-radius: 10px;
+    padding: 3px;
+    gap: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .capsule-mode-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 7px 10px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .capsule-mode-btn:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .capsule-mode-btn.active {
+    background: rgba(255, 255, 255, 0.16);
+    border-color: rgba(255, 255, 255, 0.18);
+    color: #ffffff;
+    font-weight: 600;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  }
+
+  /* Adaptive Details Area */
+  .adaptive-container {
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 12px;
+  }
+
+  .adaptive-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .panel-info-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .panel-badge {
+    font-size: 11.5px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 6px;
+    background: rgba(56, 189, 248, 0.15);
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    color: #38bdf8;
+  }
+
+  .panel-badge.beauty-badge {
+    background: rgba(244, 114, 182, 0.15);
+    border-color: rgba(244, 114, 182, 0.3);
+    color: #f472b6;
+  }
+
+  .device-hint {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.55);
+  }
+
+  .bing-story-box {
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 8px;
+    padding: 8px 10px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .story-tag {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: #94a3b8;
+    display: block;
+    margin-bottom: 2px;
+  }
+
+  .story-text {
+    margin: 0;
+    font-size: 11.5px;
+    line-height: 1.4;
+    color: rgba(255, 255, 255, 0.85);
+  }
+
+  .panel-desc {
+    margin: 0;
+    font-size: 11.5px;
+    line-height: 1.4;
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  .actions-row {
+    display: flex;
+    margin-top: 4px;
+  }
+
+  .action-button {
+    width: 100%;
+    padding: 8px 14px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+    font-size: 12.5px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .action-button:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.16);
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: translateY(-1px);
+  }
+
+  .action-button.primary {
+    background: rgba(56, 189, 248, 0.2);
+    border-color: rgba(56, 189, 248, 0.4);
+    color: #7dd3fc;
+  }
+
+  .action-button.primary:hover:not(:disabled) {
+    background: rgba(56, 189, 248, 0.3);
+    color: #ffffff;
+  }
+
+  .action-button.beauty-action {
+    background: rgba(244, 114, 182, 0.2);
+    border-color: rgba(244, 114, 182, 0.4);
+    color: #fbcfe8;
+  }
+
+  .action-button.beauty-action:hover:not(:disabled) {
+    background: rgba(244, 114, 182, 0.3);
+    color: #ffffff;
+  }
+
+  .action-button.local-action {
+    background: rgba(251, 146, 60, 0.2);
+    border-color: rgba(251, 146, 60, 0.4);
+    color: #fed7aa;
+  }
+
+  .action-button.local-action:hover:not(:disabled) {
+    background: rgba(251, 146, 60, 0.3);
+    color: #ffffff;
+  }
+
+  .action-button:disabled {
     opacity: 0.6;
     cursor: not-allowed;
-    transform: none;
   }
 
-  .bing-btn.active {
-    background: linear-gradient(135deg, rgba(0, 120, 212, 0.35), rgba(0, 178, 148, 0.35));
-    border-color: rgba(0, 255, 178, 0.7);
-    color: #00ffb2;
-    box-shadow: 0 0 16px rgba(0, 178, 148, 0.4);
+  /* Local Panel Carousel */
+  .local-carousel-wrap,
+  .local-random-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
   }
 
-  .beauty-btn.active {
-    background: linear-gradient(135deg, rgba(255, 105, 180, 0.35), rgba(219, 39, 119, 0.35));
-    border-color: rgba(255, 105, 180, 0.7);
-    color: #ff80bf;
-    box-shadow: 0 0 16px rgba(255, 105, 180, 0.4);
+  .local-header-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
   }
 
-  .api-hint {
-    font-size: 12px;
-    padding: 6px 10px;
-    border-radius: 6px;
-    margin-top: 6px;
-    text-align: center;
-    font-weight: 500;
+  .local-title {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #ffffff;
   }
 
-  .bing-hint {
-    color: #60a5fa;
-    background: rgba(37, 99, 235, 0.15);
-    border: 1px solid rgba(59, 130, 246, 0.3);
-  }
-
-  .bing-copyright {
-    margin-top: 3px;
+  .local-subtitle {
     font-size: 11px;
-    color: rgba(255, 255, 255, 0.72);
-    font-weight: 400;
-    line-height: 1.35;
+    color: rgba(255, 255, 255, 0.6);
   }
 
-  .beauty-hint {
-    color: #f472b6;
-    background: rgba(219, 39, 119, 0.15);
-    border: 1px solid rgba(236, 72, 153, 0.3);
+  .carousel-preview-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin: 4px 0;
   }
 
-  /* 切換開關 */
-  .bing-mode-toggle,
-  .sync-mode-toggle {
-    margin: 6px 0 12px 4px;
+  .carousel-arrow {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .carousel-arrow:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.08);
+  }
+
+  #bg-preview,
+  #bg-preview-random {
+    width: 170px;
+    height: 96px;
+    aspect-ratio: 16 / 9;
+    border-radius: 8px;
+    object-fit: cover;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+
+  .random-preview-center {
+    display: flex;
+    justify-content: center;
+    margin: 4px 0;
+  }
+
+  /* Switch Toggle */
+  .sync-toggle-box {
+    margin-top: 4px;
+    display: flex;
+    justify-content: center;
   }
 
   .switch-container {
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     cursor: pointer;
-    font-size: 13px;
-    color: rgba(255, 255, 255, 0.85);
+    user-select: none;
   }
 
   .switch-container input {
@@ -704,16 +1258,11 @@
     pointer-events: none;
   }
 
-  .switch-container input:focus-visible + .slider {
-    outline: 2px solid #60a5fa;
-    outline-offset: 2px;
-  }
-
   .slider {
     position: relative;
     display: inline-block;
-    width: 34px;
-    height: 18px;
+    width: 32px;
+    height: 17px;
     background-color: rgba(255, 255, 255, 0.2);
     border-radius: 20px;
     transition: 0.3s;
@@ -723,8 +1272,8 @@
   .slider:before {
     position: absolute;
     content: "";
-    height: 12px;
-    width: 12px;
+    height: 11px;
+    width: 11px;
     left: 3px;
     bottom: 3px;
     background-color: white;
@@ -733,97 +1282,33 @@
   }
 
   input:checked + .slider {
-    background-color: #3b82f6;
+    background-color: #38bdf8;
   }
 
   input:checked + .slider:before {
-    transform: translateX(16px);
+    transform: translateX(15px);
   }
 
   .label-text {
-    font-size: 12px;
+    font-size: 11.5px;
+    color: rgba(255, 255, 255, 0.85);
   }
 
-  /* 本地背景區塊 */
-  .local-bg-section {
-    margin-top: 10px;
+  .sync-status {
+    color: #38bdf8;
+    margin-left: 2px;
   }
 
-  .container {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 14px;
-    justify-content: center;
+  :global(.spin) {
+    animation: spin 1s linear infinite;
   }
 
-  #bg-preview {
-    width: 180px;
-    height: 101px;
-    aspect-ratio: 16 / 9;
-    border-radius: 8px;
-    object-fit: cover;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-  }
-
-  .container button {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    color: white;
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-
-  .container button:hover {
-    background: rgba(255, 255, 255, 0.2);
-    transform: scale(1.05);
-  }
-
-  .random-btn-container {
-    display: flex;
-    justify-content: center;
-    margin-top: 12px;
-  }
-
-  .random-btn {
-    width: auto;
-    height: auto;
-    padding: 8px 18px;
-    border-radius: 8px;
-    background: rgba(168, 85, 247, 0.15);
-    border: 1px solid rgba(168, 85, 247, 0.35);
-    color: #e9d5ff;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 13px;
-    font-weight: 500;
-    transition: all 0.2s ease;
-    cursor: pointer;
-  }
-
-  .random-btn:hover {
-    background: rgba(168, 85, 247, 0.25);
-    border-color: rgba(168, 85, 247, 0.6);
-    transform: translateY(-1px);
-    color: white;
-  }
-
-  .random-btn:active {
-    transform: translateY(0);
-  }
-
-  @media only screen and (max-width: 600px) {
-    #bg-preview {
-      width: 120px;
-      height: 67px;
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
     }
   }
 </style>

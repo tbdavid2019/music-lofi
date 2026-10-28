@@ -1,5 +1,42 @@
 # 更新日誌 (Changelog)
 
+## [1.4.0] - 2026-10-28
+
+### 🎛️ 聲學與專注中心 UI/UX 全面重構 (Acoustic & Focus Center UI/UX Overhaul)
+
+- **🌿 左側聲學氛圍中心整合 (Quick Ambience Bar)**：
+  - 將雨聲 (`Rain`)、雷聲 (`Thunder`)、叢林鳥鳴 (`Jungle`)、營火聲 (`CampFire`) 4 大快捷音效由右上角遷移至左側 `TrackList` 頂部。
+  - 左側建立統一聲學氛圍中心，實現快捷音效與 9 大場景音軌同側一站式混音。
+  - 將雨景動畫 (`RainAnimation`) 與雷雨閃電螢幕閃爍動畫 (`lightning-flash`) 提升至全域頂層 (`App.svelte`)，透過 `ambientVisualStore` 驅動，徹底解決移動端抽屜 `transform`/`display:none` 導致的包含塊裁切與動畫隱藏問題。
+  - 修正雷雨開關時 `scheduleNextFlash` 狀態賦值順序，確保閃電排程即時啟動。
+
+- **⏱️ 右上角獨立專注與定時器 (Independent Focus & Pomodoro Dock)**：
+  - 打造全新 `TimerControl.svelte` 元件，右上角控制列常駐顯示微型狀態指示點（專注綠 / 休息藍 / 暫停琥珀）與即時倒數時間標籤（如 `⏱️ 24:18`）。
+  - 點擊彈出專屬 Popover，支援三大情境切換：
+    1. **☕ 番茄工作法**：經典 25/5 分鐘或 50/10 分鐘工作與休息輪播，自動輪次記錄。
+    2. **🌙 睡眠定時器**：15m / 30m / 45m / 60m 自選，倒數結束即時觸發 `fadeOutMusic` 平滑淡出音樂，免除尖銳蜂鳴驚醒。
+    3. **⏱️ 自訂定時**：自由設定專注分鐘數。
+  - 導入基於真實時間戳記（`Date.now()`）的防漂移計時演算法，克服背景分頁節流（Timer Throttling）導致的時間停滯。
+  - 提示機制採用非同步廣播與 Toast 提醒，移除阻塞主執行緒之 `window.alert()`。
+  - AudioContext 播放後顯式釋放，杜絕瀏覽器音訊資源洩漏；輸入端全面防護 `NaN` 與負值。
+  - 自適應移動端螢幕寬度，修復 375px–390px 小尺寸破版溢出。
+
+- **📑 系統設定面板 Tab 分頁化 (Segmented Control Sheet)**：
+  - 重構 `Settings/index.svelte`，徹底解決垂直單欄過長（58vh）擁擠堆疊問題。
+  - 頂部設計 Segmented Tabs：
+    - **🎨 外觀桌布**：選單透明度調節條 + 全新二維桌布控制矩陣。
+    - **🔊 混音音量**：主電台音量與 4 大快捷音效音量拉桿。
+    - **💾 情境預設**：自訂混音場景存檔與一鍵讀取。
+  - 固定高度（520px / 80vh），內部區域平滑捲動，並將定時器抽離至獨立 Dock。
+
+- **🖼️ 桌布設定正交二維矩陣化 (Source × Mode Matrix)**：
+  - 重構 `Background.svelte`，將所有背景來源收斂為一致的直覺模型：
+    - **來源 (Source)**：`[ 🌐 Bing 官方 ]` · `[ 🌸 人像寫真 ]` · `[ ☕ 插畫主題 (10款) ]` 3 選 1 卡片。
+    - **模式 (Mode)**：`[ 📌 固定/手動精選 ]` vs `[ 🎲 隨機輪播 ]` 2 選 1 膠囊開關。
+    - **自適應微調區**：Bing 固定為今日精選 1080P、隨機可按「換一張」；人像寫真支援鎖定與「換一張」；本地主題支援「< 縮圖預覽 >」與「隨電台同步切換」。
+  - 修正 API 逾時回退時 `currentSource` 與本地背景的狀態同步問題。
+  - 100% 向前相容既有 `localStorage` 儲存設定。
+
 ## [1.3.0] - 2026-10-23
 
 ### ♿ 環境音軌輪播清單 WCAG 2.1 AA/AAA 無障礙、色彩對比與字體全面升級 (Ambient TrackList WCAG AA/AAA & Typography Overhaul)

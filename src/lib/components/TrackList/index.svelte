@@ -1,7 +1,38 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
-  import { ChevronDown, ChevronUp } from "@lucide/svelte";
+  import { ChevronDown, ChevronUp, Sparkles } from "@lucide/svelte";
   import TrackListItem from "./TrackListItem.svelte";
+  import Rain from "../Controls/Rain/index.svelte";
+  import Thunder from "../Controls/Thunder/index.svelte";
+  import Jungle from "../Controls/Jungle/index.svelte";
+  import CampFire from "../Controls/CampFire/index.svelte";
+
+  const STORAGE_KEY = "Volumes";
+  const DEFAULT_VOLUMES = {
+    rain: 1,
+    thunder: 1,
+    campfire: 1,
+    jungle: 1,
+    main_track: 1,
+  };
+
+  let volumes = loadVolumes();
+
+  function loadVolumes() {
+    if (typeof window !== "undefined") {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) return { ...DEFAULT_VOLUMES, ...JSON.parse(raw) };
+      } catch (e) {}
+    }
+    return { ...DEFAULT_VOLUMES };
+  }
+
+  function handleVolumesUpdated(e: any) {
+    if (e.detail) {
+      volumes = { ...DEFAULT_VOLUMES, ...e.detail };
+    }
+  }
 
   // Mobile visibility toggle
   let isMobileVisible = false;
@@ -172,11 +203,13 @@
 
   onMount(() => {
     window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("volumesUpdated", handleVolumesUpdated);
   });
 
   onDestroy(() => {
     if (typeof window !== "undefined") {
       window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("volumesUpdated", handleVolumesUpdated);
     }
     activeAudios.forEach((item) => {
       item.audio.pause();
@@ -202,6 +235,23 @@
       <span>顯示音軌 ({activeCount}/{tracks.length})</span>
     {/if}
   </button>
+
+  <!-- 快捷聲學氛圍塢 (Quick Ambience Bar) -->
+  <div class="quick-ambience-bar" aria-label="快捷氛圍音效">
+    <div class="ambience-info">
+      <span class="ambience-tag">
+        <Sparkles size={12} class="sparkle-icon" />
+        快捷氛圍
+      </span>
+      <span class="ambience-hint">4 大自然原聲</span>
+    </div>
+    <div class="ambience-buttons">
+      <Rain volume={volumes.rain} />
+      <Thunder volume={volumes.thunder} />
+      <Jungle volume={volumes.jungle} />
+      <CampFire volume={volumes.campfire} />
+    </div>
+  </div>
 
   <div id="track-carousel-wrapper" class="wrapper">
     <div class="carousel">
@@ -264,6 +314,53 @@
     pointer-events: none;
     position: relative;
     user-select: none;
+  }
+
+  .quick-ambience-bar {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 14px;
+    border-radius: 20px;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    background-color: rgba(0, 0, 0, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    user-select: none;
+    z-index: 25;
+  }
+
+  .ambience-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .ambience-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #ffffff;
+    letter-spacing: 0.3px;
+  }
+
+  :global(.sparkle-icon) {
+    color: #38bdf8;
+  }
+
+  .ambience-hint {
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.6);
+  }
+
+  .ambience-buttons {
+    display: flex;
+    align-items: center;
+    gap: 6px;
   }
 
   .track-list > * {
@@ -396,8 +493,17 @@
     }
     
     .track-list:not(.mobile-visible) .wrapper,
-    .track-list:not(.mobile-visible) #btn-view {
+    .track-list:not(.mobile-visible) #btn-view,
+    .track-list:not(.mobile-visible) .quick-ambience-bar {
       display: none;
+    }
+
+    .track-list.mobile-visible .quick-ambience-bar {
+      border-radius: 0;
+      border: none;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(15, 18, 28, 0.7);
+      padding: 10px 16px;
     }
     
     .mobile-toggle {
