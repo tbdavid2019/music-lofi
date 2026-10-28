@@ -18,7 +18,7 @@
   "dependencies": {
     "@lucide/svelte": "^1.63.0",
     "@tauri-apps/api": "^2.12.4",
-    "@tauri-apps/plugin-shell": "~2.3.6",
+    "@tauri-apps/plugin-shell": "~2.6.0",
     "tone": "^14.9.17"
   },
   "devDependencies": {
