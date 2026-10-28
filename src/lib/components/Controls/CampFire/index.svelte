@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Flame } from "lucide-svelte";
+  import { Flame } from "@lucide/svelte";
   import { onDestroy } from "svelte";
 
   export let volume: number;

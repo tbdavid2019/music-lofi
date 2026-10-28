@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { CloudRain } from "lucide-svelte";
+  import { CloudRain } from "@lucide/svelte";
   import { onDestroy, onMount } from "svelte";
   import * as Tone from "tone";
   import RainAnimation from "./RainAnimation.svelte";

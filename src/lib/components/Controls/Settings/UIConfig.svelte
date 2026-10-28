@@ -13,8 +13,8 @@
     }
 
     // Updater function for the opacity slider
-    function updateMenuOpacity(e) {
-        menuOpacity = parseFloat(e.target.value);
+    function updateMenuOpacity(e: Event) {
+        menuOpacity = parseFloat((e.currentTarget as HTMLInputElement).value);
         saveOpacity();
     }
 

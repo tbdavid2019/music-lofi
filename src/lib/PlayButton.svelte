@@ -12,7 +12,7 @@
     Music,
     Moon,
     AlertCircle,
-  } from "lucide-svelte";
+  } from "@lucide/svelte";
   import {
     radioStore,
     currentStation,

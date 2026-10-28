@@ -4,7 +4,7 @@
 
 <div>
   {#if isRaining}
-    <div class="rain" />
+    <div class="rain"></div>
   {/if}
 </div>
 

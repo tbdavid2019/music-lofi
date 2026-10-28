@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
-  import { ChevronDown, ChevronUp } from "lucide-svelte";
+  import { ChevronDown, ChevronUp } from "@lucide/svelte";
   import TrackListItem from "./TrackListItem.svelte";
 
   // Mobile visibility toggle

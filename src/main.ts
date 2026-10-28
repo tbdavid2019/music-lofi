@@ -23,7 +23,7 @@ console.log('🚀 Main.ts loaded at:', new Date().toISOString());
 const AppComponent = isTVMode ? TVApp : App;
 
 const app = new AppComponent({
-  target: document.getElementById("app"),
+  target: document.getElementById("app")!,
 });
 
 export default app;

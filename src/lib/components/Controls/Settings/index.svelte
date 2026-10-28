@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Settings } from "lucide-svelte";
+  import { Settings } from "@lucide/svelte";
   import { onMount, onDestroy } from "svelte";
   import UIConfig from "./UIConfig.svelte";
   import Background from "./Background.svelte";

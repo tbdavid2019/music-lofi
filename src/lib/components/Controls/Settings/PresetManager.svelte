@@ -7,7 +7,7 @@
     RotateCcw,
     Sliders,
     Check,
-  } from "lucide-svelte";
+  } from "@lucide/svelte";
   import { STATIONS } from "../../../stores/radioStore";
 
   const PRESETS_STORAGE_KEY = "LofiEngine_Presets";

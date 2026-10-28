@@ -15,7 +15,7 @@
     Moon,
     AlertCircle,
     Radio,
-  } from "lucide-svelte";
+  } from "@lucide/svelte";
   import {
     radioStore,
     currentStation,

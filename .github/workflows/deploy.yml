@@ -3,7 +3,7 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches:
-      - master  # 當推送到 master 分支時觸發
+      - main
 
   # 允許手動觸發
   workflow_dispatch:
@@ -33,12 +33,12 @@ jobs:
           node-version: '26.12.1'
 
       - name: Setup pnpm 📦
-        uses: pnpm/action-setup@v2
+        uses: pnpm/action-setup@v4
         with:
-          version: 8
+          version: 10
 
       - name: Install dependencies 📚
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
       - name: Build 🏗️
         run: pnpm build

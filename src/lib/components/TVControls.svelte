@@ -6,7 +6,7 @@
     Trees,
     Plus,
     Minus,
-  } from "lucide-svelte";
+  } from "@lucide/svelte";
   import { onMount, onDestroy } from "svelte";
 
   type EffectKey = "rain" | "thunder" | "campfire" | "jungle";

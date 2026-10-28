@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
-  import { Eye, X, Sparkles, Keyboard } from "lucide-svelte";
+  import { Eye, X, Sparkles, Keyboard } from "@lucide/svelte";
   import ShortCuts from "./ShortCuts.svelte";
   import SocialLinks from "./SocialLinks.svelte";
   import NewFeatures from "./NewFeatures.svelte";

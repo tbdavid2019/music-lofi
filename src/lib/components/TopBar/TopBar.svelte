@@ -4,10 +4,10 @@
   import GenericControls from "./GenericControls.svelte";
 
   let appWindow = {
-    close: () => {},
-    minimize: () => {},
-    maximize: () => {},
-    unmaximize: () => {},
+    close: async () => {},
+    minimize: async () => {},
+    maximize: async () => {},
+    unmaximize: async () => {},
     isMaximized: async () => false,
   };
 

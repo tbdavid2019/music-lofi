@@ -6,7 +6,7 @@
   import TVBPMControl from "./lib/components/TVBPMControl.svelte";
   import { bgUrl } from "./lib/stores/bgStore";
   import { radioStore, currentStation } from "./lib/stores/radioStore";
-  import { Radio, Music2, Info } from "lucide-svelte";
+  import { Radio, Music2, Info } from "@lucide/svelte";
   import { onMount, tick } from "svelte";
 
   let isLoaded = false;

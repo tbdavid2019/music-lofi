@@ -1,7 +1,7 @@
 <script lang="ts">
   import PresetManager from "../Controls/Settings/PresetManager.svelte";
   import Timer from "../Timer/Timer.svelte";
-  import { Sparkles, Radio, Sliders, Clock, ChevronDown, ChevronRight } from "lucide-svelte";
+  import { Sparkles, Radio, Sliders, Clock, ChevronDown, ChevronRight } from "@lucide/svelte";
   import { STATIONS, radioStore, playStation } from "../../stores/radioStore";
 
   let activeSection: "stations" | "presets" | "timer" | null = "stations";

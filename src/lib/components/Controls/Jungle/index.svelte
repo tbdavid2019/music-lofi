@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Trees } from "lucide-svelte";
+  import { Trees } from "@lucide/svelte";
   import { onDestroy } from "svelte";
 
   export let volume: number;

@@ -1,18 +1,11 @@
 import { defineConfig } from "vite";
 import { svelte } from "@sveltejs/vite-plugin-svelte";
-import sveltePreprocess from "svelte-preprocess";
 
 // https://vitejs.dev/config/
 export default defineConfig({
   base: "/",  // 改為絕對路徑，確保 Vercel 部署時路由正確
   plugins: [
-    svelte({
-      preprocess: [
-        sveltePreprocess({
-          typescript: true,
-        }),
-      ],
-    }),
+    svelte(),
   ],
 
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`

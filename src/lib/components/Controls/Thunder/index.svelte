@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { CloudLightning } from "lucide-svelte";
+  import { CloudLightning } from "@lucide/svelte";
   import { onDestroy } from "svelte";
 
   export let volume: number;

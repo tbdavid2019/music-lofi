@@ -2,7 +2,13 @@
   import { onMount } from "svelte";
 
   let isMaximized = false;
-  export let appWindow;
+  export let appWindow: {
+    close: () => unknown;
+    minimize: () => unknown;
+    maximize: () => unknown;
+    unmaximize: () => unknown;
+    isMaximized: () => Promise<boolean>;
+  };
   export let noSideEffect = false;
 
   onMount(() => {
@@ -10,15 +16,15 @@
     const minimize = document.getElementById("minimize-mac");
     const maximize = document.getElementById("maximize-mac");
 
-    close.addEventListener("click", () => {
+    close?.addEventListener("click", () => {
       appWindow.close();
     });
 
-    minimize.addEventListener("click", () => {
+    minimize?.addEventListener("click", () => {
       appWindow.minimize();
     });
 
-    maximize.addEventListener("click", () => {
+    maximize?.addEventListener("click", () => {
       if (isMaximized) {
         appWindow.unmaximize();
         isMaximized = false;
@@ -45,9 +51,9 @@
 </script>
 
 <div class="controls">
-  <div class="close" id="close-mac" />
-  <div class="minimize" id="minimize-mac" />
-  <div class="maximize" id="maximize-mac" />
+  <div class="close" id="close-mac"></div>
+  <div class="minimize" id="minimize-mac"></div>
+  <div class="maximize" id="maximize-mac"></div>
 </div>
 
 <style>

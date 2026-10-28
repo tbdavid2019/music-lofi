@@ -9,7 +9,7 @@
     Server,
     Train,
     Droplets,
-  } from "lucide-svelte";
+  } from "@lucide/svelte";
   import { onMount, onDestroy } from "svelte";
 
   interface TrackItem {

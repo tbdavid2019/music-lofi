@@ -8,7 +8,7 @@
     Moon,
     Timer as TimerIcon,
     Info,
-  } from "lucide-svelte";
+  } from "@lucide/svelte";
   import { onDestroy } from "svelte";
 
   type TimerMode = "pomodoro" | "sleep" | "custom";

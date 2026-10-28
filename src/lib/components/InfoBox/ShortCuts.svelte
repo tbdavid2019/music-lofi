@@ -5,7 +5,7 @@
     ArrowUp,
     ArrowDown,
     Keyboard,
-  } from "lucide-svelte";
+  } from "@lucide/svelte";
 
   let ambientTracks = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 </script>

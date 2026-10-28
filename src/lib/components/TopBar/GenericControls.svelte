@@ -1,10 +1,16 @@
 <script lang="ts">
-  import { Copy, Minus, Square, X } from "lucide-svelte";
+  import { Copy, Minus, Square, X } from "@lucide/svelte";
   import { onMount } from "svelte";
   
   let isMaximized = false;
 
-  export let appWindow;
+  export let appWindow: {
+    close: () => unknown;
+    minimize: () => unknown;
+    maximize: () => unknown;
+    unmaximize: () => unknown;
+    isMaximized: () => Promise<boolean>;
+  };
   export let noSideEffect = false;
 
   onMount(() => {
@@ -12,15 +18,15 @@
     const minimize = document.getElementById("minimize-wl");
     const maximize = document.getElementById("maximaze-wl");
 
-    close.addEventListener("click", () => {
+    close?.addEventListener("click", () => {
       appWindow.close();
     });
 
-    minimize.addEventListener("click", () => {
+    minimize?.addEventListener("click", () => {
       appWindow.minimize();
     });
 
-    maximize.addEventListener("click", () => {
+    maximize?.addEventListener("click", () => {
       if (isMaximized) {
         appWindow.unmaximize();
       } else {

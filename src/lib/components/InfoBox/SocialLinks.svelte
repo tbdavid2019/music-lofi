@@ -1,10 +1,10 @@
 <script lang="ts">
-  import { Github } from "lucide-svelte";
+  import { CodeXml } from "@lucide/svelte";
 </script>
 
 <div class="social-links">
   <a href="https://github.com/tbdavid2019/music-lofi" target="_blank" rel="noreferrer" aria-label="GitHub Repository">
-    <Github size={22} />
+    <CodeXml size={22} />
   </a>
 </div>
 

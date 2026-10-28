@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
   import { get } from "svelte/store";
-  import { ArrowLeft, ArrowRight, RotateCcw, Image as ImageIcon, Heart } from "lucide-svelte";
+  import { ArrowLeft, ArrowRight, RotateCcw, Image as ImageIcon, Heart } from "@lucide/svelte";
   import {
     bgUrl,
     bgTitle,

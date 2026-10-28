@@ -7,7 +7,7 @@
     Music2,
     Music,
     Moon,
-  } from "lucide-svelte";
+  } from "@lucide/svelte";
   import {
     radioStore,
     STATIONS,

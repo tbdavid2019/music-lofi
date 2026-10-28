@@ -156,9 +156,11 @@
       </div>
       <p class="track-desc">{track?.qoute}</p>
       {#if track.isPlaying}
-        <!-- svelte-ignore a11y-click-events-have-key-events -->
+        <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
         <div
           class="volume-control-row"
+          role="group"
+          aria-label={`${track.title} 音量控制`}
           on:click|stopPropagation
           on:keydown|stopPropagation
         >
@@ -298,6 +300,7 @@
     color: #E2E8F0;
     line-height: 1.5;
     display: -webkit-box;
+    line-clamp: 2;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
