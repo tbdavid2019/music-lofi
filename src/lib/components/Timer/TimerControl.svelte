@@ -290,19 +290,17 @@
     aria-label="Timer"
     aria-expanded={isOpen}
   >
+    <Clock size={18} />
     {#if isTimerActive}
       <span
         class="status-indicator-dot"
         class:break-dot={isPomodoroBreak}
         class:paused-dot={isPaused}
       ></span>
-      <span class="timer-running-label">
-        <TimerIcon size={15} />
-        <span class="tabular-time">{displayTime}</span>
-      </span>
-    {:else}
-      <Clock size={20} />
     {/if}
+    <span class="dock-tooltip">
+      {isTimerActive ? `計時中 ${displayTime}` : "專注定時"}
+    </span>
   </button>
 
   <!-- Timer Popover Panel -->
@@ -552,45 +550,73 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
+    position: relative;
+    width: 38px;
     height: 38px;
-    min-width: 38px;
-    padding: 0 8px;
-    border-radius: 999px;
+    padding: 0;
+    border-radius: 50%;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     user-select: none;
   }
 
   .timer-trigger-btn:hover {
-    background-color: rgba(255, 255, 255, 0.12);
+    background-color: rgba(255, 255, 255, 0.14);
     color: #ffffff;
   }
 
   .timer-trigger-btn.active {
-    background-color: rgba(255, 255, 255, 0.18);
+    background-color: rgba(255, 255, 255, 0.22);
   }
 
   .timer-trigger-btn.running {
     background: rgba(16, 185, 129, 0.18);
-    border: 1px solid rgba(16, 185, 129, 0.4);
+    border: 1px solid rgba(16, 185, 129, 0.45);
     color: #a7f3d0;
-    padding: 0 12px;
   }
 
   .timer-trigger-btn.paused {
     background: rgba(245, 158, 11, 0.18);
-    border: 1px solid rgba(245, 158, 11, 0.4);
+    border: 1px solid rgba(245, 158, 11, 0.45);
     color: #fde68a;
-    padding: 0 12px;
   }
 
   .status-indicator-dot {
-    width: 7px;
-    height: 7px;
+    position: absolute;
+    bottom: 4px;
+    right: 4px;
+    width: 6px;
+    height: 6px;
     border-radius: 50%;
     background-color: #10b981;
-    box-shadow: 0 0 8px #10b981;
+    box-shadow: 0 0 6px #10b981;
     animation: pulse-dot 1.8s infinite;
+  }
+
+  .dock-tooltip {
+    position: absolute;
+    top: 46px;
+    left: 50%;
+    transform: translateX(-50%) translateY(4px);
+    background: rgba(14, 18, 28, 0.94);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    padding: 4px 8px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #f1f5f9;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+    z-index: 60;
+  }
+
+  .timer-trigger-btn:hover .dock-tooltip {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
   }
 
   .status-indicator-dot.break-dot {
@@ -614,19 +640,6 @@
       opacity: 0.4;
       transform: scale(0.85);
     }
-  }
-
-  .timer-running-label {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    font-size: 13px;
-    font-weight: 600;
-  }
-
-  .tabular-time {
-    font-variant-numeric: tabular-nums;
-    letter-spacing: 0.5px;
   }
 
   .notification-toast {
@@ -1090,5 +1103,16 @@
 
   .reset-btn:hover {
     background: rgba(255, 255, 255, 0.2);
+  }
+
+  @media only screen and (max-width: 600px) {
+    .timer-trigger-btn {
+      width: 34px;
+      height: 34px;
+    }
+
+    .dock-tooltip {
+      display: none;
+    }
   }
 </style>

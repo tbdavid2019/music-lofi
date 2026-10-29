@@ -14,7 +14,7 @@
       if (copyTimeout) clearTimeout(copyTimeout);
       copyTimeout = setTimeout(() => {
         isCopied = false;
-      }, 2200);
+      }, 1500); // 1.5 秒自動回彈原狀
 
       if (typeof window !== "undefined") {
         window.dispatchEvent(
@@ -28,28 +28,29 @@
 </script>
 
 <div class="controls" aria-label="系統與專注控制塢">
-  <!-- Pomodoro & Sleep Timer -->
+  <!-- Pomodoro & Sleep Timer: 38px x 38px round glass button -->
   <TimerControl />
 
-  <!-- Top Right Share Button -->
+  <!-- Share Button: 38px x 38px round glass button with tooltip -->
   <button
     type="button"
-    class="btn-top-share"
+    class="dock-icon-btn btn-share"
     class:copied={isCopied}
     on:click={handleShare}
-    title="一鍵複製此空間直達分享連結 (Share)"
-    aria-label="複製分享連結"
+    title="複製專屬音樂空間分享連結"
+    aria-label="分享"
   >
     {#if isCopied}
       <Check size={18} class="share-icon check" />
-      <span class="share-text">已複製</span>
     {:else}
-      <Share2 size={17} class="share-icon" />
-      <span class="share-text">分享</span>
+      <Share2 size={18} class="share-icon" />
     {/if}
+    <span class="dock-tooltip">
+      {isCopied ? "已複製！" : "分享空間"}
+    </span>
   </button>
 
-  <!-- Settings Gear -->
+  <!-- Settings: 38px x 38px round glass button -->
   <Settings />
 </div>
 
@@ -60,7 +61,7 @@
     color: white;
     display: inline-flex;
     align-items: center;
-    padding: 4px 10px;
+    padding: 0 6px;
     gap: 8px;
     border-radius: 50px;
     backdrop-filter: blur(16px);
@@ -74,75 +75,94 @@
     user-select: none;
   }
 
-  .btn-top-share {
+  .dock-icon-btn {
+    position: relative;
+    width: 38px;
     height: 38px;
-    padding: 0 12px;
-    border-radius: 9999px;
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    padding: 0;
+    border-radius: 50%;
+    aspect-ratio: 1/1;
+    background: transparent;
+    border: none;
     color: #e2e8f0;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
     cursor: pointer;
-    font-size: 13px;
-    font-weight: 500;
     transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
-  .btn-top-share:hover {
-    background: rgba(168, 85, 247, 0.2);
-    border-color: rgba(168, 85, 247, 0.4);
+  .dock-icon-btn:hover {
+    background: rgba(255, 255, 255, 0.14);
     color: #ffffff;
-    transform: translateY(-1px);
   }
 
-  .btn-top-share:focus-visible {
+  .dock-icon-btn:focus-visible {
     outline: 2px solid #38bdf8;
     outline-offset: 2px;
   }
 
-  .btn-top-share.copied {
-    background: rgba(16, 185, 129, 0.22);
-    border-color: rgba(16, 185, 129, 0.45);
+  .btn-share.copied {
+    background: rgba(16, 185, 129, 0.25);
     color: #34d399;
   }
 
   :global(.share-icon) {
-    transition: transform 0.2s ease;
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   :global(.share-icon.check) {
     color: #34d399;
+    transform: scale(1.1);
   }
 
-  .share-text {
-    font-size: 13px;
-    line-height: 1;
+  /* Shared dock tooltip */
+  .dock-tooltip {
+    position: absolute;
+    top: 46px;
+    left: 50%;
+    transform: translateX(-50%) translateY(4px);
+    background: rgba(14, 18, 28, 0.94);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    padding: 4px 8px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #f1f5f9;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+    z-index: 60;
+  }
+
+  .dock-icon-btn:hover .dock-tooltip {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
   }
 
   @media only screen and (max-width: 600px) {
     .controls {
-      position: absolute;
-      top: 16px;
-      right: 16px;
+      position: relative;
+      top: auto;
+      right: auto;
       left: auto;
       transform: none;
-      width: auto;
-      padding: 4px 8px;
-      gap: 6px;
+      padding: 0 4px;
+      gap: 4px;
+      height: 42px;
     }
 
-    .btn-top-share {
-      width: 38px;
-      height: 38px;
-      padding: 0;
-      border-radius: 50%;
+    .dock-icon-btn {
+      width: 34px;
+      height: 34px;
     }
 
-    .share-text {
-      display: none;
+    .dock-tooltip {
+      display: none; /* Hide hover tooltips on mobile to avoid sticky tap artifacts */
     }
   }
 </style>

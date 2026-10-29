@@ -66,7 +66,7 @@
           <img id="app-logo" src="LofiEngine.png" alt="888 Music Logo" />
           <div>
             <h2 class="app-title">888 Music - DAVID888</h2>
-            <p id="version">Version 1.3.0</p>
+            <p id="version">Version 1.5.2</p>
             <p id="tagline">
               Create your own atmosphere, Lofi Engine sets the mood.
             </p>

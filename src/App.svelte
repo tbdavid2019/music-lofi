@@ -2,6 +2,7 @@
   import PlayButton from "./lib/PlayButton.svelte";
   import TrackList from "./lib/components/TrackList/index.svelte";
   import Controls from "./lib/components/Controls/index.svelte";
+  import ClockWidget from "./lib/components/Clock/ClockWidget.svelte";
   import TopBar from "./lib/components/TopBar/TopBar.svelte";
   import Info from "./lib/components/InfoBox/Info.svelte";
   import Config from "./lib/Config.svelte";
@@ -9,6 +10,7 @@
   import { bgUrl } from "./lib/stores/bgStore";
   import { radioStore, setMainVolume } from "./lib/stores/radioStore";
   import { isRainingStore, isLightningFlashingStore } from "./lib/stores/ambientVisualStore";
+  import { isIdleStore, initIdleDetector } from "./lib/stores/idleStore";
   import { parseShareUrl } from "./lib/utils/shareUtils";
   import { Sparkles, X } from "@lucide/svelte";
   import { onMount, onDestroy, tick } from "svelte";
@@ -17,6 +19,15 @@
   let imgElement: HTMLImageElement | null = null;
   let shareGreeting: string | null = null;
   let toastTimeout: any = null;
+  let cleanupIdle: (() => void) | null = null;
+
+  $: if (typeof document !== "undefined") {
+    if ($isIdleStore) {
+      document.body.classList.add("is-ambient-idle");
+    } else {
+      document.body.classList.remove("is-ambient-idle");
+    }
+  }
 
   function triggerToast(msg: string, duration = 4000) {
     shareGreeting = msg;
@@ -52,6 +63,7 @@
 
   onMount(() => {
     checkImageComplete();
+    cleanupIdle = initIdleDetector();
 
     // Check and apply deep link share state
     const shared = parseShareUrl();
@@ -105,7 +117,11 @@
   });
 
   onDestroy(() => {
+    if (cleanupIdle) cleanupIdle();
     if (toastTimeout) clearTimeout(toastTimeout);
+    if (typeof document !== "undefined") {
+      document.body.classList.remove("is-ambient-idle");
+    }
   });
 </script>
 
@@ -150,9 +166,16 @@
     </div>
   {/if}
 
-  <section class="content">
-    <TrackList />
-    <Controls />
+  <section class="content" class:is-ambient-idle={$isIdleStore}>
+    <div class="content-left">
+      <TrackList />
+    </div>
+
+    <div class="top-dock-cluster">
+      <ClockWidget />
+      <Controls />
+    </div>
+
     <Info />
   </section>
   <PlayButton />
@@ -205,12 +228,45 @@
     display: flex;
     flex-direction: row;
     justify-content: space-between;
+    align-items: flex-start;
     position: relative;
     pointer-events: none;
   }
   
   :global(.content > *) {
     pointer-events: auto;
+  }
+
+  .content-left {
+    display: flex;
+    flex-direction: column;
+    pointer-events: auto;
+    transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .top-dock-cluster {
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-end;
+    gap: 10px;
+    z-index: 50;
+    pointer-events: auto;
+  }
+
+  /* Ambient TV Screen Saver / Inactivity Mode (7.5s) */
+  .content.is-ambient-idle .content-left,
+  .content.is-ambient-idle :global(.tracklist-container),
+  .content.is-ambient-idle :global(.quick-ambience-bar),
+  .content.is-ambient-idle :global(.track-list),
+  .content.is-ambient-idle :global(.controls) {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-8px);
+    transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .content :global(.controls) {
+    transition: opacity 0.4s ease, transform 0.4s ease;
   }
 
   .lightning-flash-overlay {
@@ -312,6 +368,18 @@
   }
 
   @media (max-width: 640px) {
+    .content {
+      padding: 14px;
+      padding-top: 14px;
+    }
+
+    .top-dock-cluster {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      gap: 6px;
+    }
+
     .share-welcome-banner {
       top: 56px;
       font-size: 0.78rem;

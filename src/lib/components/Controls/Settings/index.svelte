@@ -85,7 +85,8 @@
     aria-label="Settings"
     aria-expanded={isActive}
   >
-    <Settings size={20} color={isActive ? "black" : "white"} />
+    <Settings size={18} color="currentColor" />
+    <span class="dock-tooltip">外觀與設定</span>
   </button>
 
   {#if isActive}
@@ -185,6 +186,7 @@
   }
 
   .settings-trigger-btn {
+    position: relative;
     color: white;
     border-radius: 50%;
     aspect-ratio: 1/1;
@@ -201,16 +203,44 @@
   }
 
   .settings-trigger-btn:hover {
-    background-color: rgba(255, 255, 255, 0.12);
+    background-color: rgba(255, 255, 255, 0.14);
   }
 
   .settings-trigger-btn.active {
-    background-color: #ffffff;
+    background-color: rgba(255, 255, 255, 0.22);
+    color: #ffffff;
   }
 
   .settings-trigger-btn:focus-visible {
     outline: 2px solid #38bdf8;
     outline-offset: 2px;
+  }
+
+  .dock-tooltip {
+    position: absolute;
+    top: 46px;
+    left: 50%;
+    transform: translateX(-50%) translateY(4px);
+    background: rgba(14, 18, 28, 0.94);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    padding: 4px 8px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #f1f5f9;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+    z-index: 60;
+  }
+
+  .settings-trigger-btn:hover .dock-tooltip {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
   }
 
   .settings-container {
@@ -408,6 +438,15 @@
   }
 
   @media only screen and (max-width: 600px) {
+    .settings-trigger-btn {
+      width: 34px;
+      height: 34px;
+    }
+
+    .dock-tooltip {
+      display: none;
+    }
+
     .mobile-backdrop {
       display: block;
       position: fixed;

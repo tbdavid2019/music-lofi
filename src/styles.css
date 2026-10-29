@@ -1,5 +1,15 @@
+@font-face {
+  font-family: 'Gen Jyuu Gothic';
+  src: url('https://tool.david888.com/fonts/GenJyuuGothic-Medium.woff2') format('woff2');
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
-  font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
+  font-family: 'JetBrains Mono', 'Gen Jyuu Gothic', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --font-sans: 'Gen Jyuu Gothic', -apple-system, BlinkMacSystemFont, 'PingFang TC', 'Microsoft JhengHei', sans-serif;
   font-size: 17px;
   line-height: 1.6;
   font-weight: 400;
@@ -22,6 +32,11 @@ body {
   height: 100vh;
   overflow: hidden;
   user-select: none;
+  transition: cursor 0.3s ease;
+}
+
+body.is-ambient-idle {
+  cursor: none;
 }
 
 button {
@@ -115,6 +130,4 @@ body *::-webkit-scrollbar-thumb:hover {
     -webkit-tap-highlight-color: transparent;
     -webkit-touch-callout: none;
   }
-
-
 }
