@@ -6,14 +6,6 @@
   "framework": "vite",
   "rewrites": [
     {
-      "source": "/tv",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/tv/",
-      "destination": "/index.html"
-    },
-    {
       "source": "/api/bing-official",
       "destination": "https://www.bing.com/HPImageArchive.aspx"
     },

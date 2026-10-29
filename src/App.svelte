@@ -11,11 +11,20 @@
   import { isRainingStore, isLightningFlashingStore } from "./lib/stores/ambientVisualStore";
   import { parseShareUrl } from "./lib/utils/shareUtils";
   import { Sparkles, X } from "@lucide/svelte";
-  import { onMount, tick } from "svelte";
+  import { onMount, onDestroy, tick } from "svelte";
 
   let isLoaded = false;
   let imgElement: HTMLImageElement | null = null;
   let shareGreeting: string | null = null;
+  let toastTimeout: any = null;
+
+  function triggerToast(msg: string, duration = 4000) {
+    shareGreeting = msg;
+    if (toastTimeout) clearTimeout(toastTimeout);
+    toastTimeout = setTimeout(() => {
+      shareGreeting = null;
+    }, duration);
+  }
 
   const onImageLoad = () => {
     isLoaded = true;
@@ -82,11 +91,21 @@
         }
       }
 
-      shareGreeting = "✨ 已為您套用專屬分享空間！點擊下方播放鍵立即沉浸。";
-      setTimeout(() => {
-        shareGreeting = null;
-      }, 9000);
+      triggerToast("✨ 已為您套用專屬分享空間！點擊下方播放鍵立即沉浸。", 9000);
     }
+
+    const onShowToast = (e: any) => {
+      if (e.detail) triggerToast(e.detail, 4000);
+    };
+    window.addEventListener("lofi:showToast", onShowToast);
+
+    return () => {
+      window.removeEventListener("lofi:showToast", onShowToast);
+    };
+  });
+
+  onDestroy(() => {
+    if (toastTimeout) clearTimeout(toastTimeout);
   });
 </script>
 

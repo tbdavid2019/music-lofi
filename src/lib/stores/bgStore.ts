@@ -117,11 +117,11 @@ function computeInitialBg(): string {
   }
 }
 
-// Initialized so both App.svelte and TVApp.svelte always have a valid initial background URL
+// Initialized so App.svelte always has a valid initial background URL
 export const bgUrl = writable<string>(computeInitialBg());
 export const bgTitle = writable<string>("");
 
-// Global fallback station listener for App & TVApp (registered once per window)
+// Global fallback station listener for App (registered once per window)
 if (typeof window !== "undefined" && !(window as any).__lofiBgStationListenerAttached) {
   (window as any).__lofiBgStationListenerAttached = true;
   window.addEventListener("stationChange", (e: any) => {

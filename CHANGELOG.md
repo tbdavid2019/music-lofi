@@ -1,5 +1,31 @@
 # 更新日誌 (Changelog)
 
+## [1.5.1] - 2026-10-29
+
+### 🔗 右上角常駐分享按鈕、電台即時搜尋快捷鍵直達與徹底清除歷史 TV 廢棄代碼 (Top-Right Share Action, Station Instant Search Hotkeys & Legacy TV Code Purge)
+
+- **🔗 右上角控制塢常駐「分享空間」按鈕 (Top-Right Share Action in Pill Dock)**：
+  - 將專屬音樂空間分享功能正式收納至右上角頂層控制塢（與番茄鐘定時器、設定齒輪三位一體並列）。
+  - 點擊即刻生成包含「當前電台、桌布模式、各軌混音比例」的直達 URL 並拷貝至剪貼簿，圖示平滑切換為翠綠打勾（`<Check size={18} />`），頂部同步浮出精美 Toast 提示。
+  - 遵循 **WCAG AA/AAA** 標準，具備 2px `#38bdf8` 天藍焦點環；手機端自適應折疊為圓形圖示按鈕，防止遮擋與破版。
+- **⌨️ 電台抽屜「即時搜尋快速輸入」與「鍵盤快捷鍵直達」 (Instant Search & Hotkeys)**：
+  - **即時過濾搜尋列**：按 `C` 或 `S`（或點擊底部「頻道」）開啟電台抽屜時，搜尋列自動聚焦（`autofocus`），隨手輸入關鍵字（如 `lofi`、`jazz`、`piano`、`drone`、`cafe` 等）即可秒級過濾。
+  - **Enter 鍵一鍵播放首選**：搜尋完成後直接按 `Enter`，立即播放第一筆匹配頻道並收合抽屜，體驗如同 Alfred / Spotlight。
+  - **12 大頻道數字快捷鍵**：卡片上醒目標註 `[1]` 到 `[9]`、`[0]`、`[-]`、`[=]` 徽章，抽屜開啟時直接按鍵秒切換！
+  - **全域快捷鍵擴充**：支援 `U` 鍵全域一鍵複製分享連結；`ShortCuts.svelte` 說明面板全面同步更新。
+- **🧹 徹底清理歷史 TV 模式殘留代碼與廢棄檔案 (Legacy TV Code Purge)**：
+  - 完全移除不再使用的早期 TV 專用檔案：
+    - `src/TVApp.svelte`
+    - `src/lib/TVPlayButton.svelte`
+    - `src/lib/components/TVBPMControl.svelte`
+    - `src/lib/components/TVControls.svelte`
+    - `src/lib/components/TVAmbientTracks.svelte`
+    - 舊版廢棄計時器 `src/lib/components/Timer/Timer.svelte`
+    - 歷史停用文檔 `SNARE_DISABLED.md`
+  - 淨化 `src/main.ts`：移除 `isTVMode` 路由判斷與多餘除錯輸出，改為純粹簡潔的單一入口。
+  - 清理 `vercel.json` 中的 `/tv` 路由重定向。
+  - 成果：生產環境 JS Bundle 瘦身 14 kB，CSS 瘦身 11 kB，編譯速度顯著加快！
+
 ## [1.5.0] - 2026-10-29
 
 ### 📻 擴充 12 大情境電台庫、全新底部電台選單抽屜 UI 與路由深度分享 (Station Library Expansion, Modern Station Drawer UX & Shareable Deep Link)

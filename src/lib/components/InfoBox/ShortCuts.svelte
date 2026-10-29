@@ -36,10 +36,22 @@
   </div>
 
   <!-- Main Radio -->
-  <h5 class="section-heading">線上電台 (Main Radio)</h5>
+  <h5 class="section-heading">線上串流電台 (Streaming Radio)</h5>
   <div class="shortcut">
     <div class="shortcut-key">SPACEBAR</div>
     <div class="shortcut-desc">播放 / 暫停主電台 (Play/Pause Radio)</div>
+  </div>
+  <div class="shortcut">
+    <div class="shortcut-key">C / S</div>
+    <div class="shortcut-desc">開啟電台選單並快速打字搜尋 (Search Stations)</div>
+  </div>
+  <div class="shortcut">
+    <div class="shortcut-key">ENTER</div>
+    <div class="shortcut-desc">播放搜尋結果首選 (Play Filtered Station)</div>
+  </div>
+  <div class="shortcut">
+    <div class="shortcut-key">1 ~ 9, 0</div>
+    <div class="shortcut-desc">選單中數字鍵直達 12 大電台 (Hotkeys 1~12)</div>
   </div>
   <div class="shortcut">
     <div class="shortcut-key">N</div>
@@ -48,6 +60,10 @@
   <div class="shortcut">
     <div class="shortcut-key">P</div>
     <div class="shortcut-desc">切換上一電台 (Previous Station)</div>
+  </div>
+  <div class="shortcut">
+    <div class="shortcut-key">U</div>
+    <div class="shortcut-desc">複製專屬音樂空間分享連結 (Copy Share Link)</div>
   </div>
 
   <!-- Effects Shortcuts -->

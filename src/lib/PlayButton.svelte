@@ -81,12 +81,12 @@
     } else if (e.key === "p" || e.key === "P") {
       e.preventDefault();
       prevStation();
-    } else if (
-      (e.key === "c" || e.key === "C" || e.key === "s" || e.key === "S") &&
-      !isDrawerOpen
-    ) {
+    } else if (e.key === "c" || e.key === "C" || e.key === "s" || e.key === "S") {
       e.preventDefault();
-      isDrawerOpen = true;
+      isDrawerOpen = !isDrawerOpen;
+    } else if (e.key === "u" || e.key === "U") {
+      e.preventDefault();
+      handleQuickShare();
     }
   }
 

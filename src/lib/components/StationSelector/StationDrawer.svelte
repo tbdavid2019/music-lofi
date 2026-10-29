@@ -3,6 +3,7 @@
     X,
     Share2,
     Check,
+    Search,
     Coffee,
     Headphones,
     Disc,
@@ -24,17 +25,42 @@
     type StationCategory,
   } from "../../stores/radioStore";
   import { copyShareLink } from "../../utils/shareUtils";
+  import { tick } from "svelte";
 
   export let isOpen = false;
   export let onClose: () => void = () => {};
 
   let activeCategory: "all" | StationCategory = "all";
+  let searchQuery = "";
+  let searchInputEl: HTMLInputElement | null = null;
   let copyToast = false;
   let copyTimeout: any = null;
 
-  $: filteredStations = activeCategory === "all"
-    ? STATIONS
-    : STATIONS.filter((s) => s.category === activeCategory);
+  // Key mappings for the 12 stations: 1..9, 0, -, =
+  const HOTKEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "-", "="];
+
+  $: filteredStations = STATIONS.filter((s) => {
+    const matchCategory =
+      activeCategory === "all" || s.category === activeCategory;
+    if (!matchCategory) return false;
+
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase().trim();
+    return (
+      s.name.toLowerCase().includes(q) ||
+      s.label.toLowerCase().includes(q) ||
+      s.description.toLowerCase().includes(q) ||
+      s.category.toLowerCase().includes(q)
+    );
+  });
+
+  function getStationHotkey(stationId: string): string | null {
+    const idx = STATIONS.findIndex((s) => s.id === stationId);
+    if (idx >= 0 && idx < HOTKEYS.length) {
+      return HOTKEYS[idx];
+    }
+    return null;
+  }
 
   function handleSelect(station: Station) {
     playStation(station.id, true);
@@ -45,21 +71,63 @@
   }
 
   async function handleShare() {
-    const success = await copyShareLink({ stationId: $radioStore.currentStationId });
+    const success = await copyShareLink({
+      stationId: $radioStore.currentStationId,
+    });
     if (success) {
       copyToast = true;
       if (copyTimeout) clearTimeout(copyTimeout);
       copyTimeout = setTimeout(() => {
         copyToast = false;
       }, 2400);
+
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("lofi:showToast", {
+            detail: "✨ 專屬音樂空間連結已複製！好友開啟即可同步聆聽。",
+          })
+        );
+      }
     }
   }
 
   function handleKeydown(e: KeyboardEvent) {
-    if (e.key === "Escape" && isOpen) {
+    if (!isOpen) return;
+
+    if (e.key === "Escape") {
       e.stopPropagation();
+      e.preventDefault();
       onClose();
+      return;
     }
+
+    // If Enter pressed in search box and we have matches, play the first one
+    if (e.key === "Enter" && filteredStations.length > 0) {
+      e.preventDefault();
+      handleSelect(filteredStations[0]);
+      onClose();
+      return;
+    }
+
+    // If user is not actively typing in an input with text, hotkeys 1..9, 0 can switch stations directly
+    const isInputActive = document.activeElement === searchInputEl;
+    if (!isInputActive || searchQuery === "") {
+      const matchIndex = HOTKEYS.indexOf(e.key);
+      if (matchIndex >= 0 && matchIndex < STATIONS.length) {
+        e.preventDefault();
+        handleSelect(STATIONS[matchIndex]);
+      }
+    }
+  }
+
+  // Auto-focus search input when drawer opens
+  $: if (isOpen) {
+    searchQuery = "";
+    tick().then(() => {
+      if (searchInputEl) {
+        searchInputEl.focus();
+      }
+    });
   }
 </script>
 
@@ -129,13 +197,30 @@
       </div>
     </header>
 
-    <!-- Copy Toast Floating Notification -->
-    {#if copyToast}
-      <div class="copy-notification-banner" role="status">
-        <Check size={16} />
-        <span>✨ 專屬音樂空間連結已複製！好友開啟即可同步聆聽。</span>
+    <!-- Quick Search Input Bar -->
+    <div class="search-bar-row">
+      <div class="search-input-wrap">
+        <Search size={15} class="search-icon" />
+        <input
+          bind:this={searchInputEl}
+          type="text"
+          class="search-input"
+          placeholder="快速輸入搜尋電台（如 lofi, jazz, piano, 專注...）按 Enter 播放"
+          bind:value={searchQuery}
+          aria-label="搜尋電台"
+        />
+        {#if searchQuery}
+          <button
+            type="button"
+            class="btn-clear-search"
+            on:click={() => (searchQuery = "")}
+            aria-label="清除搜尋"
+          >
+            <X size={14} />
+          </button>
+        {/if}
       </div>
-    {/if}
+    </div>
 
     <!-- Category Filter Tabs -->
     <div class="category-tabs" role="tablist" aria-label="情境分類">
@@ -169,79 +254,93 @@
 
     <!-- Stations Grid Container -->
     <div class="stations-grid-scroll">
-      <div class="stations-grid">
-        {#each filteredStations as station (station.id)}
-          {@const isCurrent = $radioStore.currentStationId === station.id}
-          <button
-            type="button"
-            class="station-card"
-            class:current={isCurrent}
-            class:playing={isCurrent && $radioStore.isPlaying}
-            on:click={() => handleSelect(station)}
-            aria-current={isCurrent ? "true" : undefined}
-          >
-            <!-- Card Left: Icon badge -->
-            <div class="card-icon-badge" class:active-icon={isCurrent}>
-              {#if station.icon === "coffee"}
-                <Coffee size={20} />
-              {:else if station.icon === "headphones"}
-                <Headphones size={20} />
-              {:else if station.icon === "disc"}
-                <Disc size={20} />
-              {:else if station.icon === "music2"}
-                <Music2 size={20} />
-              {:else if station.icon === "music"}
-                <Music size={20} />
-              {:else if station.icon === "moon"}
-                <Moon size={20} />
-              {:else if station.icon === "sparkles"}
-                <Sparkles size={20} />
-              {:else if station.icon === "cpu"}
-                <Cpu size={20} />
-              {:else if station.icon === "radio"}
-                <Radio size={20} />
-              {:else}
-                <Music size={20} />
-              {/if}
-            </div>
-
-            <!-- Card Center: Meta Info -->
-            <div class="card-content">
-              <div class="card-title-row">
-                <span class="card-title">{station.label}</span>
-                {#if isCurrent}
-                  <span class="active-badge">
-                    {$radioStore.isPlaying ? "播放中" : "已選取"}
-                  </span>
+      {#if filteredStations.length === 0}
+        <div class="no-results-box">
+          <Search size={28} class="no-results-icon" />
+          <p class="no-results-title">找不到符合「{searchQuery}」的電台</p>
+          <span class="no-results-hint">可嘗試搜尋 lofi、jazz、piano、drone 或切換分類</span>
+        </div>
+      {:else}
+        <div class="stations-grid">
+          {#each filteredStations as station (station.id)}
+            {@const isCurrent = $radioStore.currentStationId === station.id}
+            {@const hotkey = getStationHotkey(station.id)}
+            <button
+              type="button"
+              class="station-card"
+              class:current={isCurrent}
+              class:playing={isCurrent && $radioStore.isPlaying}
+              on:click={() => handleSelect(station)}
+              aria-current={isCurrent ? "true" : undefined}
+            >
+              <!-- Card Left: Icon badge -->
+              <div class="card-icon-badge" class:active-icon={isCurrent}>
+                {#if station.icon === "coffee"}
+                  <Coffee size={20} />
+                {:else if station.icon === "headphones"}
+                  <Headphones size={20} />
+                {:else if station.icon === "disc"}
+                  <Disc size={20} />
+                {:else if station.icon === "music2"}
+                  <Music2 size={20} />
+                {:else if station.icon === "music"}
+                  <Music size={20} />
+                {:else if station.icon === "moon"}
+                  <Moon size={20} />
+                {:else if station.icon === "sparkles"}
+                  <Sparkles size={20} />
+                {:else if station.icon === "cpu"}
+                  <Cpu size={20} />
+                {:else if station.icon === "radio"}
+                  <Radio size={20} />
+                {:else}
+                  <Music size={20} />
                 {/if}
               </div>
-              <span class="card-sub">{station.name}</span>
-              <p class="card-desc">{station.description}</p>
-            </div>
 
-            <!-- Card Right: Status Indicator / Equalizer -->
-            <div class="card-status-indicator">
-              {#if isCurrent && $radioStore.isPlaying}
-                <div class="mini-equalizer" aria-label="正在播放">
-                  <span class="m-bar bar-1"></span>
-                  <span class="m-bar bar-2"></span>
-                  <span class="m-bar bar-3"></span>
+              <!-- Card Center: Meta Info -->
+              <div class="card-content">
+                <div class="card-title-row">
+                  <span class="card-title">{station.label}</span>
+                  {#if hotkey}
+                    <kbd class="hotkey-pill" title={`按 ${hotkey} 鍵直接播放`}>
+                      {hotkey}
+                    </kbd>
+                  {/if}
+                  {#if isCurrent}
+                    <span class="active-badge">
+                      {$radioStore.isPlaying ? "播放中" : "已選取"}
+                    </span>
+                  {/if}
                 </div>
-              {:else if isCurrent}
-                <div class="status-dot paused" title="已選取但暫停中"></div>
-              {:else}
-                <div class="status-dot idle" title="點擊切換播放"></div>
-              {/if}
-            </div>
-          </button>
-        {/each}
-      </div>
+                <span class="card-sub">{station.name}</span>
+                <p class="card-desc">{station.description}</p>
+              </div>
+
+              <!-- Card Right: Status Indicator / Equalizer -->
+              <div class="card-status-indicator">
+                {#if isCurrent && $radioStore.isPlaying}
+                  <div class="mini-equalizer" aria-label="正在播放">
+                    <span class="m-bar bar-1"></span>
+                    <span class="m-bar bar-2"></span>
+                    <span class="m-bar bar-3"></span>
+                  </div>
+                {:else if isCurrent}
+                  <div class="status-dot paused" title="已選取但暫停中"></div>
+                {:else}
+                  <div class="status-dot idle" title="點擊切換播放"></div>
+                {/if}
+              </div>
+            </button>
+          {/each}
+        </div>
+      {/if}
     </div>
 
     <!-- Drawer Footer Note -->
     <footer class="drawer-footer">
       <span class="footer-tip">
-        💡 提示：按鍵盤 <kbd>Space</kbd> 播放/暫停，<kbd>N</kbd> 切換下一台，<kbd>P</kbd> 切換上一台
+        💡 快捷操控：直接按 <kbd>1</kbd>~<kbd>9</kbd>、<kbd>0</kbd> 直達電台，按 <kbd>Enter</kbd> 播放搜尋結果，按 <kbd>ESC</kbd> 關閉
       </span>
     </footer>
   </div>
@@ -301,8 +400,8 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 16px 20px 12px 20px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 16px 20px 10px 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   }
 
   .header-title-box {
@@ -394,19 +493,65 @@
     color: #fca5a5;
   }
 
-  /* Copy Notification Banner */
-  .copy-notification-banner {
+  /* Search Input Row */
+  .search-bar-row {
+    padding: 10px 20px 4px 20px;
+  }
+
+  .search-input-wrap {
+    position: relative;
     display: flex;
     align-items: center;
-    gap: 8px;
-    margin: 8px 16px 0 16px;
-    padding: 8px 14px;
-    background: rgba(16, 185, 129, 0.18);
-    border: 1px solid rgba(16, 185, 129, 0.35);
-    border-radius: 10px;
-    color: #a7f3d0;
-    font-size: 0.82rem;
-    animation: fadeIn 0.2s ease-out;
+    width: 100%;
+  }
+
+  :global(.search-icon) {
+    position: absolute;
+    left: 12px;
+    color: #94a3b8;
+    pointer-events: none;
+  }
+
+  .search-input {
+    width: 100%;
+    height: 38px;
+    padding: 0 34px 0 34px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+    font-size: 0.84rem;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+  }
+
+  .search-input:focus {
+    outline: none;
+    border-color: #a855f7;
+    background: rgba(255, 255, 255, 0.11);
+    box-shadow: 0 0 12px rgba(168, 85, 247, 0.3);
+  }
+
+  .search-input::placeholder {
+    color: #64748b;
+    font-size: 0.8rem;
+  }
+
+  .btn-clear-search {
+    position: absolute;
+    right: 10px;
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 4px;
+  }
+
+  .btn-clear-search:hover {
+    color: #ffffff;
   }
 
   /* Category Filter Tabs */
@@ -414,7 +559,7 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 12px 20px 8px 20px;
+    padding: 10px 20px 8px 20px;
     overflow-x: auto;
     scrollbar-width: none;
     -ms-overflow-style: none;
@@ -428,12 +573,12 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 6px 12px;
+    padding: 5px 11px;
     border-radius: 9999px;
     background: rgba(255, 255, 255, 0.06);
     border: 1px solid rgba(255, 255, 255, 0.1);
     color: #cbd5e1;
-    font-size: 0.82rem;
+    font-size: 0.8rem;
     font-weight: 500;
     cursor: pointer;
     white-space: nowrap;
@@ -469,7 +614,7 @@
   .stations-grid-scroll {
     flex: 1;
     overflow-y: auto;
-    padding: 8px 20px 14px 20px;
+    padding: 6px 20px 14px 20px;
     overscroll-behavior: contain;
   }
 
@@ -543,7 +688,7 @@
   .card-title-row {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     flex-wrap: wrap;
   }
 
@@ -552,6 +697,18 @@
     font-weight: 600;
     color: #ffffff;
     line-height: 1.3;
+  }
+
+  .hotkey-pill {
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    color: #e2e8f0;
+    font-size: 0.68rem;
+    font-family: inherit;
+    font-weight: 600;
+    line-height: 1;
   }
 
   .active-badge {
@@ -635,6 +792,32 @@
     background: rgba(255, 255, 255, 0.2);
   }
 
+  /* No results box */
+  .no-results-box {
+    padding: 32px 16px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+
+  :global(.no-results-icon) {
+    color: #64748b;
+  }
+
+  .no-results-title {
+    margin: 0;
+    color: #e2e8f0;
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+
+  .no-results-hint {
+    color: #94a3b8;
+    font-size: 0.78rem;
+  }
+
   /* Footer Tip */
   .drawer-footer {
     padding: 10px 20px;
@@ -697,7 +880,11 @@
     }
 
     .drawer-header {
-      padding: 10px 16px 12px 16px;
+      padding: 10px 16px 8px 16px;
+    }
+
+    .search-bar-row {
+      padding: 6px 16px 4px 16px;
     }
 
     .stations-grid {
