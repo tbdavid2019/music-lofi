@@ -43,6 +43,21 @@
 
   function toggleOpen() {
     isOpen = !isOpen;
+    if (isOpen && typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("lofi:closeSettings"));
+    }
+  }
+
+  function handleCloseTimer() {
+    isOpen = false;
+  }
+
+  function handleKeydown(e: KeyboardEvent) {
+    if (e.key === "Escape" && isOpen) {
+      e.preventDefault();
+      isOpen = false;
+      return;
+    }
   }
 
   function formatTime(seconds: number): string {
@@ -241,10 +256,16 @@
 
   onMount(() => {
     initDurationForMode();
+    window.addEventListener("keydown", handleKeydown);
+    window.addEventListener("lofi:closeTimer", handleCloseTimer);
     document.addEventListener("click", handleClickOutside);
   });
 
   onDestroy(() => {
+    if (typeof window !== "undefined") {
+      window.removeEventListener("keydown", handleKeydown);
+      window.removeEventListener("lofi:closeTimer", handleCloseTimer);
+    }
     if (typeof document !== "undefined") {
       document.removeEventListener("click", handleClickOutside);
     }
@@ -286,21 +307,28 @@
 
   <!-- Timer Popover Panel -->
   {#if isOpen}
+    <!-- Mobile Backdrop Overlay -->
+    <div
+      class="mobile-backdrop"
+      on:click={() => (isOpen = false)}
+      aria-hidden="true"
+    ></div>
+
     <div class="timer-popover" role="dialog" aria-label="專注計時器面板">
       <!-- Header -->
       <div class="popover-header">
         <div class="title-with-icon">
-          <Clock size={16} class="accent-icon" />
+          <Clock size={18} class="accent-icon" />
           <h4>專注與定時</h4>
         </div>
         <button
           type="button"
           class="close-popover-btn"
           on:click={() => (isOpen = false)}
-          aria-label="關閉"
-          title="關閉"
+          aria-label="關閉定時器"
+          title="關閉 (ESC)"
         >
-          <X size={16} />
+          <X size={18} />
         </button>
       </div>
 
@@ -321,7 +349,7 @@
           disabled={isTimerActive}
           on:click={() => setMode("pomodoro")}
         >
-          <Coffee size={13} />
+          <Coffee size={15} />
           <span>番茄鐘</span>
         </button>
         <button
@@ -333,7 +361,7 @@
           disabled={isTimerActive}
           on:click={() => setMode("sleep")}
         >
-          <Moon size={13} />
+          <Moon size={15} />
           <span>睡眠</span>
         </button>
         <button
@@ -345,7 +373,7 @@
           disabled={isTimerActive}
           on:click={() => setMode("custom")}
         >
-          <TimerIcon size={13} />
+          <TimerIcon size={15} />
           <span>自訂</span>
         </button>
       </div>
@@ -615,21 +643,30 @@
     animation: pop-in 0.2s ease-out;
   }
 
+  .timer-trigger-btn:focus-visible {
+    outline: 2px solid #38bdf8;
+    outline-offset: 2px;
+  }
+
+  .mobile-backdrop {
+    display: none;
+  }
+
   /* Popover */
   .timer-popover {
     position: absolute;
     top: 50px;
     right: 0;
-    width: 320px;
+    width: 330px;
     max-width: calc(100vw - 28px);
     box-sizing: border-box;
     padding: 16px;
     border-radius: 18px;
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    background-color: rgb(15 18 28 / var(--menu-opacity, 0.94));
-    border: 1px solid rgba(255, 255, 255, 0.16);
-    box-shadow: 0 20px 48px rgba(0, 0, 0, 0.65), 0 0 1px rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    background-color: rgb(15 18 28 / max(var(--menu-opacity, 0.94), 0.94));
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 24px 50px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.15);
     z-index: 70;
     color: #ffffff;
     user-select: none;
@@ -637,9 +674,29 @@
   }
 
   @media only screen and (max-width: 600px) {
+    .mobile-backdrop {
+      display: block;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      z-index: 80;
+    }
+
     .timer-popover {
-      right: -12px;
-      width: min(320px, calc(100vw - 24px));
+      position: fixed;
+      top: 64px;
+      left: 12px;
+      right: 12px;
+      width: auto;
+      max-width: none;
+      height: auto;
+      max-height: calc(100dvh - 80px);
+      padding: 14px;
+      border-radius: 16px;
+      z-index: 90;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.85);
     }
   }
 
@@ -659,12 +716,14 @@
     align-items: center;
     justify-content: space-between;
     margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
   }
 
   .title-with-icon {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
   }
 
   :global(.accent-icon) {
@@ -673,39 +732,46 @@
 
   .popover-header h4 {
     margin: 0;
-    font-size: 14px;
-    font-weight: 600;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
     color: #ffffff;
   }
 
   .close-popover-btn {
     background: transparent;
-    border: none;
-    color: rgba(255, 255, 255, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    color: #cbd5e1;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 26px;
-    height: 26px;
-    border-radius: 50%;
-    transition: all 0.2s;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .close-popover-btn:hover {
     color: #ffffff;
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.16);
+    border-color: rgba(255, 255, 255, 0.35);
+  }
+
+  .close-popover-btn:focus-visible {
+    outline: 2px solid #38bdf8;
+    outline-offset: 2px;
   }
 
   /* Mode Tabs */
   .mode-tabs {
     display: flex;
-    background: rgba(0, 0, 0, 0.35);
-    border-radius: 10px;
-    padding: 3px;
-    gap: 3px;
+    background: rgba(0, 0, 0, 0.45);
+    border-radius: 12px;
+    padding: 4px;
+    gap: 4px;
     margin-bottom: 14px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.16);
   }
 
   .mode-tab {
@@ -713,29 +779,34 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 5px;
-    padding: 6px 8px;
+    gap: 6px;
+    padding: 7px 10px;
     border-radius: 8px;
     border: 1px solid transparent;
     background: transparent;
-    color: rgba(255, 255, 255, 0.7);
-    font-size: 12px;
-    font-weight: 500;
+    color: #cbd5e1;
+    font-size: 13.5px;
+    font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .mode-tab:hover:not(:disabled) {
     color: #ffffff;
-    background: rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.1);
   }
 
   .mode-tab.selected {
-    background: rgba(255, 255, 255, 0.16);
-    border-color: rgba(255, 255, 255, 0.18);
+    background: rgba(255, 255, 255, 0.22);
+    border-color: rgba(255, 255, 255, 0.35);
     color: #ffffff;
-    font-weight: 600;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+    font-weight: 700;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  }
+
+  .mode-tab:focus-visible {
+    outline: 2px solid #38bdf8;
+    outline-offset: 2px;
   }
 
   .mode-tab:disabled {
@@ -745,10 +816,10 @@
 
   /* Mode Config Card */
   .mode-config-card {
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    padding: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 14px;
+    padding: 14px;
     margin-bottom: 14px;
   }
 
@@ -756,7 +827,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 10px;
+    margin-bottom: 12px;
   }
 
   .config-row:last-of-type {
@@ -764,97 +835,112 @@
   }
 
   .config-row label {
-    font-size: 13px;
-    font-weight: 500;
-    color: rgba(255, 255, 255, 0.9);
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #ffffff;
   }
 
   .number-input-wrap {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 7px;
   }
 
   .number-input-wrap input {
-    width: 60px;
-    background: rgba(0, 0, 0, 0.45);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 6px;
+    width: 64px;
+    background: rgba(0, 0, 0, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 8px;
     color: #ffffff;
-    padding: 4px 8px;
+    padding: 6px 8px;
     text-align: center;
-    font-size: 13px;
-    font-weight: 600;
+    font-size: 14px;
+    font-weight: 700;
     font-variant-numeric: tabular-nums;
+    transition: all 0.2s;
   }
 
-  .number-input-wrap input:focus {
+  .number-input-wrap input:focus-visible {
     outline: 2px solid #38bdf8;
+    outline-offset: 2px;
     border-color: transparent;
   }
 
   .unit {
-    font-size: 12px;
-    color: rgba(255, 255, 255, 0.6);
+    font-size: 13px;
+    font-weight: 500;
+    color: #cbd5e1;
   }
 
   .config-hint {
     margin: 4px 0 10px 0;
-    font-size: 11px;
-    color: rgba(255, 255, 255, 0.65);
-    line-height: 1.4;
+    font-size: 12.5px;
+    color: #94a3b8;
+    font-weight: 500;
+    line-height: 1.5;
   }
 
   .quick-pills {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
-    margin-top: 6px;
+    margin-top: 8px;
   }
 
   .quick-pill {
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 6px;
-    color: rgba(255, 255, 255, 0.85);
-    font-size: 11px;
-    font-weight: 500;
-    padding: 3px 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 8px;
+    color: #f1f5f9;
+    font-size: 12.5px;
+    font-weight: 600;
+    padding: 5px 10px;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .quick-pill:hover {
-    background: rgba(255, 255, 255, 0.16);
+    background: rgba(255, 255, 255, 0.2);
     color: #ffffff;
-    border-color: rgba(255, 255, 255, 0.25);
+    border-color: rgba(255, 255, 255, 0.4);
+  }
+
+  .quick-pill:focus-visible {
+    outline: 2px solid #38bdf8;
+    outline-offset: 2px;
   }
 
   .primary-action-btn {
     width: 100%;
-    padding: 10px;
+    padding: 11px;
     border-radius: 10px;
     border: none;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
-    font-size: 14px;
-    font-weight: 600;
+    font-size: 14.5px;
+    font-weight: 700;
     cursor: pointer;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .start-btn {
-    background: linear-gradient(135deg, #059669 0%, #10b981 100%);
-    color: #ffffff;
+    background: #10b981;
+    color: #022c22;
     box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
   }
 
   .start-btn:hover {
-    background: linear-gradient(135deg, #10b981 0%, #34d399 100%);
-    box-shadow: 0 6px 18px rgba(16, 185, 129, 0.5);
+    background: #34d399;
+    color: #022c22;
+    box-shadow: 0 6px 18px rgba(16, 185, 129, 0.45);
     transform: translateY(-1px);
+  }
+
+  .start-btn:focus-visible {
+    outline: 2px solid #34d399;
+    outline-offset: 2px;
   }
 
   /* Active Timer View */
@@ -873,9 +959,9 @@
   }
 
   .state-pill {
-    font-size: 12px;
+    font-size: 12.5px;
     font-weight: 600;
-    padding: 3px 10px;
+    padding: 4px 12px;
     border-radius: 999px;
     background: rgba(16, 185, 129, 0.2);
     border: 1px solid rgba(16, 185, 129, 0.4);
@@ -901,23 +987,23 @@
   }
 
   .paused-badge {
-    font-size: 11px;
-    font-weight: 600;
-    padding: 3px 8px;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 3px 9px;
     border-radius: 999px;
-    background: rgba(245, 158, 11, 0.25);
-    border: 1px solid rgba(245, 158, 11, 0.4);
-    color: #fde68a;
+    background: #fef3c7;
+    border: 1px solid #f59e0b;
+    color: #78350f;
   }
 
   .big-countdown-display {
-    font-size: 42px;
+    font-size: 44px;
     font-weight: 700;
     letter-spacing: 2px;
     font-variant-numeric: tabular-nums;
     color: #ffffff;
     margin: 4px 0 14px 0;
-    text-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    text-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
   }
 
   .big-countdown-display.is-break {
@@ -932,7 +1018,7 @@
     width: 100%;
     height: 6px;
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.14);
     overflow: hidden;
     margin-bottom: 16px;
   }
@@ -960,45 +1046,49 @@
     align-items: center;
     justify-content: center;
     gap: 6px;
-    padding: 8px 12px;
+    padding: 9px 12px;
     border-radius: 8px;
     border: none;
-    font-size: 13px;
+    font-size: 13.5px;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .btn-ctrl:focus-visible {
+    outline: 2px solid #38bdf8;
+    outline-offset: 2px;
   }
 
   .pause-btn {
-    background: rgba(245, 158, 11, 0.2);
-    border: 1px solid rgba(245, 158, 11, 0.4);
-    color: #fde68a;
+    background: #fef3c7;
+    border: 1px solid #f59e0b;
+    color: #78350f;
+    font-weight: 700;
   }
 
   .pause-btn:hover {
-    background: rgba(245, 158, 11, 0.3);
-    color: #ffffff;
+    background: #fde68a;
   }
 
   .resume-btn {
-    background: rgba(16, 185, 129, 0.2);
-    border: 1px solid rgba(16, 185, 129, 0.4);
-    color: #a7f3d0;
+    background: #10b981;
+    color: #022c22;
+    font-weight: 700;
   }
 
   .resume-btn:hover {
-    background: rgba(16, 185, 129, 0.3);
-    color: #ffffff;
+    background: #34d399;
   }
 
   .reset-btn {
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.16);
-    color: rgba(255, 255, 255, 0.85);
+    background: rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    color: #ffffff;
+    font-weight: 600;
   }
 
   .reset-btn:hover {
-    background: rgba(255, 255, 255, 0.16);
-    color: #ffffff;
+    background: rgba(255, 255, 255, 0.2);
   }
 </style>

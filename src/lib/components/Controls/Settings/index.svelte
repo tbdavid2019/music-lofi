@@ -14,6 +14,13 @@
 
   function toggle() {
     isActive = !isActive;
+    if (isActive && typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("lofi:closeTimer"));
+    }
+  }
+
+  function handleCloseSettings() {
+    isActive = false;
   }
 
   function handleKeydown(e: KeyboardEvent) {
@@ -53,12 +60,14 @@
 
   onMount(() => {
     window.addEventListener("keydown", handleKeydown);
+    window.addEventListener("lofi:closeSettings", handleCloseSettings);
     document.addEventListener("click", handleClickOutside);
   });
 
   onDestroy(() => {
     if (typeof window !== "undefined") {
       window.removeEventListener("keydown", handleKeydown);
+      window.removeEventListener("lofi:closeSettings", handleCloseSettings);
     }
     if (typeof document !== "undefined") {
       document.removeEventListener("click", handleClickOutside);
@@ -80,6 +89,13 @@
   </button>
 
   {#if isActive}
+    <!-- Mobile Backdrop Overlay -->
+    <div
+      class="mobile-backdrop"
+      on:click={() => (isActive = false)}
+      aria-hidden="true"
+    ></div>
+
     <div class="settings-container" role="dialog" aria-label="系統設定面板">
       <!-- Header -->
       <div class="settings-header">
@@ -385,5 +401,42 @@
     font-size: 12px;
     font-weight: 600;
     color: #ffffff;
+  }
+
+  .mobile-backdrop {
+    display: none;
+  }
+
+  @media only screen and (max-width: 600px) {
+    .mobile-backdrop {
+      display: block;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      z-index: 80;
+    }
+
+    .settings-container {
+      position: fixed;
+      top: 64px;
+      left: 12px;
+      right: 12px;
+      width: auto;
+      max-width: none;
+      height: auto;
+      max-height: calc(100dvh - 80px);
+      padding: 14px;
+      border-radius: 16px;
+      z-index: 90;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.85);
+    }
+
+    .tab-btn {
+      padding: 7px 6px;
+      font-size: 12.5px;
+      gap: 4px;
+    }
   }
 </style>

@@ -580,7 +580,8 @@
         </div>
         <div class="card-text">
           <span class="card-title">Bing 官方</span>
-          <span class="card-desc">每日世界風光</span>
+          <span class="card-desc desktop-desc">每日世界風光</span>
+          <span class="card-desc mobile-desc">每日風光</span>
         </div>
         {#if currentSource === "bing"}
           <span class="check-indicator"><Check size={14} /></span>
@@ -601,7 +602,8 @@
         </div>
         <div class="card-text">
           <span class="card-title">人像寫真</span>
-          <span class="card-desc">高解析藝術人像</span>
+          <span class="card-desc desktop-desc">高解析藝術人像</span>
+          <span class="card-desc mobile-desc">藝術人像</span>
         </div>
         {#if currentSource === "beauty"}
           <span class="check-indicator"><Check size={14} /></span>
@@ -622,7 +624,8 @@
         </div>
         <div class="card-text">
           <span class="card-title">插畫主題</span>
-          <span class="card-desc">10 款 Lo-Fi 原創</span>
+          <span class="card-desc desktop-desc">10 款 Lo-Fi 原創</span>
+          <span class="card-desc mobile-desc">10 款原創</span>
         </div>
         {#if currentSource === "local"}
           <span class="check-indicator"><Check size={14} /></span>
@@ -647,7 +650,8 @@
         on:click={() => selectMode("fixed")}
       >
         <Pin size={14} />
-        <span>固定 / 手動精選</span>
+        <span class="desktop-text">固定 / 手動精選</span>
+        <span class="mobile-text">固定精選</span>
       </button>
       <button
         type="button"
@@ -1348,6 +1352,59 @@
     }
     to {
       transform: rotate(360deg);
+    }
+  }
+
+  .mobile-desc,
+  .mobile-text {
+    display: none;
+  }
+
+  .desktop-desc,
+  .desktop-text {
+    display: inline;
+  }
+
+  @media only screen and (max-width: 480px) {
+    .mobile-desc,
+    .mobile-text {
+      display: inline;
+    }
+
+    .desktop-desc,
+    .desktop-text {
+      display: none;
+    }
+
+    .source-grid {
+      gap: 6px;
+    }
+
+    .source-card {
+      padding: 8px 6px;
+    }
+
+    .card-title {
+      font-size: 12.5px;
+      white-space: nowrap;
+    }
+
+    .card-desc {
+      font-size: 11px;
+      white-space: nowrap;
+    }
+
+    .capsule-mode-btn {
+      padding: 7px 8px;
+      font-size: 12.5px;
+      gap: 5px;
+      white-space: nowrap;
+    }
+
+    #bg-preview,
+    #bg-preview-random {
+      width: 150px;
+      height: 84px;
     }
   }
 </style>
