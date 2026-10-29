@@ -7,8 +7,10 @@
     RotateCcw,
     Sliders,
     Check,
+    Share2,
   } from "@lucide/svelte";
   import { STATIONS } from "../../../stores/radioStore";
+  import { copyShareLink } from "../../../utils/shareUtils";
 
   const PRESETS_STORAGE_KEY = "LofiEngine_Presets";
   const CURRENT_STATE_KEY = "LofiEngine_CurrentState";
@@ -33,6 +35,32 @@
   let presets: Preset[] = loadPresets();
   let newPresetName = "";
   let showSaveDialog = false;
+  let sharedPresetId: string | null = null;
+  let currentShareToast = false;
+
+  async function shareCurrent() {
+    const success = await copyShareLink();
+    if (success) {
+      currentShareToast = true;
+      setTimeout(() => {
+        currentShareToast = false;
+      }, 2200);
+    }
+  }
+
+  async function sharePreset(preset: Preset) {
+    const success = await copyShareLink({
+      stationId: preset.state.stationId,
+      bg: preset.state.background,
+      volumes: preset.state.volumes,
+    });
+    if (success) {
+      sharedPresetId = preset.id;
+      setTimeout(() => {
+        if (sharedPresetId === preset.id) sharedPresetId = null;
+      }, 2000);
+    }
+  }
 
   function loadPresets(): Preset[] {
     try {
@@ -210,13 +238,31 @@
     <h3>預設管理 (Presets)</h3>
   </div>
 
-  <!-- 保存新預設 -->
+  <!-- 保存新預設與分享當前 -->
   <div class="save-section">
     {#if !showSaveDialog}
-      <button type="button" class="btn-primary" on:click={() => (showSaveDialog = true)}>
-        <Save size={16} />
-        保存當前設定
-      </button>
+      <div class="action-buttons-group">
+        <button type="button" class="btn-primary" on:click={() => (showSaveDialog = true)}>
+          <Save size={16} />
+          保存當前設定
+        </button>
+
+        <button
+          type="button"
+          class="btn-share-current"
+          class:copied={currentShareToast}
+          on:click={shareCurrent}
+          title="複製當前空間直達分享連結"
+        >
+          {#if currentShareToast}
+            <Check size={16} />
+            <span>已複製！</span>
+          {:else}
+            <Share2 size={16} />
+            <span>分享當前空間</span>
+          {/if}
+        </button>
+      </div>
     {:else}
       <div class="save-dialog">
         <input
@@ -247,6 +293,20 @@
             <div class="preset-date">{formatDate(preset.timestamp)}</div>
           </div>
           <div class="preset-actions">
+            <button
+              type="button"
+              class="btn-share-preset"
+              class:copied={sharedPresetId === preset.id}
+              on:click={() => sharePreset(preset)}
+              title="複製此預設的分享連結"
+              aria-label="Share preset"
+            >
+              {#if sharedPresetId === preset.id}
+                <Check size={15} />
+              {:else}
+                <Share2 size={15} />
+              {/if}
+            </button>
             <button
               type="button"
               class="btn-load"
@@ -316,6 +376,76 @@
 
   .save-section {
     margin-bottom: 15px;
+  }
+
+  .action-buttons-group {
+    display: flex;
+    gap: 8px;
+  }
+
+  .action-buttons-group .btn-primary {
+    flex: 1.2;
+  }
+
+  .btn-share-current {
+    flex: 1;
+    padding: 10px 14px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    color: #f1f5f9;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 13.5px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+  }
+
+  .btn-share-current:hover {
+    background: rgba(168, 85, 247, 0.25);
+    border-color: rgba(168, 85, 247, 0.5);
+    color: #ffffff;
+    transform: translateY(-1px);
+  }
+
+  .btn-share-current.copied {
+    background: rgba(16, 185, 129, 0.25);
+    border-color: rgba(16, 185, 129, 0.5);
+    color: #34d399;
+  }
+
+  .btn-share-preset {
+    padding: 6px 8px;
+    background: rgba(255, 255, 255, 0.08);
+    color: #cbd5e1;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+  }
+
+  .btn-share-preset:hover {
+    background: rgba(168, 85, 247, 0.25);
+    border-color: rgba(168, 85, 247, 0.5);
+    color: #ffffff;
+  }
+
+  .btn-share-preset.copied {
+    background: rgba(16, 185, 129, 0.25);
+    border-color: rgba(16, 185, 129, 0.5);
+    color: #34d399;
+  }
+
+  .btn-share-preset:focus-visible,
+  .btn-share-current:focus-visible {
+    outline: 2px solid #38bdf8;
+    outline-offset: 2px;
   }
 
   .btn-primary {

@@ -44,9 +44,20 @@ export function getLocalBgByStation(stationId: string): number {
     case "jazz":
       return 4;
     case "piano":
+    case "classical":
       return 5;
     case "nightwave":
       return 6;
+    case "defcon":
+      return 7;
+    case "vaporwave":
+      return 8;
+    case "dronezone":
+      return 9;
+    case "lush":
+      return 10;
+    case "secretagent":
+      return 4;
     default:
       return 2;
   }

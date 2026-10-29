@@ -1,9 +1,34 @@
 import { writable, derived, get } from "svelte/store";
 
-export type StationIcon = "coffee" | "headphones" | "disc" | "music2" | "music" | "moon";
+export type StationIcon =
+  | "coffee"
+  | "headphones"
+  | "disc"
+  | "music2"
+  | "music"
+  | "moon"
+  | "sparkles"
+  | "cpu"
+  | "radio";
+
+export type StationCategory = "focus" | "chill" | "calm" | "retro";
+
+export interface StationCategoryInfo {
+  id: StationCategory;
+  label: string;
+  iconName: string;
+}
+
+export const STATION_CATEGORIES: StationCategoryInfo[] = [
+  { id: "focus", label: "專注工作", iconName: "headphones" },
+  { id: "chill", label: "咖啡弛放", iconName: "coffee" },
+  { id: "calm", label: "器樂古典", iconName: "music" },
+  { id: "retro", label: "懷舊氛圍", iconName: "disc" },
+];
 
 export interface Station {
   id: string;
+  category: StationCategory;
   icon: StationIcon;
   name: string;
   label: string;
@@ -13,17 +38,10 @@ export interface Station {
 }
 
 export const STATIONS: Station[] = [
-  {
-    id: "cafe",
-    icon: "coffee",
-    name: "Cafe Lounge",
-    label: "咖啡廳輕音樂",
-    description: "溫暖慵懶的 Bossa 與咖啡廳氛圍",
-    url: "https://0nlineradio.radioho.st/lounge-coffee-bar-lounge",
-    fallbackUrl: "https://streams.ilovemusic.de/iloveradio17.mp3",
-  },
+  // 1. Focus 專注工作
   {
     id: "lofi",
+    category: "focus",
     icon: "headphones",
     name: "Lo-Fi Study",
     label: "專注 Lo-Fi Beats",
@@ -33,24 +51,81 @@ export const STATIONS: Station[] = [
   },
   {
     id: "chillhop",
+    category: "focus",
     icon: "disc",
     name: "Chillhop Groove",
     label: "Chillhop 律動",
-    description: "柔和輕快的爵士嘻哈律動",
+    description: "柔和輕快的爵士嘻哈與節奏感",
     url: "https://streams.ilovemusic.de/iloveradio17.mp3",
     fallbackUrl: "https://public.isekoi-radio.com/listen/chill/radio.mp3",
   },
   {
+    id: "dronezone",
+    category: "focus",
+    icon: "sparkles",
+    name: "Drone Zone",
+    label: "深層冥想環境音",
+    description: "SomaFM 殿堂級環境氛圍，深沉無人聲專注流",
+    url: "https://ice1.somafm.com/dronezone-128-mp3",
+    fallbackUrl: "https://ice4.somafm.com/dronezone-128-mp3",
+  },
+  {
+    id: "defcon",
+    category: "focus",
+    icon: "cpu",
+    name: "DEF CON Radio",
+    label: "賽博駭客節拍",
+    description: "暗黑賽博龐克與工程電子，編碼心流專用",
+    url: "https://ice1.somafm.com/defcon-128-mp3",
+    fallbackUrl: "https://ice4.somafm.com/defcon-128-mp3",
+  },
+
+  // 2. Chill 咖啡弛放
+  {
+    id: "cafe",
+    category: "chill",
+    icon: "coffee",
+    name: "Cafe Lounge",
+    label: "咖啡廳輕音樂",
+    description: "溫暖慵懶的 Bossa 與午後咖啡廳氛圍",
+    url: "https://0nlineradio.radioho.st/lounge-coffee-bar-lounge",
+    fallbackUrl: "https://streams.ilovemusic.de/iloveradio17.mp3",
+  },
+  {
     id: "jazz",
+    category: "chill",
     icon: "music2",
     name: "Piano Jazz Bar",
     label: "深夜爵士鋼琴",
-    description: "優雅醇厚的鋼琴爵士酒廊",
+    description: "優雅醇厚的鋼琴爵士與低吟酒廊時光",
     url: "https://0nlineradio.radioho.st/lounge-piano-jazz-bar",
     fallbackUrl: "https://ice1.somafm.com/illstreet-128-mp3",
   },
   {
+    id: "secretagent",
+    category: "chill",
+    icon: "radio",
+    name: "Secret Agent",
+    label: "復古秘密沙龍",
+    description: "SomaFM 007 沙龍，復古 Downtempo 與弛放調情",
+    url: "https://ice1.somafm.com/secretagent-128-mp3",
+    fallbackUrl: "https://ice4.somafm.com/secretagent-128-mp3",
+  },
+  {
+    id: "lush",
+    category: "chill",
+    icon: "moon",
+    name: "Lush Chillout",
+    label: "空靈溫柔女聲",
+    description: "SomaFM 夢幻空靈人聲與絲滑緩拍治癒",
+    url: "https://ice1.somafm.com/lush-128-mp3",
+    fallbackUrl: "https://ice4.somafm.com/lush-128-mp3",
+  },
+
+  // 3. Calm 器樂古典
+  {
     id: "piano",
+    category: "calm",
     icon: "music",
     name: "Peaceful Piano",
     label: "純淨療癒鋼琴",
@@ -59,13 +134,36 @@ export const STATIONS: Station[] = [
     fallbackUrl: "https://0nlineradio.radioho.st/classical-classical-piano",
   },
   {
+    id: "classical",
+    category: "calm",
+    icon: "music2",
+    name: "Classical Radio",
+    label: "經典古典管弦",
+    description: "優雅沉靜的室內樂與巴洛克古典交響",
+    url: "https://0nlineradio.radioho.st/classical-classical-piano",
+    fallbackUrl: "https://media-ssl.musicradio.com/ClassicFM",
+  },
+
+  // 4. Retro 懷舊氛圍
+  {
     id: "nightwave",
+    category: "retro",
     icon: "moon",
-    name: "Nightwave Chill",
+    name: "Groove Salad",
     label: "深夜放鬆氛圍",
-    description: "SomaFM Groove Salad 經典環境弛放",
+    description: "SomaFM 全球經典環境弛放電台",
     url: "https://ice1.somafm.com/groovesalad-128-mp3",
     fallbackUrl: "https://radio.plaza.one/mp3",
+  },
+  {
+    id: "vaporwave",
+    category: "retro",
+    icon: "disc",
+    name: "Nightwave Plaza",
+    label: "蒸氣波懷舊電台",
+    description: "Nightwave Plaza 復古蒸氣波與 80s 迷幻回憶",
+    url: "https://radio.plaza.one/mp3",
+    fallbackUrl: "https://plaza.one/mp3",
   },
 ];
 
@@ -79,6 +177,19 @@ export interface RadioState {
 
 function getInitialStationId(): string {
   if (typeof window !== "undefined") {
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlStation = urlParams.get("st");
+      if (urlStation) {
+        if (STATIONS.some((s) => s.id === urlStation)) {
+          return urlStation;
+        }
+        if (urlStation === "nightwave") {
+          return "nightwave";
+        }
+      }
+    } catch {}
+
     const saved = localStorage.getItem("LofiEngine_Station");
     if (saved && STATIONS.some((s) => s.id === saved)) {
       return saved;
