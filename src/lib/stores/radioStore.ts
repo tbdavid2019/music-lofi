@@ -6,6 +6,7 @@ export type StationIcon =
   | "disc"
   | "music2"
   | "music"
+  | "eighth-notes"
   | "moon"
   | "sparkles"
   | "cpu"
@@ -22,7 +23,7 @@ export interface StationCategoryInfo {
 export const STATION_CATEGORIES: StationCategoryInfo[] = [
   { id: "focus", label: "專注工作", iconName: "headphones" },
   { id: "chill", label: "咖啡弛放", iconName: "coffee" },
-  { id: "calm", label: "器樂古典", iconName: "music" },
+  { id: "calm", label: "器樂古典", iconName: "eighth-notes" },
   { id: "retro", label: "懷舊氛圍", iconName: "disc" },
 ];
 
@@ -94,7 +95,7 @@ export const STATIONS: Station[] = [
   {
     id: "jazz",
     category: "chill",
-    icon: "music2",
+    icon: "eighth-notes",
     name: "Piano Jazz Bar",
     label: "深夜爵士鋼琴",
     description: "優雅醇厚的鋼琴爵士與低吟酒廊時光",
@@ -126,7 +127,7 @@ export const STATIONS: Station[] = [
   {
     id: "piano",
     category: "calm",
-    icon: "music",
+    icon: "eighth-notes",
     name: "Peaceful Piano",
     label: "純淨療癒鋼琴",
     description: "寧靜溫柔的純鋼琴獨奏曲庫",
@@ -136,7 +137,7 @@ export const STATIONS: Station[] = [
   {
     id: "classical",
     category: "calm",
-    icon: "music2",
+    icon: "eighth-notes",
     name: "Classical Radio",
     label: "經典古典管弦",
     description: "優雅沉靜的室內樂與巴洛克古典交響",

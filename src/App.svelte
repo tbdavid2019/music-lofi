@@ -7,6 +7,8 @@
   import Info from "./lib/components/InfoBox/Info.svelte";
   import Config from "./lib/Config.svelte";
   import RainAnimation from "./lib/components/Controls/Rain/RainAnimation.svelte";
+  import PWAInstallPrompt from "./lib/components/PWA/PWAInstallPrompt.svelte";
+  import { initPWA } from "./lib/stores/pwaStore";
   import { bgUrl } from "./lib/stores/bgStore";
   import { radioStore, setMainVolume } from "./lib/stores/radioStore";
   import { isRainingStore, isLightningFlashingStore } from "./lib/stores/ambientVisualStore";
@@ -20,6 +22,7 @@
   let shareGreeting: string | null = null;
   let toastTimeout: any = null;
   let cleanupIdle: (() => void) | null = null;
+  let cleanupPWA: (() => void) | null = null;
 
   $: if (typeof document !== "undefined") {
     if ($isIdleStore) {
@@ -64,6 +67,7 @@
   onMount(() => {
     checkImageComplete();
     cleanupIdle = initIdleDetector();
+    cleanupPWA = initPWA();
 
     // Check and apply deep link share state
     const shared = parseShareUrl();
@@ -118,6 +122,7 @@
 
   onDestroy(() => {
     if (cleanupIdle) cleanupIdle();
+    if (cleanupPWA) cleanupPWA();
     if (toastTimeout) clearTimeout(toastTimeout);
     if (typeof document !== "undefined") {
       document.body.classList.remove("is-ambient-idle");
@@ -179,6 +184,7 @@
     <Info />
   </section>
   <PlayButton />
+  <PWAInstallPrompt />
 </main>
 
 <style>

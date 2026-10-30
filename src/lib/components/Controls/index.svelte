@@ -1,8 +1,9 @@
 <script lang="ts">
   import TimerControl from "../Timer/TimerControl.svelte";
   import Settings from "./Settings/index.svelte";
-  import { Share2, Check } from "@lucide/svelte";
+  import { Share2, Check, Download } from "@lucide/svelte";
   import { copyShareLink } from "../../utils/shareUtils";
+  import { pwaStore, openPWAPrompt } from "../../stores/pwaStore";
 
   let isCopied = false;
   let copyTimeout: any = null;
@@ -49,6 +50,20 @@
       {isCopied ? "已複製！" : "分享空間"}
     </span>
   </button>
+
+  <!-- PWA Install Button: visible when not already standalone -->
+  {#if !$pwaStore.isStandalone}
+    <button
+      type="button"
+      class="dock-icon-btn btn-install"
+      on:click={openPWAPrompt}
+      title="安裝 888 Music 桌面 / 手機 App"
+      aria-label="安裝 App"
+    >
+      <Download size={18} class="dock-install-icon" />
+      <span class="dock-tooltip">安裝 App</span>
+    </button>
+  {/if}
 
   <!-- Settings: 38px x 38px round glass button -->
   <Settings />

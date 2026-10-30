@@ -1,5 +1,30 @@
 # 更新日誌 (Changelog)
 
+## [1.5.3] - 2026-10-30
+
+### 📲 完整 PWA 支援與智慧主動安裝提示 (Active PWA Install Prompt) & 🎵 音樂圖示全面重構為 Lucide Eighth-Notes
+
+- **📲 完整 PWA (Progressive Web App) 支援與「主動跳出安裝提示」機制**：
+  - **自動捕捉 `beforeinstallprompt` 事件**：在符合安裝資格之瀏覽器（Chrome、Edge、Android、Samsung Internet 等）開啟時，自動攔截預設靜音行為，於進入畫面 2 秒後優雅主動彈出「安裝 888 Music App」毛玻璃邀請卡片。
+  - **沉浸式主動安裝邀請卡**：
+    - 展示全新 888 Music 品牌圖示與閃爍微光動畫。
+    - 列出三大專屬優勢：「獨立全螢幕・無網址列干擾」、「桌面 / 主畫面一鍵快捷秒開」、「離線快取與不中斷音訊串流」。
+    - 點擊「立即主動安裝」立即觸發瀏覽器原生安裝確認彈窗；點擊「稍後再說」記錄 3 天暫緩頻率，不重複干擾。
+  - **iOS Safari 專屬安裝指引 (Smart iOS Add-to-Home-Screen Guide)**：
+    - 針對無 `beforeinstallprompt` 的 iPhone / iPad Safari，提供一鍵開啟三步驟視覺圖文指引（點擊分享按鈕 ➔ 加入主畫面 ➕ ➔ 新增）。
+  - **常駐安裝按鈕 (Permanent Install Entry)**：
+    - 右上角控制塢新增「安裝 App」毛玻璃圓鈕（已安裝為獨立 App 時自動優雅隱藏）。
+    - 關於視窗（Info Box）同步加入「安裝 888 Music App」快捷入口，隨時皆可一鍵發起安裝。
+  - **PWA Manifest 與 Service Worker 全面升級 (v3)**：
+    - 完善 `site.webmanifest`：加入 `id`、`display_override`、`shortcuts`（Lo-Fi、深夜爵士鋼琴、純淨鋼琴）、`maskable` 圖示。
+    - Service Worker 升級為 `888-music-v3`，增加離線快取與 Manifest 斷網回退支援。
+- **🎵 Logo 與音樂圖示全面重構為 Lucide `eighth-notes`**：
+  - **官方 Favicon / App Icon 全面重新設計**：
+    - 替換原先粗糙的純文字 `Music`，改以高質感、黃金比例的 Lucide `eighth-notes`（雙連八分音符向量，https://lucide.dev/icons/eighth-notes）幾何結構與 `888` 品牌字體融合。
+    - 重新編譯生成完整尺寸圖標體系：`favicon.svg`、`favicon.ico`（16x16/32x32 雙層）、`favicon-16x16.png`、`favicon-32x32.png`、`apple-touch-icon.png` (180x180)、`icon-192.png` (192x192)、`icon-512.png` (512x512)、`LofiEngine.png`、`app-icon.png`。
+  - **站內音樂圖標全面升級**：
+    - 在播放器（`PlayButton.svelte`）、電台抽屜（`StationDrawer.svelte`）與電台狀態庫（`radioStore.ts`）中，全面導入 `@lucide/svelte` 的 `EighthNotes` 元件，使鋼琴、古典、爵士等電台圖示風格一體化。
+
 ## [1.5.2] - 2026-10-29
 
 ### ⏱️ 右上角 38px 毛玻璃控制圓鈕統一、雙模式沉浸時鐘 (888tools 風格) 與電視無動作屏保 (Ambient TV Mode)

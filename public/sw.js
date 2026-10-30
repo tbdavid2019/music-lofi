@@ -1,21 +1,35 @@
-const CACHE_NAME = "888-music-v2";
+const CACHE_NAME = "888-music-v3";
 const CACHE_PREFIX = "888-music-";
-const STATIC_PATHS = ["/assets/", "/icons/", "/favicon", "/site.webmanifest"];
+const STATIC_PATHS = ["/assets/", "/icons/", "/favicon", "/site.webmanifest", "/LofiEngine.png", "/app-icon.png"];
 
 async function getPrecacheAssets() {
-  const response = await fetch("/build-manifest.json");
-  if (!response.ok) throw new Error("Could not load the production build manifest.");
+  const fallbackAssets = [
+    "/",
+    "/site.webmanifest",
+    "/favicon.svg",
+    "/favicon.ico",
+    "/icons/icon-192.png",
+    "/icons/icon-512.png"
+  ];
 
-  const manifest = await response.json();
-  const assets = new Set(["/"]);
+  try {
+    const response = await fetch("/build-manifest.json");
+    if (!response.ok) return fallbackAssets;
 
-  for (const entry of Object.values(manifest)) {
-    for (const file of [entry.file, ...(entry.css || [])]) {
-      if (/\.(js|css)$/i.test(file)) assets.add(`/${file}`);
+    const manifest = await response.json();
+    const assets = new Set(fallbackAssets);
+
+    for (const entry of Object.values(manifest)) {
+      for (const file of [entry.file, ...(entry.css || [])]) {
+        if (/\.(js|css)$/i.test(file)) assets.add(`/${file}`);
+      }
     }
-  }
 
-  return [...assets];
+    return [...assets];
+  } catch (err) {
+    console.warn("[SW] Manifest precache fallback:", err);
+    return fallbackAssets;
+  }
 }
 
 self.addEventListener("install", (event) => {

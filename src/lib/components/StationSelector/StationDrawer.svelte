@@ -7,7 +7,7 @@
     Coffee,
     Headphones,
     Disc,
-    Music2,
+    EighthNotes,
     Music,
     Moon,
     Sparkles,
@@ -281,10 +281,8 @@
                   <Headphones size={20} />
                 {:else if station.icon === "disc"}
                   <Disc size={20} />
-                {:else if station.icon === "music2"}
-                  <Music2 size={20} />
-                {:else if station.icon === "music"}
-                  <Music size={20} />
+                {:else if station.icon === "eighth-notes" || station.icon === "music" || station.icon === "music2"}
+                  <EighthNotes size={20} />
                 {:else if station.icon === "moon"}
                   <Moon size={20} />
                 {:else if station.icon === "sparkles"}
@@ -294,7 +292,7 @@
                 {:else if station.icon === "radio"}
                   <Radio size={20} />
                 {:else}
-                  <Music size={20} />
+                  <EighthNotes size={20} />
                 {/if}
               </div>
 

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
-  import { Eye, X, Sparkles, Keyboard } from "@lucide/svelte";
+  import { Eye, X, Sparkles, Keyboard, Download } from "@lucide/svelte";
+  import { pwaStore, openPWAPrompt } from "../../stores/pwaStore";
   import ShortCuts from "./ShortCuts.svelte";
   import SocialLinks from "./SocialLinks.svelte";
   import NewFeatures from "./NewFeatures.svelte";
@@ -66,11 +67,24 @@
           <img id="app-logo" src="LofiEngine.png" alt="888 Music Logo" />
           <div>
             <h2 class="app-title">888 Music - DAVID888</h2>
-            <p id="version">Version 1.5.2</p>
+            <p id="version">Version 1.5.3</p>
             <p id="tagline">
               Create your own atmosphere, Lofi Engine sets the mood.
             </p>
             <SocialLinks />
+            {#if !$pwaStore.isStandalone}
+              <button
+                type="button"
+                class="pwa-install-app-btn"
+                on:click={() => {
+                  visible = false;
+                  openPWAPrompt();
+                }}
+              >
+                <Download size={14} />
+                <span>安裝 888 Music App</span>
+              </button>
+            {/if}
           </div>
         </div>
       </div>
@@ -170,6 +184,27 @@
     font-size: 15px;
     margin: 5px 10px;
     font-family: "Courier New", Courier, monospace;
+  }
+  .pwa-install-app-btn {
+    margin: 10px 10px 4px 10px;
+    background: linear-gradient(135deg, #ff7a00, #ea580c);
+    border: none;
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 6px 14px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(234, 88, 12, 0.35);
+    transition: all 0.2s ease;
+  }
+  .pwa-install-app-btn:hover {
+    filter: brightness(1.1);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(234, 88, 12, 0.45);
   }
   #bottom-section {
     margin-top: 10px;
